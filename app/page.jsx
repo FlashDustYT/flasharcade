@@ -39,7 +39,7 @@ const games = [
     plays: "Playable",
     tag: "Featured",
     image: "rings",
-    url: "https://flashdustyt.github.io/perfect-season-pro/how-many-rings-source-code/",
+    url: "/how-many-rings",
     accent: "gold",
     playable: true,
   },
@@ -291,7 +291,7 @@ export default function HomePage() {
 
   function launchGame() {
     unlockAchievement("first-play");
-    window.open(featured.url, "_blank", "noopener,noreferrer");
+    window.location.href = featured.url;
   }
 
   function rateGame(stars) {

@@ -1,16 +1,11 @@
-# FlashArcade V6
+# FlashArcade V7
 
 Changes:
-- Removed fake Google/Discord/GitHub login behavior
-- Added a real local player profile system instead
-- Removed manual leaderboard typing
-- Replaced leaderboard with achievements
-- Achievements unlock from local FlashArcade actions
-- Score-based achievements are reserved for when the game can send results back automatically
-- Keeps How Many Rings as the only playable game
-- Keeps Legacy League as coming soon
-- Keeps Add Your Own Game as shaded coming soon
-- Keeps audio toggles and click sound on any click
+- How Many Rings now opens inside FlashArcade at `/how-many-rings`
+- The game is embedded using an iframe from the official GitHub Pages link
+- Play buttons now stay on arcade.flashdust.dev instead of opening a separate tab
+- Added a Back to FlashArcade button
+- Added an Open Original button in case the embed has issues
 
-Important:
-Real Google login, global achievements, and automatic game score syncing require Firebase or Supabase.
+Commit summary:
+Embed How Many Rings inside FlashArcade
