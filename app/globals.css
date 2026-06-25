@@ -17,3 +17,13 @@
 .modal-backdrop{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.72);display:grid;place-items:center;padding:18px}.login-modal{position:relative;width:min(440px,100%);border:1px solid var(--line);background:linear-gradient(145deg,rgba(25,23,15,.96),rgba(9,9,9,.98));border-radius:28px;box-shadow:var(--shadow);padding:28px}.close{position:absolute;right:16px;top:14px;background:transparent;border:0;color:var(--muted);font-size:2rem;cursor:pointer}.modal-icon{width:62px;height:62px;border-radius:20px;display:grid;place-items:center;background:var(--gold);color:#080808}.login-modal h2{font-size:2rem;margin:16px 0 8px}.login-modal p{color:var(--muted);line-height:1.55}.login-modal input{width:100%;min-height:50px;margin-top:10px;border:1px solid var(--soft);border-radius:14px;background:rgba(255,255,255,.07);color:var(--text);padding:0 14px;font:inherit}.login-modal button[disabled]{width:100%;min-height:50px;margin-top:14px;border:0;border-radius:14px;background:var(--gold);color:#080808;font-weight:1000;opacity:.65}
 footer{padding:42px 0 34px;color:var(--muted);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}footer a{color:var(--gold);font-weight:900;text-decoration:none}
 @media(max-width:1000px){.hero,.roadmap{grid-template-columns:1fr}.game-grid{grid-template-columns:repeat(2,1fr)}.toolbar{align-items:stretch;flex-direction:column}.search-box{min-width:100%}}@media(max-width:640px){.shell{width:min(100% - 22px,1220px)}.nav{align-items:flex-start;flex-direction:column}.game-grid,.stats{grid-template-columns:1fr}.hero-actions,.button{width:100%}.featured-card{min-height:auto}.featured-card .game-art{min-height:245px}.leader-row{grid-template-columns:48px 1fr}.score{grid-column:2}.hover-message{font-size:1.35rem}}
+
+
+.audio-button {
+  min-width: 43px;
+  justify-content: center;
+}
+
+.audio-button svg {
+  color: var(--gold);
+}

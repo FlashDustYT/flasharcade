@@ -1,15 +1,10 @@
-# FlashArcade V2
+# FlashArcade V3
 
-Updated FlashArcade build.
+Adds:
+- Arcade-style background music toggle
+- Click sound effect toggle
+- Music is generated in-browser, so there are no audio files or copyright issues
+- Audio starts only after the visitor clicks the toggle, because browsers block autoplay
 
-Includes:
-- How Many Rings? as the only playable game
-- Login button with coming-soon modal
-- Live-style leaderboard section
-- Add Your Own Game card, shaded/disabled with Coming Soon hover
-- All other games set to Coming Soon
-
-Deploy:
-1. Replace the old flasharcade files with these.
-2. Commit and push in GitHub Desktop.
-3. Vercel will redeploy automatically.
+Commit summary:
+V3 - Add arcade audio and click sounds

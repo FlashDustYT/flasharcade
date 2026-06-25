@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Search,
   Play,
@@ -20,6 +20,10 @@ import {
   Lock,
   Medal,
   Crown,
+  Volume2,
+  VolumeX,
+  Music,
+  Music2,
 } from "lucide-react";
 
 const MAIN_SITE = "https://flashdust.dev";
@@ -92,11 +96,140 @@ const leaderboard = [
 
 const categories = ["All", "Playable", "Sports Strategy", "Coming Soon", "Horror", "Party Trivia", "Concept"];
 
+function playClickSound(enabled) {
+  if (!enabled || typeof window === "undefined") return;
+
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "square";
+    osc.frequency.setValueAtTime(760, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(420, ctx.currentTime + 0.055);
+
+    gain.gain.setValueAtTime(0.035, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.075);
+  } catch {}
+}
+
+function createArcadeAmbience() {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AudioContext();
+
+  const master = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+
+  master.gain.value = 0.045;
+  filter.type = "lowpass";
+  filter.frequency.value = 1200;
+
+  filter.connect(master);
+  master.connect(ctx.destination);
+
+  const bass = ctx.createOscillator();
+  const bassGain = ctx.createGain();
+  bass.type = "triangle";
+  bass.frequency.value = 55;
+  bassGain.gain.value = 0.055;
+  bass.connect(bassGain);
+  bassGain.connect(filter);
+
+  const pad = ctx.createOscillator();
+  const padGain = ctx.createGain();
+  pad.type = "sine";
+  pad.frequency.value = 220;
+  padGain.gain.value = 0.028;
+  pad.connect(padGain);
+  padGain.connect(filter);
+
+  const pulse = ctx.createOscillator();
+  const pulseGain = ctx.createGain();
+  pulse.type = "square";
+  pulse.frequency.value = 110;
+  pulseGain.gain.value = 0.012;
+  pulse.connect(pulseGain);
+  pulseGain.connect(filter);
+
+  bass.start();
+  pad.start();
+  pulse.start();
+
+  const notes = [55, 65.41, 73.42, 82.41, 98, 110];
+  let step = 0;
+
+  const interval = setInterval(() => {
+    const now = ctx.currentTime;
+    const note = notes[step % notes.length];
+    bass.frequency.exponentialRampToValueAtTime(note, now + 0.25);
+    pad.frequency.exponentialRampToValueAtTime(note * 4, now + 0.4);
+
+    pulseGain.gain.setValueAtTime(0.02, now);
+    pulseGain.gain.exponentialRampToValueAtTime(0.004, now + 0.16);
+
+    step += 1;
+  }, 700);
+
+  return {
+    stop() {
+      clearInterval(interval);
+      const now = ctx.currentTime;
+      master.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      setTimeout(() => {
+        bass.stop();
+        pad.stop();
+        pulse.stop();
+        ctx.close();
+      }, 450);
+    },
+  };
+}
+
+
 export default function HomePage() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [loginOpen, setLoginOpen] = useState(false);
+  const [clickSoundOn, setClickSoundOn] = useState(false);
+  const [musicOn, setMusicOn] = useState(false);
+  const musicRef = useRef(null);
   const featured = games[0];
+
+
+  useEffect(() => {
+    const handler = (event) => {
+      if (event.target.closest("button, a")) {
+        playClickSound(clickSoundOn);
+      }
+    };
+
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [clickSoundOn]);
+
+  useEffect(() => {
+    if (musicOn && !musicRef.current) {
+      musicRef.current = createArcadeAmbience();
+    }
+
+    if (!musicOn && musicRef.current) {
+      musicRef.current.stop();
+      musicRef.current = null;
+    }
+
+    return () => {
+      if (musicRef.current) {
+        musicRef.current.stop();
+        musicRef.current = null;
+      }
+    };
+  }, [musicOn]);
 
   const filteredGames = useMemo(() => {
     return games.filter((game) => {
@@ -151,6 +284,12 @@ export default function HomePage() {
             <a href="#library">Library</a>
             <a href="#leaderboard">Leaderboard</a>
             <a href={MAIN_SITE}><Home size={16} /> FlashDust</a>
+            <button className="login-button audio-button" onClick={() => setClickSoundOn((value) => !value)} title="Toggle click sound">
+              {clickSoundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            </button>
+            <button className="login-button audio-button" onClick={() => setMusicOn((value) => !value)} title="Toggle arcade background music">
+              {musicOn ? <Music2 size={16} /> : <Music size={16} />}
+            </button>
             <button className="login-button" onClick={() => setLoginOpen(true)}>
               <LogIn size={16} /> Login
             </button>
