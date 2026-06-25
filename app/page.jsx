@@ -23,6 +23,8 @@ import {
   Music,
   Music2,
   Star,
+  ShieldCheck,
+  Award,
 } from "lucide-react";
 
 const MAIN_SITE = "https://flashdust.dev";
@@ -57,6 +59,27 @@ const games = [
 ];
 
 const categories = ["All", "Playable", "Sports Strategy", "Sports Simulation", "Coming Soon"];
+
+const defaultAchievements = [
+  {
+    id: "first-login",
+    title: "Signed to the Arcade",
+    text: "Create a FlashArcade local player profile.",
+    unlocked: false,
+  },
+  {
+    id: "first-play",
+    title: "First Tip-Off",
+    text: "Launch How Many Rings from FlashArcade.",
+    unlocked: false,
+  },
+  {
+    id: "first-rating",
+    title: "Critic Mode",
+    text: "Rate How Many Rings.",
+    unlocked: false,
+  },
+];
 
 function playClickSound(enabled) {
   if (!enabled || typeof window === "undefined") return;
@@ -173,17 +196,16 @@ export default function HomePage() {
   const [clickSoundOn, setClickSoundOn] = useState(false);
   const [musicOn, setMusicOn] = useState(false);
   const [player, setPlayer] = useState(null);
+  const [username, setUsername] = useState("");
   const [ratingData, setRatingData] = useState({ total: 0, count: 0, myRating: 0 });
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [scoreName, setScoreName] = useState("");
-  const [scoreValue, setScoreValue] = useState("");
+  const [achievements, setAchievements] = useState(defaultAchievements);
   const musicRef = useRef(null);
   const featured = games[0];
 
   useEffect(() => {
     setPlayer(getStoredJson("flasharcade-player", null));
     setRatingData(getStoredJson("flasharcade-rating-how-many-rings", { total: 0, count: 0, myRating: 0 }));
-    setLeaderboard(getStoredJson("flasharcade-leaderboard-how-many-rings", []));
+    setAchievements(getStoredJson("flasharcade-achievements", defaultAchievements));
   }, []);
 
   useEffect(() => {
@@ -231,26 +253,45 @@ export default function HomePage() {
     });
   }, [query, category]);
 
-  const averageRating = ratingData.count ? (ratingData.total / ratingData.count).toFixed(1) : "No ratings yet";
+  const averageRating = ratingData.count ? (ratingData.total / ratingData.count).toFixed(1) : "Unrated";
+  const unlockedCount = achievements.filter((item) => item.unlocked).length;
 
-  function randomGame() {
-    window.open(featured.url, "_blank", "noopener,noreferrer");
+  function unlockAchievement(id) {
+    const next = achievements.map((achievement) =>
+      achievement.id === id ? { ...achievement, unlocked: true } : achievement
+    );
+
+    setAchievements(next);
+    setStoredJson("flasharcade-achievements", next);
   }
 
-  function login(provider) {
-    const user = {
-      name: provider === "Google" ? "Google Player" : provider === "Discord" ? "Discord Player" : provider === "GitHub" ? "GitHub Player" : "FlashArcade Player",
-      provider,
+  function randomGame() {
+    launchGame();
+  }
+
+  function createLocalProfile(event) {
+    event.preventDefault();
+
+    const name = (username || "FlashArcade Player").trim().slice(0, 24);
+    const localPlayer = {
+      name,
+      provider: "Local Profile",
     };
-    setPlayer(user);
-    setScoreName(user.name);
-    setStoredJson("flasharcade-player", user);
+
+    setPlayer(localPlayer);
+    setStoredJson("flasharcade-player", localPlayer);
     setLoginOpen(false);
+    unlockAchievement("first-login");
   }
 
   function logout() {
     setPlayer(null);
     localStorage.removeItem("flasharcade-player");
+  }
+
+  function launchGame() {
+    unlockAchievement("first-play");
+    window.open(featured.url, "_blank", "noopener,noreferrer");
   }
 
   function rateGame(stars) {
@@ -260,31 +301,10 @@ export default function HomePage() {
       total: previous ? ratingData.total - previous + stars : ratingData.total + stars,
       count: previous ? ratingData.count : ratingData.count + 1,
     };
+
     setRatingData(next);
     setStoredJson("flasharcade-rating-how-many-rings", next);
-  }
-
-  function submitScore(event) {
-    event.preventDefault();
-    const rings = Number(scoreValue);
-
-    if (!Number.isFinite(rings) || rings < 0) return;
-
-    const entry = {
-      id: Date.now(),
-      name: (scoreName || player?.name || "Guest Player").slice(0, 24),
-      game: "How Many Rings?",
-      score: rings,
-      detail: rings >= 10 ? "Dynasty God" : rings >= 5 ? "Respectable Run" : "Building the legacy",
-    };
-
-    const next = [...leaderboard, entry]
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
-
-    setLeaderboard(next);
-    setStoredJson("flasharcade-leaderboard-how-many-rings", next);
-    setScoreValue("");
+    unlockAchievement("first-rating");
   }
 
   return (
@@ -298,14 +318,23 @@ export default function HomePage() {
           <div className="login-modal" onClick={(event) => event.stopPropagation()}>
             <button className="close" onClick={() => setLoginOpen(false)}>×</button>
             <div className="modal-icon"><User size={30} /></div>
-            <h2>FlashArcade Login</h2>
-            <p>Sign in style is ready. These buttons create a local player profile for now. Real Google/Discord login can be connected later with Firebase or Supabase.</p>
+            <h2>FlashArcade Profile</h2>
+            <p>Create a local player profile for achievements. Real Google/Discord login needs Firebase or Supabase connected next.</p>
 
-            <div className="auth-grid">
-              <button onClick={() => login("Google")}>Continue with Google</button>
-              <button onClick={() => login("Discord")}>Continue with Discord</button>
-              <button onClick={() => login("GitHub")}>Continue with GitHub</button>
-              <button onClick={() => login("Guest")}>Continue as Guest</button>
+            <form className="profile-form" onSubmit={createLocalProfile}>
+              <input
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                placeholder="Choose a display name"
+                maxLength={24}
+              />
+              <button type="submit">Create Local Profile</button>
+            </form>
+
+            <div className="auth-disabled">
+              <button disabled>Google Login Coming Soon</button>
+              <button disabled>Discord Login Coming Soon</button>
+              <button disabled>GitHub Login Coming Soon</button>
             </div>
           </div>
         </section>
@@ -320,7 +349,7 @@ export default function HomePage() {
 
           <nav>
             <a href="#library">Library</a>
-            <a href="#leaderboard">Leaderboard</a>
+            <a href="#achievements">Achievements</a>
             <a href={MAIN_SITE}><Home size={16} /> FlashDust</a>
             <button className="login-button audio-button" onClick={() => setClickSoundOn((value) => !value)} title="Toggle click sound">
               {clickSoundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
@@ -358,9 +387,9 @@ export default function HomePage() {
             </p>
 
             <div className="hero-actions">
-              <a className="button primary" href={featured.url} target="_blank">
+              <button className="button primary" onClick={launchGame}>
                 <Play size={20} /> Play How Many Rings
-              </a>
+              </button>
               <button className="button secondary" onClick={randomGame}>
                 <Dice5 size={20} /> Random Playable Game
               </button>
@@ -368,12 +397,12 @@ export default function HomePage() {
 
             <div className="stats">
               <Stat icon={<Gamepad2 />} value="1" label="Playable Game" />
-              <Stat icon={<Trophy />} value={leaderboard.length || 0} label="Scores Submitted" />
+              <Stat icon={<Trophy />} value={unlockedCount} label="Achievements" />
               <Stat icon={<Star />} value={averageRating} label="Player Rating" />
             </div>
           </div>
 
-          <a className="featured-card" href={featured.url} target="_blank">
+          <button className="featured-card" onClick={launchGame}>
             <GameArt type={featured.image} />
             <div className="featured-info">
               <span className="pill">{featured.tag}</span>
@@ -384,7 +413,7 @@ export default function HomePage() {
                 <span>{featured.status}</span>
               </div>
             </div>
-          </a>
+          </button>
         </section>
 
         <section className="toolbar" id="library">
@@ -418,7 +447,7 @@ export default function HomePage() {
 
         <section className="game-grid">
           {filteredGames.map((game) => (
-            <GameCard game={game} key={game.id} ratingData={ratingData} rateGame={rateGame} />
+            <GameCard game={game} key={game.id} ratingData={ratingData} rateGame={rateGame} launchGame={launchGame} />
           ))}
 
           <article className="game-card submit-card">
@@ -436,55 +465,29 @@ export default function HomePage() {
           </article>
         </section>
 
-        <section className="leaderboard" id="leaderboard">
+        <section className="achievements" id="achievements">
           <div className="leaderboard-head">
             <div>
-              <span className="pill">Live Board</span>
-              <h2>How Many Rings Leaderboard</h2>
-              <p>Submit your rings total after playing. This works live in your browser and saves on this device.</p>
+              <span className="pill">Player Progress</span>
+              <h2>Achievements</h2>
+              <p>Achievements unlock from actions on FlashArcade. Real score-based achievements can be connected once the game sends results back.</p>
             </div>
             <Medal size={54} />
           </div>
 
-          <form className="score-form" onSubmit={submitScore}>
-            <input
-              value={scoreName}
-              onChange={(event) => setScoreName(event.target.value)}
-              placeholder={player ? player.name : "Your name"}
-              maxLength={24}
-            />
-            <input
-              value={scoreValue}
-              onChange={(event) => setScoreValue(event.target.value)}
-              placeholder="Rings won"
-              type="number"
-              min="0"
-              max="99"
-            />
-            <button type="submit">Submit Score</button>
-          </form>
-
-          <div className="leaderboard-list">
-            {leaderboard.length === 0 ? (
-              <div className="empty-board">
-                <Trophy size={34} />
-                <strong>No scores yet</strong>
-                <span>Play How Many Rings and submit your score here.</span>
-              </div>
-            ) : (
-              leaderboard.map((entry, index) => (
-                <div className={`leader-row rank-${index + 1}`} key={entry.id}>
-                  <div className="rank">
-                    {index === 0 ? <Crown size={22} /> : index + 1}
-                  </div>
-                  <div className="player">
-                    <strong>{entry.name}</strong>
-                    <span>{entry.game} • {entry.detail}</span>
-                  </div>
-                  <div className="score">{entry.score} Rings</div>
+          <div className="achievement-grid">
+            {achievements.map((achievement) => (
+              <article className={`achievement-card ${achievement.unlocked ? "unlocked" : ""}`} key={achievement.id}>
+                <div className="achievement-icon">
+                  {achievement.unlocked ? <ShieldCheck size={30} /> : <Lock size={28} />}
                 </div>
-              ))
-            )}
+                <div>
+                  <h3>{achievement.title}</h3>
+                  <p>{achievement.text}</p>
+                  <span>{achievement.unlocked ? "Unlocked" : "Locked"}</span>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
 
@@ -494,12 +497,12 @@ export default function HomePage() {
             <h2>FlashArcade Roadmap</h2>
             <p>
               Next upgrades can include real accounts, cloud leaderboards, Google login,
-              achievements, game pages, and creator-uploaded games.
+              automatic score syncing, game pages, and creator-uploaded games.
             </p>
           </div>
 
           <div className="roadmap-list">
-            <RoadmapItem icon={<Trophy />} title="Cloud Score Saving" text="Connect games to submit scores globally." />
+            <RoadmapItem icon={<Trophy />} title="Cloud Score Saving" text="Games submit scores automatically instead of users typing them." />
             <RoadmapItem icon={<Star />} title="Real Ratings" text="Save ratings for everyone, not just one browser." />
             <RoadmapItem icon={<Gamepad2 />} title="Legacy League" text="Your future sports game gets its own full store page." />
           </div>
@@ -514,7 +517,7 @@ export default function HomePage() {
   );
 }
 
-function GameCard({ game, ratingData, rateGame }) {
+function GameCard({ game, ratingData, rateGame, launchGame }) {
   const averageRating = ratingData.count ? (ratingData.total / ratingData.count).toFixed(1) : "Unrated";
 
   return (
@@ -555,9 +558,9 @@ function GameCard({ game, ratingData, rateGame }) {
         )}
 
         {game.playable ? (
-          <a className="play-link" href={game.url} target="_blank">
+          <button className="play-link" onClick={launchGame}>
             Play Now <ExternalLink size={16} />
-          </a>
+          </button>
         ) : (
           <button className="play-link disabled" disabled>
             Coming Soon
