@@ -1,10 +1,8 @@
-# FlashArcade V3
+# FlashArcade V5
 
-Adds:
-- Arcade-style background music toggle
-- Click sound effect toggle
-- Music is generated in-browser, so there are no audio files or copyright issues
-- Audio starts only after the visitor clicks the toggle, because browsers block autoplay
-
-Commit summary:
-V3 - Add arcade audio and click sounds
+Changes:
+- Removed the PlayStation wording
+- Click sound now plays on any click anywhere on the page
+- Keeps How Many Rings as the only playable game
+- Keeps Legacy League as the future game
+- Keeps local ratings, local leaderboard, login-style modal, music toggle, and Add Your Own Game coming-soon card
