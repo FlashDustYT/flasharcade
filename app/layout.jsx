@@ -2,7 +2,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "FlashArcade | FlashDust Games",
-  description: "A premium arcade-style hub for FlashDust games, experiments, and playable web projects.",
+  description: "The official FlashDust game hub with playable games, leaderboards, and upcoming creator tools.",
 };
 
 export default function RootLayout({ children }) {

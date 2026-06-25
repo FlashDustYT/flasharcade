@@ -1,18 +1,15 @@
-# FlashArcade V1
+# FlashArcade V2
 
-A separate games-storefront website for FlashDust games.
+Updated FlashArcade build.
 
-Recommended domain:
-
-```txt
-games.flashdust.dev
-```
-
-First playable game currently links to the GitHub Pages version of How Many Rings.
+Includes:
+- How Many Rings? as the only playable game
+- Login button with coming-soon modal
+- Live-style leaderboard section
+- Add Your Own Game card, shaded/disabled with Coming Soon hover
+- All other games set to Coming Soon
 
 Deploy:
-1. Create a new GitHub repo named `flasharcade`.
-2. Upload this project.
-3. Import it into Vercel as a separate project.
-4. Add `games.flashdust.dev` as the domain.
-5. Add the Vercel DNS CNAME record in Porkbun.
+1. Replace the old flasharcade files with these.
+2. Commit and push in GitHub Desktop.
+3. Vercel will redeploy automatically.
