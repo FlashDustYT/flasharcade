@@ -17,28 +17,32 @@ const plans = [
     title: "Extra Game Upload",
     text: "Submit another browser game for FlashPortal review.",
     cta: "Pay $1.99",
-    href: process.env.NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL || "#",
-    missing: !process.env.NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL,
+    env: "NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL",
+    href: process.env.NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL || "",
   },
   {
     price: "$4.99",
     title: "Featured 7 Days",
     text: "Request featured placement for one approved game for 7 days.",
     cta: "Pay $4.99",
-    href: process.env.NEXT_PUBLIC_STRIPE_FEATURED_7_URL || "#",
-    missing: !process.env.NEXT_PUBLIC_STRIPE_FEATURED_7_URL,
+    env: "NEXT_PUBLIC_STRIPE_FEATURED_7_URL",
+    href: process.env.NEXT_PUBLIC_STRIPE_FEATURED_7_URL || "",
   },
   {
     price: "$9.99",
     title: "Featured 30 Days",
     text: "Request longer featured placement for one approved game.",
     cta: "Pay $9.99",
-    href: process.env.NEXT_PUBLIC_STRIPE_FEATURED_30_URL || "#",
-    missing: !process.env.NEXT_PUBLIC_STRIPE_FEATURED_30_URL,
+    env: "NEXT_PUBLIC_STRIPE_FEATURED_30_URL",
+    href: process.env.NEXT_PUBLIC_STRIPE_FEATURED_30_URL || "",
   },
 ];
 
 export default function CreatorCheckout() {
+  function handleMissing(plan) {
+    alert(`Stripe link missing for ${plan.title}. Add ${plan.env} in Vercel Environment Variables, then redeploy.`);
+  }
+
   return (
     <main className="checkout-page">
       <Link className="back-link" href="/">
@@ -66,12 +70,14 @@ export default function CreatorCheckout() {
               <li><Check size={16} /> Game thumbnail support</li>
             </ul>
 
-            {plan.missing ? (
-              <button disabled>Connect Stripe Link</button>
-            ) : plan.href.startsWith("http") ? (
+            {plan.href?.startsWith("http") ? (
               <a href={plan.href} target="_blank" rel="noreferrer">{plan.cta}</a>
-            ) : (
+            ) : plan.href ? (
               <Link href={plan.href}>{plan.cta}</Link>
+            ) : (
+              <button type="button" onClick={() => handleMissing(plan)}>
+                Connect Stripe Link
+              </button>
             )}
           </article>
         ))}

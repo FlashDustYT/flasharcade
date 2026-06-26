@@ -28,6 +28,10 @@ import {
   VolumeX,
   Megaphone,
   Music2,
+  Settings,
+  CreditCard,
+  ExternalLink,
+  CheckCircle2,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { loadCloudSave, saveCloudSave } from "../lib/cloudSaves";
@@ -52,26 +56,27 @@ function isAdminUser(user) {
 
 const PLATFORM_UPDATES = [
   {
-    version: "V36",
-    title: "Admin, audio, and payments update",
+    version: "V37",
+    title: "Functionality fix update",
     date: "Current",
     changes: [
-      "Added a real notification panel explaining future alerts",
-      "Added admin-only tools for global announcements and moderation foundation",
-      "Added stronger UI sounds and optional background music",
-      "Connected paid creator plans to Stripe payment link environment variables",
-      "Added redirects from old FlashArcade URLs to FlashPortal",
-      "Improved account menu behavior so logging out requires confirmation",
+      "Fixed game play buttons and created stable /play game routes",
+      "Added a real Settings section",
+      "Made Publish more visible in the nav and top bar",
+      "Added stronger global click sounds across buttons, links, inputs, and tabs",
+      "Expanded admin tools with announcement draft and platform shortcuts",
+      "Added safer Stripe checkout behavior and clearer payment button states",
     ],
   },
   {
-    version: "V35",
-    title: "Stripe and domain redirect foundation",
+    version: "V36",
+    title: "Admin, audio, and payments update",
     date: "Recent",
     changes: [
-      "Added payment link environment variable support",
-      "Added old-domain redirects to flashportal.dev",
-      "Added sound toggle groundwork",
+      "Added a notification panel explaining future alerts",
+      "Added admin-only tools foundation",
+      "Added stronger UI sounds and optional background music",
+      "Connected paid creator plans to Stripe payment link environment variables",
     ],
   },
   {
@@ -81,11 +86,9 @@ const PLATFORM_UPDATES = [
     changes: [
       "Full FlashPortal rebrand cleanup",
       "New black and orange dark mode",
-      "Light mode keeps the older brighter FlashPortal feel",
       "Cleaner homepage layout with easier navigation",
       "New Updates section so players can see what changed",
       "Improved official thumbnails for existing FlashDust games",
-      "Cloud-save foundation remains connected",
     ],
   },
 ];
@@ -105,7 +108,7 @@ const BASE_GAMES = [
     rating: 4.8,
     plays: 0,
     thumbnail: "/game-thumbnails/how-many-rings.svg",
-    path: "/how-many-rings",
+    path: "/play/how-many-rings",
   },
   {
     id: "legacy-league",
@@ -121,7 +124,7 @@ const BASE_GAMES = [
     rating: 4.6,
     plays: 0,
     thumbnail: "/game-thumbnails/legacy-league.svg",
-    path: "/legacy-league",
+    path: "/play/legacy-league",
   },
 ];
 
@@ -167,11 +170,32 @@ export default function Home() {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [announcementDraft, setAnnouncementDraft] = useState("");
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("flashportal-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const handler = (event) => {
+      const target = event.target;
+      if (
+        target?.closest?.("button") ||
+        target?.closest?.("a") ||
+        target?.closest?.("input") ||
+        target?.closest?.("textarea") ||
+        target?.closest?.("select")
+      ) {
+        playUISound("click");
+      }
+    };
+
+    window.addEventListener("pointerdown", handler, { passive: true });
+    window.__flashPortalGlobalClickSound = true;
+    return () => window.removeEventListener("pointerdown", handler);
+  }, [audioEnabled]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("flashportal-theme");
@@ -287,11 +311,10 @@ export default function Home() {
   }
 
   async function launchGame(game) {
-    await trackPlay(game);
+    if (!game?.path) return;
 
-    if (game.path) {
-      window.location.href = game.path;
-    }
+    trackPlay(game);
+    window.location.href = game.path;
   }
 
   function launchRandomGame() {
@@ -318,7 +341,8 @@ export default function Home() {
     { id: "library", label: "Library", icon: BookOpen },
     { id: "updates", label: "Updates", icon: Newspaper },
     { id: "achievements", label: "Achievements", icon: Trophy },
-    { id: "publish", label: "Publish", icon: Upload },
+    { id: "publish", label: "Publish", icon: Upload, highlight: true },
+    { id: "settings", label: "Settings", icon: Settings },
     ...(isAdminUser(user) ? [{ id: "admin", label: "Admin", icon: Shield }] : []),
   ];
 
@@ -470,8 +494,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V36 Online</strong>
-          <p>Audio, admin tools, Stripe payment links, notifications, and FlashPortal branding.</p>
+          <strong>V37 Online</strong>
+          <p>Game launch fixes, settings, admin shortcuts, global click sounds, and creator tools.</p>
         </div>
       </aside>
 
@@ -492,6 +516,9 @@ export default function Home() {
           </label>
 
           <div className="portal-actions">
+            <button className="top-publish-cta" type="button" onClick={() => handleTabChange("publish")}>
+              <Upload size={18} /> Publish Game
+            </button>
             <div className="notification-wrap">
               <button
                 className="icon-button"
@@ -562,6 +589,14 @@ export default function Home() {
                   <button type="button" onClick={() => handleTabChange("updates")}>
                     <Newspaper size={16} /> Updates
                   </button>
+                  <button type="button" onClick={() => handleTabChange("settings")}>
+                    <Settings size={16} /> Account Settings
+                  </button>
+                  {isAdminUser(user) && (
+                    <button type="button" onClick={() => handleTabChange("admin")}>
+                      <Shield size={16} /> Admin Tools
+                    </button>
+                  )}
                   <button type="button" onClick={confirmSignOut} className="danger">
                     <LogOut size={16} /> Log out
                   </button>
@@ -578,7 +613,7 @@ export default function Home() {
               <button
                 key={item.id}
                 type="button"
-                className={activeTab === item.id ? "active" : ""}
+                className={`${activeTab === item.id ? "active" : ""} ${item.highlight ? "publish-nav" : ""}`}
                 onClick={() => handleTabChange(item.id)}
               >
                 <Icon size={16} />
@@ -737,6 +772,57 @@ export default function Home() {
         )}
 
 
+
+        {activeTab === "settings" && (
+          <section className="portal-view">
+            <SectionHeader
+              label="Settings"
+              title="Customize FlashPortal"
+              text="Control theme, sounds, music, account info, and platform preferences."
+            />
+
+            <div className="settings-grid">
+              <article className="settings-card">
+                <Sun size={28} />
+                <h3>Appearance</h3>
+                <p>Switch between the classic light look and the black/orange dark look.</p>
+                <button type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                  Current: {theme === "dark" ? "Dark Mode" : "Light Mode"}
+                </button>
+              </article>
+
+              <article className="settings-card">
+                <Volume2 size={28} />
+                <h3>UI Sounds</h3>
+                <p>Play a small sound when clicking buttons, links, tabs, and forms.</p>
+                <button type="button" onClick={() => setAudioEnabled((enabled) => !enabled)}>
+                  Sounds: {audioEnabled ? "On" : "Off"}
+                </button>
+              </article>
+
+              <article className="settings-card">
+                <Music2 size={28} />
+                <h3>Background Music</h3>
+                <p>Optional low-volume portal ambience. Browsers require you to click first.</p>
+                <button type="button" onClick={toggleBackgroundMusic}>
+                  Music: {musicEnabled ? "On" : "Off"}
+                </button>
+              </article>
+
+              <article className="settings-card">
+                <User size={28} />
+                <h3>Account</h3>
+                <p>{user ? `Signed in as ${user.email}` : "Sign in to use cloud saves and creator tools."}</p>
+                {user ? (
+                  <button type="button" onClick={confirmSignOut}>Log Out</button>
+                ) : (
+                  <button type="button" onClick={signIn}>Login with Google</button>
+                )}
+              </article>
+            </div>
+          </section>
+        )}
+
         {activeTab === "admin" && isAdminUser(user) && (
           <section className="portal-view">
             <SectionHeader
@@ -750,8 +836,8 @@ export default function Home() {
                 <Megaphone size={32} />
                 <h3>Global Announcement</h3>
                 <p>Send a message that appears in the Updates tab and notification bell.</p>
-                <textarea placeholder="Example: V36 is live with improved audio, admin tools, and payment setup." />
-                <button type="button" onClick={() => { playUISound("success"); setToast("Announcement draft saved locally"); }}>
+                <textarea value={announcementDraft} onChange={(event) => setAnnouncementDraft(event.target.value)} placeholder="Example: V37 is live with fixed game launching, settings, and admin tools." />
+                <button type="button" onClick={() => { playUISound("success"); setToast("Announcement draft saved. Database posting comes next."); }}>
                   Save Announcement Draft
                 </button>
               </article>
@@ -768,6 +854,16 @@ export default function Home() {
                 <h3>Updates Manager</h3>
                 <p>Use this area later to add changelog posts without editing code.</p>
                 <button type="button" onClick={() => handleTabChange("updates")}>View Updates</button>
+              </article>
+
+              <article className="admin-card">
+                <CheckCircle2 size={32} />
+                <h3>Platform Controls</h3>
+                <p>Quick owner controls for checking payments, submissions, settings, and public pages.</p>
+                <div className="admin-button-row">
+                  <a href="/creator-checkout">Payment Page</a>
+                  <a href="/creator/upload">Upload Form</a>
+                </div>
               </article>
             </div>
           </section>
@@ -835,7 +931,7 @@ function FeaturedCard({ game, onPlay }) {
           <em>{game.genre}</em>
           {game.official && <em className="official">Presented by FlashDust</em>}
         </div>
-        <button className="primary-button full" type="button" onClick={() => { playUISound?.("success"); onPlay?.(); }}>
+        <button className="primary-button full" type="button" onClick={onPlay}>
           Play Now
         </button>
       </div>
@@ -879,7 +975,7 @@ function GameCard({ game, onPlay, compact = false }) {
           <em>{game.genre}</em>
           <em>{game.status}</em>
         </div>
-        <button type="button" onClick={() => { playUISound?.("success"); onPlay?.(); }}>
+        <button type="button" onClick={onPlay}>
           <Play size={15} /> Play
         </button>
       </div>

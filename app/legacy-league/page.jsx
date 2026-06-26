@@ -1,35 +1,11 @@
 "use client";
 
-import Link from "next/link";
-import { Maximize2, ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
 
-const game = {
-  title: "Legacy League",
-  src: "/games/legacy-league/index.html",
-};
+export default function RedirectGame() {
+  useEffect(() => {
+    window.location.replace("/play/legacy-league");
+  }, []);
 
-export default function GamePage() {
-  return (
-    <main className="game-player-page">
-      <header className="game-player-header">
-        <Link href="/" className="back-link"><ArrowLeft size={18} /> Back to FlashPortal</Link>
-        <div>
-          <span>Now Playing</span>
-          <h1>{game.title}</h1>
-        </div>
-        <a href={game.src} target="_blank" rel="noreferrer" className="secondary-link-button">
-          Open Fullscreen <Maximize2 size={16} />
-        </a>
-      </header>
-
-      <section className="game-frame-shell">
-        <iframe
-          title={game.title}
-          src={game.src}
-          className="game-frame"
-          allow="fullscreen; gamepad; autoplay"
-        />
-      </section>
-    </main>
-  );
+  return <main style={{padding: 40}}>Opening game...</main>;
 }

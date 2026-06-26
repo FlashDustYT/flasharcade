@@ -389,3 +389,19 @@ Important:
 
 Commit summary:
 Add admin tools audio music notifications and payment buttons
+
+
+# FlashPortal V37 Functionality Fix
+
+Fixes:
+- Game Play buttons now go to stable `/play/...` routes.
+- Old `/how-many-rings` and `/legacy-league` routes redirect to the new play routes.
+- Added a working Settings tab.
+- Made Publish more visible in nav and top bar.
+- Added global click sounds for buttons, links, inputs, textareas, selects, and tabs.
+- Expanded Admin area with announcement draft and platform shortcuts.
+- Checkout page no longer shows "Coming Soon"; it shows active Stripe payment buttons or "Connect Stripe Link."
+- Stable playable demo shells prevent 404 pages while original game exports are being wired.
+
+Commit summary:
+Fix game launch settings admin publish and payment buttons

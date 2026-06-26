@@ -1121,3 +1121,172 @@ a {
     min-height: 460px;
   }
 }
+
+
+/* V37 functionality fixes */
+.top-publish-cta,
+.portal-nav button.publish-nav {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+  color: var(--accent-text) !important;
+  border-color: transparent !important;
+  box-shadow: 0 12px 34px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.top-publish-cta {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 1000;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.settings-card {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 22px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 86%, transparent));
+  box-shadow: var(--shadow);
+}
+
+.settings-card svg {
+  color: var(--accent);
+}
+
+.settings-card p {
+  color: var(--muted);
+  line-height: 1.55;
+  font-weight: 750;
+}
+
+.settings-card button,
+.admin-button-row a {
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--accent-text);
+  font-weight: 1000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.playable-demo {
+  display: grid;
+  place-items: center;
+}
+
+.demo-game-ui {
+  width: min(100%, 960px);
+  min-height: 560px;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 106, 0, .35);
+  background:
+    radial-gradient(circle at 80% 0%, rgba(255, 106, 0, .22), transparent 30%),
+    linear-gradient(145deg, #111, #050505);
+  color: #fffaf3;
+  box-shadow: 0 40px 100px rgba(0,0,0,.55);
+  overflow: hidden;
+}
+
+.demo-game-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px;
+  border-bottom: 1px solid rgba(255, 106, 0, .25);
+  background: rgba(255, 106, 0, .08);
+}
+
+.demo-game-top strong,
+.demo-game-top small {
+  display: block;
+}
+
+.demo-game-top small {
+  color: #cfc0b6;
+  margin-top: 4px;
+}
+
+.demo-game-top span {
+  border-radius: 999px;
+  padding: 8px 10px;
+  background: rgba(255, 106, 0, .16);
+  color: #ff8a00;
+  font-weight: 1000;
+  font-size: .78rem;
+}
+
+.demo-game-body {
+  padding: clamp(28px, 6vw, 70px);
+}
+
+.demo-game-body h2 {
+  font-size: clamp(3rem, 8vw, 7rem);
+  line-height: .9;
+  letter-spacing: -.08em;
+  margin: 0 0 18px;
+}
+
+.demo-game-body p {
+  max-width: 720px;
+  color: #d6c9bf;
+  font-weight: 800;
+  line-height: 1.65;
+  font-size: 1.1rem;
+}
+
+.demo-game-body button {
+  margin-top: 22px;
+  border: 0;
+  border-radius: 18px;
+  padding: 14px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #ff6a00, #ffb02e);
+  color: #050505;
+  font-weight: 1000;
+}
+
+.game-frame-shell.rings .demo-game-ui {
+  background:
+    radial-gradient(circle at 82% 0%, rgba(255, 200, 64, .24), transparent 32%),
+    linear-gradient(145deg, #111, #080401);
+}
+
+.game-frame-shell.league .demo-game-ui {
+  background:
+    radial-gradient(circle at 82% 0%, rgba(34, 120, 255, .22), transparent 32%),
+    linear-gradient(145deg, #071120, #050505);
+}
+
+@media (max-width: 1100px) {
+  .settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .top-publish-cta {
+    order: -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
