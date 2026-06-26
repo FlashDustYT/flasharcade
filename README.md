@@ -33,3 +33,41 @@ Changes:
 
 Note:
 Admin edits are local-only in this version. To make edits live for everyone, the next step is adding Supabase database tables for site_settings, games, ratings, achievements, and profiles.
+
+
+# FlashArcade V11 Optimization + Account Menu
+
+Changes:
+- Clicking the logged-in account now opens an account menu instead of instantly logging out
+- Added explicit Sign Out option
+- Added Admin Panel shortcut inside account menu for the owner account
+- Reduced lag by disabling heavy scanline/orbit effects
+- Removed expensive backdrop blur effects
+- Disabled repeated shine animation
+- Reduced heavy shadows and hover transforms
+- Added reduced-motion support
+
+
+# FlashArcade V12 Legacy League
+
+Changes:
+- Added Legacy League game files into `public/games/legacy-league/`
+- Added `/legacy-league` embedded game player page
+- Updated Legacy League card from Coming Soon to Playable
+- Play button now opens Legacy League inside FlashArcade
+- Direct game file path: `/games/legacy-league/`
+
+Commit summary:
+Add Legacy League as playable game
+
+
+# FlashArcade V13 FDC Badge
+
+Changes:
+- Added FDC badge next to official FlashDust games
+- How Many Rings and Legacy League show the FDC badge
+- Community-added games do not show the badge
+- Featured game title also shows the badge
+
+Commit summary:
+Add FDC badge to official games

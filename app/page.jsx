@@ -52,15 +52,15 @@ const baseGames = [
   {
     id: "legacy-league",
     title: "Legacy League",
-    subtitle: "A future sports universe from FlashDust. Build legacies, chase rings, and dominate eras.",
+    subtitle: "Build your squad, chase championships, and create a football legacy.",
     genre: "Sports Simulation",
-    status: "Coming Soon",
-    plays: "Soon",
-    tag: "Coming Soon",
+    status: "Playable",
+    plays: "Playable",
+    tag: "New Release",
     image: "legacy",
-    url: "#",
+    url: "/legacy-league",
     accent: "violet",
-    playable: false,
+    playable: true,
     official: true,
   },
 ];
@@ -246,6 +246,7 @@ export default function HomePage() {
   const [username, setUsername] = useState("");
   const [communityGames, setCommunityGames] = useState([]);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [platformCopy, setPlatformCopy] = useState(defaultPlatformCopy);
   const [adminDraft, setAdminDraft] = useState(defaultPlatformCopy);
   const [ratingData, setRatingData] = useState({ total: 0, count: 0, myRating: 0 });
@@ -486,6 +487,8 @@ export default function HomePage() {
   }
 
   function logout() {
+    setAccountMenuOpen(false);
+
     if (session) {
       signOut();
       return;
@@ -686,10 +689,38 @@ export default function HomePage() {
               {musicOn ? <Music2 size={16} /> : <Music size={16} />}
             </button>
             {player ? (
-              <button className="login-button" onClick={logout} title="Click to sign out">
-                {player.avatar ? <img className="nav-avatar" src={player.avatar} alt="" /> : <User size={16} />}
-                {player.name}
-              </button>
+              <div className="account-menu-wrap">
+                <button
+                  className="login-button"
+                  onClick={() => setAccountMenuOpen((value) => !value)}
+                  title="Open account menu"
+                >
+                  {player.avatar ? <img className="nav-avatar" src={player.avatar} alt="" /> : <User size={16} />}
+                  {player.name}
+                </button>
+
+                {accountMenuOpen && (
+                  <div className="account-menu">
+                    <div className="account-menu-head">
+                      {player.avatar ? <img className="account-avatar" src={player.avatar} alt="" /> : <User size={22} />}
+                      <div>
+                        <strong>{player.name}</strong>
+                        <span>{player.email || player.provider}</span>
+                      </div>
+                    </div>
+
+                    {isAdmin && (
+                      <button onClick={() => { setAdminOpen(true); setAccountMenuOpen(false); }}>
+                        <Settings size={16} /> Admin Panel
+                      </button>
+                    )}
+
+                    <button onClick={logout}>
+                      <LogIn size={16} /> Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <button className="login-button" onClick={() => setProfileOpen(true)}>
                 <LogIn size={16} /> {authLoading ? "Checking..." : "Login"}

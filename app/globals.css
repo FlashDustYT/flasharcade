@@ -218,3 +218,158 @@ body {
   letter-spacing: .08em;
   font-size: .75rem;
 }
+
+
+/* V11 performance patch */
+.bg-orbit,
+.scanlines {
+  display: none !important;
+}
+
+.bg-grid {
+  opacity: .055 !important;
+  background-size: 72px 72px !important;
+}
+
+.game-art .shine {
+  animation: none !important;
+  opacity: .18 !important;
+}
+
+.featured-card,
+.game-card,
+.achievements,
+.roadmap,
+.login-modal,
+.stat,
+.search-box,
+.nav {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.featured-card,
+.game-card,
+.achievements,
+.roadmap,
+.login-modal {
+  box-shadow: 0 18px 48px rgba(0,0,0,.34) !important;
+}
+
+.game-card:hover,
+.featured-card:hover {
+  transform: translateY(-3px) !important;
+}
+
+* {
+  will-change: auto !important;
+}
+
+.account-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.account-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: min(310px, 86vw);
+  border: 1px solid rgba(102, 192, 244, .26);
+  border-radius: 18px;
+  background: rgba(15, 23, 36, .98);
+  box-shadow: 0 22px 60px rgba(0,0,0,.42);
+  padding: 10px;
+  z-index: 100;
+}
+
+.account-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  margin-bottom: 8px;
+}
+
+.account-menu-head strong,
+.account-menu-head span {
+  display: block;
+}
+
+.account-menu-head span {
+  color: var(--muted);
+  font-size: .78rem;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 210px;
+}
+
+.account-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,.2);
+}
+
+.account-menu button {
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 900;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 10px;
+  text-align: left;
+}
+
+.account-menu button:hover {
+  background: rgba(102,192,244,.12);
+  color: #66c0f4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+
+.game-title-row,
+.featured-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fdc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #66c0f4, #9be870);
+  color: #07111f;
+  font-size: .68rem;
+  font-weight: 1000;
+  letter-spacing: .09em;
+  box-shadow: 0 0 18px rgba(102, 192, 244, .26);
+  border: 1px solid rgba(255,255,255,.2);
+}
+
+.fdc-badge.big {
+  min-height: 28px;
+  padding: 0 11px;
+  font-size: .75rem;
+}
