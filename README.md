@@ -110,3 +110,15 @@ Add Stripe checkout starter flow
 
 Patch:
 - Fixed missing lucide-react imports for Stripe checkout UI.
+
+
+# FlashArcade V16 Build Fix
+
+Changes:
+- Force-fixed missing Stripe checkout icon imports in app/page.jsx
+- Confirmed CreditCard, Rocket, and ShieldCheck are imported from lucide-react
+- Kept Stripe checkout starter flow
+- Added this README update so GitHub Desktop should detect changed files
+
+Commit summary:
+Fix Stripe build import error

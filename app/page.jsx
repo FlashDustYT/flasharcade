@@ -4,10 +4,9 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState } from "react";
-import { supabase } from "../lib/supabaseClient";
-
-import {
+  useState } from "react";,
+  import { supabase } from "../lib/supabaseClient";,
+  import {,
   Search,
   Play,
   Trophy,
