@@ -1042,7 +1042,7 @@ export default function HomePage() {
 
             <div className="stats">
               <Stat icon={<Gamepad2 />} value={allGames.filter((game) => game.playable).length} label="Playable Games" />
-              <Stat icon={{game.thumbnail ? <img className="game-thumbnail-img" src={game.thumbnail} alt={`${game.title} thumbnail`} /> : <Trophy />} value={unlockedCount} label="Achievements" />
+              <Stat icon={<Trophy />} value={unlockedCount} label="Achievements" />
               <Stat icon={<Star />} value={averageRating} label="Player Rating" />
             </div>
           </div>

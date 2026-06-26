@@ -281,3 +281,14 @@ Fixes:
 
 Commit summary:
 Fix FlashPortal theme toggle JSX
+
+
+# V32.2 Stats Icon Build Fix
+
+Fixes:
+- Restored the Achievements stat icon to `<Trophy />`.
+- Removed broken thumbnail injection inside the stats section.
+- Keeps FlashPortal rebrand, dark/light theme, and official game thumbnails.
+
+Commit summary:
+Fix broken stats icon JSX
