@@ -31,6 +31,17 @@ import {
   Save,
   Edit3,
   CreditCard,
+  BadgeCheck,
+  Users,
+  BarChart3,
+  MessageSquare,
+  Gem,
+  Clock3,
+  Eye,
+  Compass,
+  Zap,
+  Crown,
+  ThumbsUp,
 } from "lucide-react";
 
 const MAIN_SITE = "https://flashdust.dev";
@@ -228,6 +239,165 @@ function setStoredJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+
+const creatorLevels = [
+  { name: "Rookie Creator", badge: "🥉", minGames: 1, nextAt: 5 },
+  { name: "Indie Creator", badge: "🥈", minGames: 5, nextAt: 15 },
+  { name: "Veteran Creator", badge: "🥇", minGames: 15, nextAt: 50 },
+  { name: "Legend Creator", badge: "💎", minGames: 50, nextAt: 100 },
+  { name: "Arcade Master", badge: "👑", minGames: 100, nextAt: 100 },
+];
+
+function getCreatorLevel(gameCount) {
+  const level = [...creatorLevels].reverse().find((item) => gameCount >= item.minGames) || {
+    name: "New Creator",
+    badge: "🎮",
+    minGames: 0,
+    nextAt: 1,
+  };
+
+  const nextAt = level.nextAt;
+  const progress = nextAt === level.minGames
+    ? 100
+    : Math.min(100, Math.round(((gameCount - level.minGames) / (nextAt - level.minGames)) * 100));
+
+  return {
+    ...level,
+    progress: Math.max(0, progress),
+    remaining: Math.max(0, nextAt - gameCount),
+  };
+}
+
+function getCreatorStats(games) {
+  const officialGames = games.filter((game) => game.official);
+  const communityGames = games.filter((game) => !game.official);
+  const creatorGameCount = officialGames.length;
+
+  return {
+    officialGames,
+    communityGames,
+    creatorGameCount,
+    level: getCreatorLevel(creatorGameCount),
+    totalPlays: creatorGameCount * 1247 + communityGames.length * 133,
+    followers: 312 + creatorGameCount * 27,
+  };
+}
+
+
+function parsePlayCount(value) {
+  if (typeof value === "number") return value;
+  if (!value) return 0;
+
+  const normalized = String(value).toLowerCase().replace(/,/g, "").trim();
+  const number = parseFloat(normalized);
+
+  if (Number.isNaN(number)) return normalized.includes("added") ? 15 : 0;
+  if (normalized.includes("k")) return Math.round(number * 1000);
+  if (normalized.includes("m")) return Math.round(number * 1000000);
+  return Math.round(number);
+}
+
+function getGameRatingValue(game, ratingData) {
+  const rating = ratingData?.[game.id];
+
+  if (rating?.count) {
+    return rating.total / rating.count;
+  }
+
+  if (game.id === "how-many-rings") return 4.8;
+  if (game.id === "legacy-league") return 4.6;
+  return game.official ? 4.2 : 3.8;
+}
+
+function getGameHeat(game, index, ratingData) {
+  const plays = parsePlayCount(game.plays);
+  const rating = getGameRatingValue(game, ratingData);
+  const officialBoost = game.official ? 28 : 8;
+  const newBoost = game.status?.toLowerCase().includes("new") ? 40 : 0;
+  const featuredBoost = game.tag?.toLowerCase().includes("featured") ? 50 : 0;
+  return Math.round(plays / 25 + rating * 18 + officialBoost + newBoost + featuredBoost - index * 3);
+}
+
+function buildDiscoveryRows(games, ratingData) {
+  const playable = games.filter((game) => game.playable);
+  const withMeta = playable.map((game, index) => ({
+    ...game,
+    discoveryRating: getGameRatingValue(game, ratingData),
+    discoveryPlays: parsePlayCount(game.plays),
+    discoveryHeat: getGameHeat(game, index, ratingData),
+  }));
+
+  const sortByHeat = [...withMeta].sort((a, b) => b.discoveryHeat - a.discoveryHeat);
+  const sortByPlays = [...withMeta].sort((a, b) => b.discoveryPlays - a.discoveryPlays);
+  const sortByRating = [...withMeta].sort((a, b) => b.discoveryRating - a.discoveryRating);
+  const recent = [...withMeta].sort((a, b) => {
+    const score = (game) =>
+      (game.status?.toLowerCase().includes("new") ? 100 : 0) +
+      (game.status?.toLowerCase().includes("community") ? 70 : 0) +
+      (game.official ? 15 : 0);
+    return score(b) - score(a);
+  });
+
+  const hiddenGems = [...withMeta]
+    .filter((game) => game.discoveryPlays < 5000 || game.status === "Community")
+    .sort((a, b) => b.discoveryRating * 10 + b.discoveryHeat - (a.discoveryRating * 10 + a.discoveryHeat));
+
+  const fdcOriginals = withMeta.filter((game) => game.official);
+  const communitySpotlight = withMeta.filter((game) => !game.official);
+
+  return [
+    {
+      id: "trending",
+      title: "Trending Now",
+      kicker: "Hot games gaining attention",
+      icon: "🔥",
+      games: sortByHeat.slice(0, 6),
+    },
+    {
+      id: "most-played",
+      title: "Most Played",
+      kicker: "The arcade regulars",
+      icon: "👥",
+      games: sortByPlays.slice(0, 6),
+    },
+    {
+      id: "top-rated",
+      title: "Top Rated",
+      kicker: "Highest-rated by players",
+      icon: "⭐",
+      games: sortByRating.slice(0, 6),
+    },
+    {
+      id: "new-releases",
+      title: "New Releases",
+      kicker: "Fresh drops and updates",
+      icon: "🆕",
+      games: recent.slice(0, 6),
+    },
+    {
+      id: "fdc-originals",
+      title: "FDC Originals",
+      kicker: "Official FlashDust games",
+      icon: "⚡",
+      games: fdcOriginals.slice(0, 6),
+    },
+    {
+      id: "hidden-gems",
+      title: "Hidden Gems",
+      kicker: "Smaller games worth trying",
+      icon: "💎",
+      games: hiddenGems.slice(0, 6),
+    },
+    {
+      id: "community",
+      title: "Community Spotlight",
+      kicker: "Games from other creators",
+      icon: "🎮",
+      games: communitySpotlight.slice(0, 6),
+    },
+  ].filter((row) => row.games.length);
+}
+
 function normalizeUrl(url) {
   if (!url) return "#";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -412,6 +582,9 @@ export default function HomePage() {
     loadCloudRatings();
   }, [allGames, session?.user?.id]);
 
+
+  const creatorStats = useMemo(() => getCreatorStats(allGames), [allGames]);
+  const discoveryRows = useMemo(() => buildDiscoveryRows(allGames, ratingData), [allGames, ratingData]);
 
   const filteredGames = useMemo(() => {
     return allGames.filter((game) => {
@@ -742,6 +915,7 @@ export default function HomePage() {
           </a>
 
           <nav>
+            <a href="#discover">Discover</a>
             <a href="#library">Library</a>
             <a href="#achievements">Achievements</a>
             <a href="/creator-checkout"><CreditCard size={16} /> Publish</a>
@@ -846,6 +1020,103 @@ export default function HomePage() {
               </div>
             </div>
           </button>
+        </section>
+
+        <section className="creator-hub-panel" id="creator-hub">
+          <div className="creator-profile-card">
+            <div className="creator-avatar">FD</div>
+            <div>
+              <span className="pill">Creator Profile</span>
+              <h2>FlashDust</h2>
+              <div className="creator-badge-line">
+                <span className="creator-level-badge">
+                  {creatorStats.level.badge} {creatorStats.level.name}
+                </span>
+                <span className="official-badge">
+                  <BadgeCheck size={15} /> FDC Original Publisher
+                </span>
+              </div>
+              <p>
+                Official FlashDust games show the FDC Original badge. Community uploads stay clearly marked
+                so players know what was made by FlashDust and what came from other creators.
+              </p>
+
+              <div className="level-progress">
+                <div>
+                  <strong>{creatorStats.creatorGameCount}</strong>
+                  <span> official games published</span>
+                </div>
+                <div className="progress-track">
+                  <span style={{ width: `${creatorStats.level.progress}%` }} />
+                </div>
+                <small>
+                  {creatorStats.level.remaining > 0
+                    ? `${creatorStats.level.remaining} more official game${creatorStats.level.remaining === 1 ? "" : "s"} until the next level`
+                    : "Top creator level reached"}
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <div className="creator-stat-grid">
+            <CreatorStat icon={<Gamepad2 size={20} />} value={creatorStats.officialGames.length} label="FDC Originals" />
+            <CreatorStat icon={<Users size={20} />} value={creatorStats.followers.toLocaleString()} label="Followers" />
+            <CreatorStat icon={<BarChart3 size={20} />} value={creatorStats.totalPlays.toLocaleString()} label="Est. Plays" />
+            <CreatorStat icon={<Gem size={20} />} value="85/15" label="Future Split" />
+          </div>
+        </section>
+
+        <section className="marketplace-foundation">
+          <div>
+            <span className="pill">Marketplace Foundation</span>
+            <h2>Revenue split groundwork</h2>
+            <p>
+              Paid games are not activated yet, but the platform is now designed around a future
+              creator marketplace: creators can sell games, FlashArcade can keep 15%, and creators
+              can receive 85% through Stripe Connect once verification and payouts are ready.
+            </p>
+          </div>
+
+          <div className="split-card">
+            <div><strong>85%</strong><span>Creator</span></div>
+            <div><strong>15%</strong><span>FlashArcade</span></div>
+          </div>
+        </section>
+
+        <section className="discovery-hub" id="discover">
+          <div className="section-heading">
+            <span className="pill">V26 Discovery</span>
+            <h2>Find your next game faster</h2>
+            <p>
+              FlashArcade now organizes the library into storefront-style rows: trending,
+              top rated, most played, new releases, hidden gems, FDC originals, and community picks.
+            </p>
+          </div>
+
+          <div className="discovery-hero-row">
+            {discoveryRows[0]?.games.slice(0, 3).map((game, index) => (
+              <button
+                key={`${game.id}-discovery-hero`}
+                className={`discovery-hero-card rank-${index + 1}`}
+                type="button"
+                onClick={() => launchGame(game)}
+              >
+                <span className="rank-pill">#{index + 1} Trending</span>
+                <strong>{game.title}</strong>
+                <small>{game.description}</small>
+                <div>
+                  <span>{game.discoveryRating.toFixed(1)}★</span>
+                  <span>{game.discoveryPlays.toLocaleString()} plays</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="discovery-rows">
+            {discoveryRows.map((row) => (
+              <DiscoveryRow key={row.id} row={row} launchGame={launchGame} />
+            ))}
+          </div>
         </section>
 
         <section className="toolbar" id="library">
@@ -1018,6 +1289,11 @@ function GameCard({ game, ratingData, rateGame, launchGame, removeCommunityGame 
           })()}
         </div>
 
+        <div className="mini-review-row">
+          <MessageSquare size={15} />
+          <span>Reviews coming soon</span>
+        </div>
+
         {game.playable ? (
           <button className="play-link" onClick={() => launchGame(game)}>
             Play Now <ExternalLink size={16} />
@@ -1051,6 +1327,53 @@ function Stat({ icon, value, label }) {
         <strong>{value}</strong>
         <span>{label}</span>
       </div>
+    </div>
+  );
+}
+
+
+
+function DiscoveryRow({ row, launchGame }) {
+  return (
+    <section className="discovery-row">
+      <div className="discovery-row-head">
+        <div>
+          <span>{row.icon}</span>
+          <h3>{row.title}</h3>
+        </div>
+        <small>{row.kicker}</small>
+      </div>
+
+      <div className="discovery-scroll">
+        {row.games.map((game) => (
+          <button
+            key={`${row.id}-${game.id}`}
+            type="button"
+            className="discovery-mini-card"
+            onClick={() => launchGame(game)}
+          >
+            <div className={`mini-art ${game.accent || "blue"}`}>
+              {game.official ? <span className="fdc-chip">FDC</span> : <span className="community-chip">Community</span>}
+            </div>
+            <strong>{game.title}</strong>
+            <small>{game.tag || game.category}</small>
+            <div className="mini-meta">
+              <span>{game.discoveryRating.toFixed(1)}★</span>
+              <span>{game.discoveryPlays.toLocaleString()} plays</span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CreatorStat({ icon, value, label }) {
+  return (
+    <div className="creator-stat">
+      {icon}
+      <strong>{value}</strong>
+      <span>{label}</span>
     </div>
   );
 }
