@@ -7,5 +7,5 @@ export default function RedirectGame() {
     window.location.replace("/play/how-many-rings");
   }, []);
 
-  return <main style={{padding: 40}}>Opening game...</main>;
+  return <main style={{padding: 40, color: "white", background: "black", minHeight: "100vh"}}>Opening game...</main>;
 }

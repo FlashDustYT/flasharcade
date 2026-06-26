@@ -36,36 +36,50 @@ import {
 import { supabase } from "../lib/supabaseClient";
 import { loadCloudSave, saveCloudSave } from "../lib/cloudSaves";
 
-const ADMIN_EMAILS = [
-  "isaac.akinola122@gmail.com",
-  "isaac.akinola122@icloud.com",
-  "flashdustcorp@gmail.com",
-  "flashdustyt@gmail.com",
-];
+const OWNER_EMAIL = "isaac.akinola122@gmail.com";
+
+function getExtraAdmins() {
+  return (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function isOwnerUser(user) {
+  return user?.email?.toLowerCase() === OWNER_EMAIL;
+}
 
 function isAdminUser(user) {
   const email = user?.email?.toLowerCase();
   if (!email) return false;
-  const extraAdmins = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "")
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-
-  return ADMIN_EMAILS.includes(email) || extraAdmins.includes(email);
+  return isOwnerUser(user) || getExtraAdmins().includes(email);
 }
 
 const PLATFORM_UPDATES = [
   {
+    version: "V38",
+    title: "Owner tools and platform management",
+    date: "Current",
+    changes: [
+      "Changed the main account label from Admin to Owner",
+      "Restricted owner tools to the main owner email only",
+      "Added game management controls for editing, privating, and deleting games",
+      "Added owner-only admin invite UI with permission choices",
+      "Changed Continue Playing to show only the latest game with a close button",
+      "Cleaned up the top Publish button so it does not crowd the header",
+      "Added payment troubleshooting links and clearer owner controls",
+    ],
+  },
+  {
     version: "V37",
     title: "Functionality fix update",
-    date: "Current",
+    date: "Recent",
     changes: [
       "Fixed game play buttons and created stable /play game routes",
       "Added a real Settings section",
-      "Made Publish more visible in the nav and top bar",
-      "Added stronger global click sounds across buttons, links, inputs, and tabs",
+      "Made Publish more visible in the nav",
+      "Added stronger global click sounds",
       "Expanded admin tools with announcement draft and platform shortcuts",
-      "Added safer Stripe checkout behavior and clearer payment button states",
     ],
   },
   {
@@ -77,18 +91,6 @@ const PLATFORM_UPDATES = [
       "Added admin-only tools foundation",
       "Added stronger UI sounds and optional background music",
       "Connected paid creator plans to Stripe payment link environment variables",
-    ],
-  },
-  {
-    version: "V33",
-    title: "FlashPortal platform refresh",
-    date: "Recent",
-    changes: [
-      "Full FlashPortal rebrand cleanup",
-      "New black and orange dark mode",
-      "Cleaner homepage layout with easier navigation",
-      "New Updates section so players can see what changed",
-      "Improved official thumbnails for existing FlashDust games",
     ],
   },
 ];
@@ -172,6 +174,15 @@ export default function Home() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [announcementDraft, setAnnouncementDraft] = useState("");
+  const [continueDockOpen, setContinueDockOpen] = useState(true);
+  const [managedGames, setManagedGames] = useState(BASE_GAMES);
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [adminPermissions, setAdminPermissions] = useState({
+    games: true,
+    submissions: false,
+    announcements: false,
+    payments: false,
+  });
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -235,11 +246,11 @@ export default function Home() {
 
   const games = useMemo(
     () =>
-      BASE_GAMES.map((game) => ({
+      managedGames.map((game) => ({
         ...game,
         plays: playCounts[game.id] ?? game.plays,
       })),
-    [playCounts]
+    [managedGames, playCounts]
   );
 
   const filteredGames = useMemo(() => {
@@ -262,6 +273,13 @@ export default function Home() {
       : "0.0";
 
   const totalPlays = games.reduce((sum, game) => sum + parsePlayCount(game.plays), 0);
+
+  useEffect(() => {
+    if (!recentlyPlayed.length) return;
+    setContinueDockOpen(true);
+    const continueDockTimer = setTimeout(() => setContinueDockOpen(false), 60000);
+    return () => clearTimeout(continueDockTimer);
+  }, [recentlyPlayed.length]);
 
   function saveRecentlyPlayed(game) {
     const next = [
@@ -343,7 +361,7 @@ export default function Home() {
     { id: "achievements", label: "Achievements", icon: Trophy },
     { id: "publish", label: "Publish", icon: Upload, highlight: true },
     { id: "settings", label: "Settings", icon: Settings },
-    ...(isAdminUser(user) ? [{ id: "admin", label: "Admin", icon: Shield }] : []),
+    ...(isAdminUser(user) ? [{ id: "admin", label: isOwnerUser(user) ? "Owner" : "Admin", icon: Shield }] : []),
   ];
 
   function playUISound(type = "click") {
@@ -494,8 +512,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V37 Online</strong>
-          <p>Game launch fixes, settings, admin shortcuts, global click sounds, and creator tools.</p>
+          <strong>V38 Online</strong>
+          <p>Owner tools, game management, admin roles, payments troubleshooting, and cleaner publishing.</p>
         </div>
       </aside>
 
@@ -516,9 +534,6 @@ export default function Home() {
           </label>
 
           <div className="portal-actions">
-            <button className="top-publish-cta" type="button" onClick={() => handleTabChange("publish")}>
-              <Upload size={18} /> Publish Game
-            </button>
             <div className="notification-wrap">
               <button
                 className="icon-button"
@@ -574,13 +589,13 @@ export default function Home() {
             <div className="account-menu-wrap">
               <button className="account-button" type="button" onClick={handleAccountClick} disabled={!user && authLoading}>
                 {user ? <User size={18} /> : <LogIn size={18} />}
-                <span>{user ? (isAdminUser(user) ? "FlashDust Admin" : user.email?.split("@")[0]) : (authLoading ? "Checking..." : "Login")}</span>
+                <span>{user ? (isOwnerUser(user) ? "FlashDust Owner" : isAdminUser(user) ? "FlashPortal Admin" : user.email?.split("@")[0]) : (authLoading ? "Checking..." : "Login")}</span>
               </button>
 
               {user && accountMenuOpen && (
                 <div className="account-dropdown">
                   <div className="account-dropdown-header">
-                    <strong>{isAdminUser(user) ? "FlashDust Admin" : user.email?.split("@")[0]}</strong>
+                    <strong>{isOwnerUser(user) ? "FlashDust Owner" : isAdminUser(user) ? "FlashPortal Admin" : user.email?.split("@")[0]}</strong>
                     <small>{user.email}</small>
                   </div>
                   <button type="button" onClick={() => handleTabChange("library")}>
@@ -594,7 +609,7 @@ export default function Home() {
                   </button>
                   {isAdminUser(user) && (
                     <button type="button" onClick={() => handleTabChange("admin")}>
-                      <Shield size={16} /> Admin Tools
+                      <Shield size={16} /> Owner/Admin Tools
                     </button>
                   )}
                   <button type="button" onClick={confirmSignOut} className="danger">
@@ -826,53 +841,118 @@ export default function Home() {
         {activeTab === "admin" && isAdminUser(user) && (
           <section className="portal-view">
             <SectionHeader
-              label="Admin Control"
-              title="FlashPortal admin tools"
-              text="Owner-only tools for announcements, moderation, creator submissions, and platform updates."
+              label={isOwnerUser(user) ? "Owner Control" : "Admin Control"}
+              title={isOwnerUser(user) ? "FlashPortal owner dashboard" : "FlashPortal admin dashboard"}
+              text="Manage games, review future submissions, edit announcements, and control who can help moderate the platform."
             />
 
-            <div className="admin-grid">
-              <article className="admin-card">
+            <div className="owner-grid">
+              <article className="admin-card wide">
                 <Megaphone size={32} />
                 <h3>Global Announcement</h3>
-                <p>Send a message that appears in the Updates tab and notification bell.</p>
-                <textarea value={announcementDraft} onChange={(event) => setAnnouncementDraft(event.target.value)} placeholder="Example: V37 is live with fixed game launching, settings, and admin tools." />
-                <button type="button" onClick={() => { playUISound("success"); setToast("Announcement draft saved. Database posting comes next."); }}>
-                  Save Announcement Draft
+                <p>Create a draft announcement for Updates/Notifications. Database posting comes in the next backend pass.</p>
+                <textarea value={announcementDraft} onChange={(event) => setAnnouncementDraft(event.target.value)} placeholder="Example: FlashPortal V38 is live with owner tools and game management." />
+                <button type="button" onClick={() => { playUISound("success"); setToast("Announcement draft saved locally"); }}>
+                  Save Draft
                 </button>
+              </article>
+
+              <article className="admin-card wide">
+                <Gamepad2 size={32} />
+                <h3>Game Management</h3>
+                <p>Edit text, hide/private games, or remove games from the live list.</p>
+                <div className="admin-game-list">
+                  {managedGames.map((game) => (
+                    <div className="admin-game-row" key={game.id}>
+                      <img src={game.thumbnail} alt="" />
+                      <div>
+                        <strong>{game.title}</strong>
+                        <small>{game.genre} · {game.status}</small>
+                      </div>
+                      <button type="button" onClick={() => {
+                        const nextTitle = window.prompt("Edit game title:", game.title);
+                        if (!nextTitle) return;
+                        setManagedGames((current) => current.map((item) => item.id === game.id ? { ...item, title: nextTitle } : item));
+                      }}>
+                        Edit Text
+                      </button>
+                      <button type="button" onClick={() => {
+                        setManagedGames((current) => current.map((item) => item.id === game.id ? { ...item, playable: !item.playable, status: item.playable ? "Private" : "Playable" } : item));
+                      }}>
+                        {game.playable ? "Private" : "Public"}
+                      </button>
+                      <button className="danger" type="button" onClick={() => {
+                        if (window.confirm(`Delete ${game.title} from the local game list?`)) {
+                          setManagedGames((current) => current.filter((item) => item.id !== game.id));
+                        }
+                      }}>
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </article>
 
               <article className="admin-card">
                 <Upload size={32} />
                 <h3>Submission Queue</h3>
-                <p>Creator upload moderation will live here: approve, reject, or feature games.</p>
-                <button type="button" onClick={() => handleTabChange("publish")}>Open Publish Tools</button>
-              </article>
-
-              <article className="admin-card">
-                <Newspaper size={32} />
-                <h3>Updates Manager</h3>
-                <p>Use this area later to add changelog posts without editing code.</p>
-                <button type="button" onClick={() => handleTabChange("updates")}>View Updates</button>
-              </article>
-
-              <article className="admin-card">
-                <CheckCircle2 size={32} />
-                <h3>Platform Controls</h3>
-                <p>Quick owner controls for checking payments, submissions, settings, and public pages.</p>
-                <div className="admin-button-row">
-                  <a href="/creator-checkout">Payment Page</a>
-                  <a href="/creator/upload">Upload Form</a>
+                <p>Future uploaded games appear here for accept/decline review.</p>
+                <div className="submission-placeholder">
+                  <strong>No pending submissions</strong>
+                  <small>When creators upload games, review cards will appear here.</small>
+                  <button type="button" onClick={() => setToast("Submission queue is ready for backend wiring")}>Check Queue</button>
                 </div>
               </article>
+
+              <article className="admin-card">
+                <CreditCard size={32} />
+                <h3>Payments</h3>
+                <p>Check paid upload/featured setup and open the Stripe checkout page.</p>
+                <div className="admin-button-row">
+                  <a href="/creator-checkout">Payment Page</a>
+                  <a href="https://dashboard.stripe.com/payment-links" target="_blank" rel="noreferrer">Stripe Dashboard</a>
+                </div>
+              </article>
+
+              {isOwnerUser(user) && (
+                <article className="admin-card wide">
+                  <Shield size={32} />
+                  <h3>Add Admin</h3>
+                  <p>Owner-only. Add a helper admin by email and choose what they should be allowed to manage.</p>
+                  <input value={newAdminEmail} onChange={(event) => setNewAdminEmail(event.target.value)} placeholder="admin@example.com" />
+                  <div className="permission-grid">
+                    {Object.entries(adminPermissions).map(([key, value]) => (
+                      <label key={key}>
+                        <input
+                          type="checkbox"
+                          checked={value}
+                          onChange={() => setAdminPermissions((current) => ({ ...current, [key]: !current[key] }))}
+                        />
+                        {key}
+                      </label>
+                    ))}
+                  </div>
+                  <button type="button" onClick={() => {
+                    if (!newAdminEmail.includes("@")) {
+                      setToast("Enter a valid admin email");
+                      return;
+                    }
+                    setToast(`Admin invite prepared for ${newAdminEmail}. Add it to NEXT_PUBLIC_ADMIN_EMAILS to activate.`);
+                  }}>
+                    Prepare Admin Invite
+                  </button>
+                  <small className="admin-note">For now, Vercel env variable required: NEXT_PUBLIC_ADMIN_EMAILS. A database admin table comes next.</small>
+                </article>
+              )}
             </div>
           </section>
         )}
 
-        {recentlyPlayed.length > 0 && (
-          <aside className="recent-dock">
+        {recentlyPlayed.length > 0 && continueDockOpen && (
+          <aside className="recent-dock single">
+            <button className="recent-close" type="button" onClick={() => setContinueDockOpen(false)} aria-label="Close continue playing">×</button>
             <h3>Continue Playing</h3>
-            {recentlyPlayed.slice(0, 3).map((item) => (
+            {recentlyPlayed.slice(0, 1).map((item) => (
               <button key={item.id} type="button" onClick={() => launchGame(games.find((game) => game.id === item.id) || item)}>
                 <img src={item.thumbnail} alt="" />
                 <span>{item.title}</span>

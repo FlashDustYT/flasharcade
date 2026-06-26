@@ -1290,3 +1290,156 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* V38 owner/admin cleanup */
+.portal-actions .top-publish-cta {
+  display: none !important;
+}
+
+.recent-dock.single {
+  width: 270px;
+  padding-top: 38px;
+}
+
+.recent-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px !important;
+  height: 28px;
+  border: 1px solid var(--line) !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: color-mix(in srgb, var(--surface-3) 70%, transparent) !important;
+  color: var(--text) !important;
+  padding: 0 !important;
+  font-size: 20px;
+}
+
+.owner-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-card.wide {
+  grid-column: span 2;
+}
+
+.admin-card input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+  color: var(--text);
+  font: inherit;
+  margin: 12px 0;
+}
+
+.admin-game-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-game-row {
+  display: grid;
+  grid-template-columns: 58px 1fr auto auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent);
+}
+
+.admin-game-row img {
+  width: 58px;
+  height: 42px;
+  border-radius: 9px;
+  object-fit: cover;
+}
+
+.admin-game-row strong,
+.admin-game-row small {
+  display: block;
+}
+
+.admin-game-row small,
+.admin-note,
+.submission-placeholder small {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.admin-game-row button {
+  padding: 9px 11px;
+}
+
+.admin-game-row button.danger {
+  background: #ff6b6b;
+  color: #120505;
+}
+
+.permission-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.permission-grid label {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  color: var(--muted);
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.submission-placeholder {
+  border: 1px dashed var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.admin-button-row a {
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .owner-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-card.wide {
+    grid-column: auto;
+  }
+  .admin-game-row {
+    grid-template-columns: 48px 1fr;
+  }
+  .admin-game-row button {
+    grid-column: span 2;
+  }
+}
+
+
+/* V39 real game file iframe */
+.real-game-shell {
+  padding: 0;
+  display: block;
+  background: #000;
+}
+
+.real-game-shell .game-frame,
+.game-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #000;
+}

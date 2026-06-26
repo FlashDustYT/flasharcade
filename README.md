@@ -405,3 +405,34 @@ Fixes:
 
 Commit summary:
 Fix game launch settings admin publish and payment buttons
+
+
+# FlashPortal V38 Owner/Admin/Games/Payments
+
+Changes:
+- Removed top-bar Publish Game clutter.
+- Owner label replaces Admin label for the main account.
+- Owner/admin logic is stricter: only isaac.akinola122@gmail.com is owner by default.
+- Continue Playing now only shows the latest game and has a close button.
+- Added game management controls: edit text, private/public, delete.
+- Added owner-only admin invite UI with permission choices.
+- Added payment troubleshooting doc.
+- Added notes about real game files needing to be present under public/games.
+
+Commit summary:
+Add owner tools game management and cleaner continue playing
+
+
+# FlashPortal V39 Real Game Files
+
+Added real uploaded game files:
+
+- How Many Rings?: `public/games/how-many-rings/index.html` exists: True
+- Legacy League: `public/games/legacy-league/index.html` exists: True
+
+Updated play routes:
+- `/play/how-many-rings`
+- `/play/legacy-league`
+
+Commit summary:
+Add real uploaded game files to play routes
