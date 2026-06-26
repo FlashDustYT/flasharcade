@@ -1243,3 +1243,211 @@ body {
   border-color: rgba(155, 232, 112, .28);
   background: rgba(155, 232, 112, .1);
 }
+
+
+/* V32 FlashPortal UI refresh: black/orange dark mode + original light mode */
+:root {
+  --portal-bg: #f7fbff;
+  --portal-surface: #ffffff;
+  --portal-surface-2: #eef5ff;
+  --portal-text: #07111f;
+  --portal-muted: #5f6d80;
+  --portal-accent: #38bdf8;
+  --portal-accent-2: #9be870;
+  --portal-line: rgba(7, 17, 31, .12);
+}
+
+html[data-theme="dark"] {
+  --portal-bg: #050505;
+  --portal-surface: #0d0d0d;
+  --portal-surface-2: #15100a;
+  --portal-text: #fffaf3;
+  --portal-muted: #b8aea5;
+  --portal-accent: #ff6a00;
+  --portal-accent-2: #ff9d2e;
+  --portal-line: rgba(255, 106, 0, .22);
+}
+
+html[data-theme="light"] {
+  --portal-bg: #eef7ff;
+  --portal-surface: #ffffff;
+  --portal-surface-2: #e8f2ff;
+  --portal-text: #07111f;
+  --portal-muted: #5f6d80;
+  --portal-accent: #38bdf8;
+  --portal-accent-2: #9be870;
+  --portal-line: rgba(56, 189, 248, .22);
+}
+
+body {
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--portal-accent) 22%, transparent), transparent 34%),
+    radial-gradient(circle at 88% 10%, color-mix(in srgb, var(--portal-accent-2) 12%, transparent), transparent 32%),
+    var(--portal-bg) !important;
+  color: var(--portal-text) !important;
+}
+
+header,
+.navbar,
+.topbar,
+.site-header {
+  background: color-mix(in srgb, var(--portal-surface) 88%, transparent) !important;
+  border-color: var(--portal-line) !important;
+  backdrop-filter: blur(18px);
+}
+
+.logo,
+.brand,
+.wordmark,
+.site-logo {
+  color: var(--portal-text) !important;
+}
+
+.logo span,
+.brand span,
+.wordmark span,
+.site-logo span {
+  color: var(--portal-accent) !important;
+}
+
+button,
+.primary-button,
+.cta-button,
+.play-button,
+.login-button,
+.theme-toggle-button {
+  border-radius: 16px !important;
+}
+
+.primary-button,
+.cta-button,
+.play-button {
+  background: linear-gradient(135deg, var(--portal-accent), var(--portal-accent-2)) !important;
+  color: #080808 !important;
+  border: 0 !important;
+  box-shadow: 0 18px 36px color-mix(in srgb, var(--portal-accent) 28%, transparent) !important;
+}
+
+.theme-toggle-button {
+  border: 1px solid var(--portal-line);
+  background: color-mix(in srgb, var(--portal-surface-2) 80%, transparent);
+  color: var(--portal-text);
+  font-weight: 900;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.card,
+.game-card,
+.discovery-mini-card,
+.discovery-hero-card,
+.creator-card,
+.panel,
+.stat-card,
+.feature-card,
+.roadmap-card {
+  background:
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--portal-surface) 92%, transparent),
+      color-mix(in srgb, var(--portal-surface-2) 78%, transparent)
+    ) !important;
+  border-color: var(--portal-line) !important;
+  color: var(--portal-text) !important;
+  box-shadow: 0 24px 80px rgba(0,0,0,.22);
+}
+
+.hero,
+.hero-section,
+.platform-status,
+.discovery-hub .section-heading {
+  background:
+    radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--portal-accent) 18%, transparent), transparent 36%),
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--portal-surface) 94%, transparent),
+      color-mix(in srgb, var(--portal-surface-2) 82%, transparent)
+    ) !important;
+  border-color: var(--portal-line) !important;
+}
+
+.pill,
+.tag-pill,
+.status-pill,
+.fdc-chip,
+.cloud-save-badge {
+  border-color: var(--portal-line) !important;
+}
+
+html[data-theme="dark"] .pill,
+html[data-theme="dark"] .tag-pill,
+html[data-theme="dark"] .status-pill {
+  background: rgba(255, 106, 0, .12) !important;
+  color: #ffd9b8 !important;
+}
+
+.game-thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Make placeholder art use thumbnails cleanly */
+.mini-art,
+.game-art,
+.game-card-art,
+.featured-art,
+.hero-game-art {
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.mini-art .game-thumbnail-img,
+.game-art .game-thumbnail-img,
+.game-card-art .game-thumbnail-img,
+.featured-art .game-thumbnail-img,
+.hero-game-art .game-thumbnail-img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.mini-art > *:not(.game-thumbnail-img),
+.game-art > *:not(.game-thumbnail-img),
+.game-card-art > *:not(.game-thumbnail-img),
+.featured-art > *:not(.game-thumbnail-img),
+.hero-game-art > *:not(.game-thumbnail-img) {
+  position: relative;
+  z-index: 2;
+}
+
+html[data-theme="dark"] .hero h1,
+html[data-theme="dark"] .section-heading h2 {
+  color: #fffaf3 !important;
+}
+
+html[data-theme="dark"] .hero h1 span,
+html[data-theme="dark"] .section-heading h2 span {
+  color: var(--portal-accent) !important;
+}
+
+html[data-theme="light"] .hero h1,
+html[data-theme="light"] .section-heading h2 {
+  color: #07111f !important;
+}
+
+html[data-theme="light"] .primary-button,
+html[data-theme="light"] .cta-button,
+html[data-theme="light"] .play-button {
+  background: linear-gradient(135deg, #38bdf8, #9be870) !important;
+}
+
+@media (max-width: 900px) {
+  header,
+  .navbar,
+  .topbar,
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+}

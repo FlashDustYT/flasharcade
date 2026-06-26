@@ -51,6 +51,7 @@ const baseGames = [
   {
     id: "how-many-rings",
     title: "How Many Rings?",
+    thumbnail: "/game-thumbnails/how-many-rings.svg",
     subtitle: "Build the perfect dynasty and see how many rings your team can win.",
     genre: "Sports Strategy",
     status: "Playable",
@@ -65,6 +66,7 @@ const baseGames = [
   {
     id: "legacy-league",
     title: "Legacy League",
+    thumbnail: "/game-thumbnails/legacy-league.svg",
     subtitle: "Build your squad, chase championships, and create a football legacy.",
     genre: "Sports Simulation",
     status: "Playable",
@@ -83,7 +85,7 @@ const categories = ["All", "Playable", "Sports Strategy", "Sports Simulation", "
 const defaultAchievements = [
   {
     id: "first-profile",
-    title: "Arcade Identity",
+    title: "Portal Identity",
     text: "Create a FlashPortal local profile.",
     unlocked: false,
   },
@@ -102,7 +104,7 @@ const defaultAchievements = [
   {
     id: "first-upload",
     title: "Game Curator",
-    text: "Add a community game to your arcade library.",
+    text: "Add a community game to your portal library.",
     unlocked: false,
   },
 ];
@@ -153,7 +155,7 @@ function playClickSound(enabled) {
   } catch {}
 }
 
-function createArcadeAmbience() {
+function createPortalAmbience() {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   const ctx = new AudioContext();
 
@@ -246,7 +248,7 @@ const creatorLevels = [
   { name: "Indie Creator", badge: "🥈", minGames: 5, nextAt: 15 },
   { name: "Veteran Creator", badge: "🥇", minGames: 15, nextAt: 50 },
   { name: "Legend Creator", badge: "💎", minGames: 50, nextAt: 100 },
-  { name: "Arcade Master", badge: "👑", minGames: 100, nextAt: 100 },
+  { name: "Portal Master", badge: "👑", minGames: 100, nextAt: 100 },
 ];
 
 function getCreatorLevel(gameCount) {
@@ -358,7 +360,7 @@ function buildDiscoveryRows(games, ratingData) {
     {
       id: "most-played",
       title: "Most Played",
-      kicker: "The arcade regulars",
+      kicker: "The portal regulars",
       icon: "👥",
       games: sortByPlays.slice(0, 6),
     },
@@ -513,7 +515,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (musicOn && !musicRef.current) {
-      musicRef.current = createArcadeAmbience();
+      musicRef.current = createPortalAmbience();
     }
 
     if (!musicOn && musicRef.current) {
@@ -799,6 +801,12 @@ export default function HomePage() {
   }
 
 
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.dataset.theme = themeMode;
+    }
+  }, [themeMode]);
+
   return (
     <main>
       <div className="bg-grid" />
@@ -922,7 +930,7 @@ export default function HomePage() {
                 placeholder="Short description"
                 maxLength={120}
               />
-              <button type="submit">Add Game to Arcade</button>
+              <button type="submit">Add Game to Portal</button>
             </form>
           </div>
         </section>
@@ -931,8 +939,8 @@ export default function HomePage() {
       <section className="shell">
         <header className="nav">
           <a href="#" className="brand">
-            <span className="brand-mark">FA</span>
-            <span>Flash<span>Arcade</span></span>
+            <span className="brand-mark">FP</span>
+            <span>Flash<span>Portal</span></span>
           </a>
 
           <nav>
@@ -944,7 +952,7 @@ export default function HomePage() {
             <button className="login-button audio-button" onClick={() => setClickSoundOn((value) => !value)} title="Toggle click sound">
               {clickSoundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
             </button>
-            <button className="login-button audio-button" onClick={() => setMusicOn((value) => !value)} title="Toggle arcade background music">
+            <button className="login-button audio-button" onClick={() => setMusicOn((value) => !value)} title="Toggle portal background music">
               {musicOn ? <Music2 size={16} /> : <Music size={16} />}
             </button>
             {player ? (
@@ -981,7 +989,14 @@ export default function HomePage() {
                 )}
               </div>
             ) : (
-              <button className="login-button" onClick={() => setProfileOpen(true)}>
+              <button
+              className="theme-toggle-button"
+              type="button"
+              onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
+            >
+              {themeMode === "dark" ? "Light Mode" : "Dark Mode"}
+            </button>
+            <button className="login-button" onClick={() => setProfileOpen(true)}>
                 <LogIn size={16} /> {authLoading ? "Checking..." : "Login"}
               </button>
             )}
@@ -1024,7 +1039,7 @@ export default function HomePage() {
 
             <div className="stats">
               <Stat icon={<Gamepad2 />} value={allGames.filter((game) => game.playable).length} label="Playable Games" />
-              <Stat icon={<Trophy />} value={unlockedCount} label="Achievements" />
+              <Stat icon={{game.thumbnail ? <img className="game-thumbnail-img" src={game.thumbnail} alt={`${game.title} thumbnail`} /> : <Trophy />} value={unlockedCount} label="Achievements" />
               <Stat icon={<Star />} value={averageRating} label="Player Rating" />
             </div>
           </div>
@@ -1374,6 +1389,8 @@ function DiscoveryRow({ row, launchGame }) {
             onClick={() => launchGame(game)}
           >
             <div className={`mini-art ${game.accent || "blue"}`}>
+              {game.thumbnail && <img className="game-thumbnail-img" src={game.thumbnail} alt={`${game.title} thumbnail`} />}
+
               {game.official ? <span className="fdc-chip">FDC</span> : <span className="community-chip">Community</span>}
             </div>
             <strong>{game.title}</strong>

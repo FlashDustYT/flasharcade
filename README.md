@@ -7,7 +7,7 @@ Changes:
 - Shows Google display name and avatar in the nav
 - Adds sign out by clicking the profile button
 - Keeps local profile as a backup option
-- Keeps neon arcade overhaul and Add Game local system
+- Keeps neon portal overhaul and Add Game local system
 
 Vercel environment variables to add:
 NEXT_PUBLIC_SUPABASE_URL=https://apnxmejkizttyyfagbjt.supabase.co
@@ -105,10 +105,10 @@ Commit summary:
 Add safe isolated Stripe checkout
 
 
-# FlashPortal V21 Arcade Checkout + Ratings
+# FlashPortal V21 Portal Checkout + Ratings
 
 Changes:
-- Added Publish link to the main arcade nav
+- Added Publish link to the main portal nav
 - Main Add/Publish buttons now go to `/creator-checkout`
 - Header/brand no longer sticks and overlaps while scrolling
 - Every game can now be rated
@@ -119,7 +119,7 @@ Supabase setup:
 Run `supabase/game_ratings.sql` in Supabase SQL Editor to enable real global ratings.
 
 Commit summary:
-Add arcade checkout link and global game ratings
+Add portal checkout link and global game ratings
 
 
 # FlashPortal V22 Game Rating Prerender Fix
@@ -127,7 +127,7 @@ Add arcade checkout link and global game ratings
 Changes:
 - Fixed `gameRating is not defined` prerender error.
 - Rating UI now calculates each game's rating safely inside the card render.
-- Keeps arcade checkout link and Supabase global ratings.
+- Keeps portal checkout link and Supabase global ratings.
 
 Commit summary:
 Fix game rating prerender error
@@ -221,7 +221,7 @@ Add functional creator game uploads
 # V31 FlashPortal Rebrand + Cloud Saves
 
 Changes:
-- Rebranded user-facing FlashArcade text to FlashPortal.
+- Rebranded user-facing FlashPortal text to FlashPortal.
 - Kept Supabase table names, storage buckets, auth, and Stripe unchanged.
 - Added `supabase/cloud_saves.sql`.
 - Added `lib/cloudSaves.js`.
@@ -253,3 +253,20 @@ Fixes:
 
 Commit summary:
 Fix FlashPortal cloud save build error
+
+
+# V32 FlashPortal UI + Thumbnail Refresh
+
+Changes:
+- Stronger FlashPortal rebrand pass across user-facing files.
+- Added dark/light theme foundation.
+- Dark mode uses black/orange FlashPortal styling.
+- Light mode keeps the older blue/green feel.
+- Added clean vector thumbnails:
+  - `/public/game-thumbnails/how-many-rings.svg`
+  - `/public/game-thumbnails/legacy-league.svg`
+- Added thumbnail metadata to existing games where possible.
+- Added CSS to render thumbnails inside existing game art containers.
+
+Commit summary:
+Refresh FlashPortal UI and add official game thumbnails

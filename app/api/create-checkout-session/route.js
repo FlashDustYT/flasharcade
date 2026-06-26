@@ -40,7 +40,7 @@ export async function POST(request) {
     const origin =
       request.headers.get("origin") ||
       process.env.NEXT_PUBLIC_SITE_URL ||
-      "https://arcade.flashdust.dev";
+      "https://portal.flashdust.dev";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
