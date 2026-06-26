@@ -149,7 +149,7 @@ export default function CreatorUploadPage() {
           <h1>Publish Your Game</h1>
           <p>
             Your first game submission is free. Uploads go into a pending review queue before
-            they appear on FlashArcade.
+            they appear on FlashPortal.
           </p>
         </div>
 

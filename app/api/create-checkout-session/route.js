@@ -3,17 +3,17 @@ import { NextResponse } from "next/server";
 
 const PRODUCTS = {
   game_upload: {
-    name: "FlashArcade Extra Game Submission",
-    description: "Submit an additional browser game to FlashArcade for review.",
+    name: "FlashPortal Extra Game Submission",
+    description: "Submit an additional browser game to FlashPortal for review.",
     amount: 199,
   },
   featured_7: {
-    name: "FlashArcade Featured Game - 7 Days",
+    name: "FlashPortal Featured Game - 7 Days",
     description: "Request featured placement for one game for 7 days.",
     amount: 499,
   },
   featured_30: {
-    name: "FlashArcade Featured Game - 30 Days",
+    name: "FlashPortal Featured Game - 30 Days",
     description: "Request featured placement for one game for 30 days.",
     amount: 999,
   },
@@ -61,7 +61,7 @@ export async function POST(request) {
       ],
       metadata: {
         productKey,
-        platform: "FlashArcade",
+        platform: "FlashPortal",
       },
     });
 

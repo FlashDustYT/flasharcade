@@ -11,7 +11,7 @@ export default function HowManyRingsPage() {
       <header className="game-player-header">
         <Link href="/" className="back-link">
           <ArrowLeft size={18} />
-          Back to FlashArcade
+          Back to FlashPortal
         </Link>
 
         <div>

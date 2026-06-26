@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "FlashArcade | FlashDust Games",
-  description: "The official FlashDust game portal.",
+  title: "FlashPortal | Discover & Publish Browser Games",
+  description: "Play, rate, review, and publish browser games. FlashPortal is the creator-first platform for modern web games.",
 };
 
 export default function RootLayout({ children }) {

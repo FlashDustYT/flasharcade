@@ -1,4 +1,4 @@
-# FlashArcade V9
+# FlashPortal V9
 
 Changes:
 - Added Supabase client
@@ -14,17 +14,17 @@ NEXT_PUBLIC_SUPABASE_URL=https://apnxmejkizttyyfagbjt.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_iOCOM6wDQoQ6royCPjX84g_ZC5oM-l-
 
 Commit summary:
-Connect FlashArcade to Supabase Google login
+Connect FlashPortal to Supabase Google login
 
 
 Patch:
 - Fixed JSX typo in local profile username input.
 
 
-# FlashArcade V10 Admin + Steam Style
+# FlashPortal V10 Admin + Steam Style
 
 Changes:
-- Updated the "Real Login Comes Next" section to "FlashArcade is online"
+- Updated the "Real Login Comes Next" section to "FlashPortal is online"
 - Added admin-only mode for isaac.akinola122@gmail.com
 - Admin button appears only after that Google account logs in
 - Admin panel can edit the platform status section
@@ -35,7 +35,7 @@ Note:
 Admin edits are local-only in this version. To make edits live for everyone, the next step is adding Supabase database tables for site_settings, games, ratings, achievements, and profiles.
 
 
-# FlashArcade V11 Optimization + Account Menu
+# FlashPortal V11 Optimization + Account Menu
 
 Changes:
 - Clicking the logged-in account now opens an account menu instead of instantly logging out
@@ -48,20 +48,20 @@ Changes:
 - Added reduced-motion support
 
 
-# FlashArcade V12 Legacy League
+# FlashPortal V12 Legacy League
 
 Changes:
 - Added Legacy League game files into `public/games/legacy-league/`
 - Added `/legacy-league` embedded game player page
 - Updated Legacy League card from Coming Soon to Playable
-- Play button now opens Legacy League inside FlashArcade
+- Play button now opens Legacy League inside FlashPortal
 - Direct game file path: `/games/legacy-league/`
 
 Commit summary:
 Add Legacy League as playable game
 
 
-# FlashArcade V13 FDC Badge
+# FlashPortal V13 FDC Badge
 
 Changes:
 - Added FDC badge next to official FlashDust games
@@ -73,7 +73,7 @@ Commit summary:
 Add FDC badge to official games
 
 
-# FlashArcade V14 Legacy League Asset Fix
+# FlashPortal V14 Legacy League Asset Fix
 
 Changes:
 - Fixed Legacy League asset paths so CSS/JS/images load correctly from `/games/legacy-league/`
@@ -84,7 +84,7 @@ Commit summary:
 Fix Legacy League embedded asset loading
 
 
-# FlashArcade V20 Safe Stripe
+# FlashPortal V20 Safe Stripe
 
 Important:
 - Starts from stable V14.
@@ -105,7 +105,7 @@ Commit summary:
 Add safe isolated Stripe checkout
 
 
-# FlashArcade V21 Arcade Checkout + Ratings
+# FlashPortal V21 Arcade Checkout + Ratings
 
 Changes:
 - Added Publish link to the main arcade nav
@@ -122,7 +122,7 @@ Commit summary:
 Add arcade checkout link and global game ratings
 
 
-# FlashArcade V22 Game Rating Prerender Fix
+# FlashPortal V22 Game Rating Prerender Fix
 
 Changes:
 - Fixed `gameRating is not defined` prerender error.
@@ -133,7 +133,7 @@ Commit summary:
 Fix game rating prerender error
 
 
-# FlashArcade V23 Creator Update
+# FlashPortal V23 Creator Update
 
 Changes:
 - Added Creator Level system UI
@@ -141,7 +141,7 @@ Changes:
 - Added FDC Original badge language for official games
 - Added Community badge for non-FDC games
 - Added Creator stats panel
-- Added marketplace revenue-split foundation display (85% creator / 15% FlashArcade)
+- Added marketplace revenue-split foundation display (85% creator / 15% FlashPortal)
 - Added review placeholder row on game cards
 - Added Supabase SQL foundation for creator profiles, reviews, and future payouts
 
@@ -152,7 +152,7 @@ Commit summary:
 Add creator levels and marketplace foundation
 
 
-# FlashArcade V26 Discovery Update
+# FlashPortal V26 Discovery Update
 
 Changes:
 - Added storefront-style Discover section
@@ -175,7 +175,7 @@ Commit summary:
 Add discovery storefront rows
 
 
-# FlashArcade V27 Free First + Honest Stats
+# FlashPortal V27 Free First + Honest Stats
 
 Changes:
 - Creator checkout now includes a $0 first game submission option.
@@ -216,3 +216,28 @@ Required Supabase setup:
 
 Commit summary:
 Add functional creator game uploads
+
+
+# V31 FlashPortal Rebrand + Cloud Saves
+
+Changes:
+- Rebranded user-facing FlashArcade text to FlashPortal.
+- Kept Supabase table names, storage buckets, auth, and Stripe unchanged.
+- Added `supabase/cloud_saves.sql`.
+- Added `lib/cloudSaves.js`.
+- Added cloud-save badge/message foundation.
+- When a signed-in user launches a game, FlashPortal now creates/updates a lightweight cloud save record:
+  - game id
+  - title
+  - last played time
+  - launch count
+
+Important:
+- This is cloud-save foundation, not full automatic iframe/localStorage capture yet.
+- Full in-game save syncing requires games to use the FlashPortal save API or a controlled game wrapper.
+
+Supabase step:
+Run `supabase/cloud_saves.sql` in Supabase SQL Editor.
+
+Commit summary:
+Rebrand to FlashPortal and add cloud save foundation

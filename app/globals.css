@@ -1217,3 +1217,29 @@ body {
     align-items: stretch;
   }
 }
+
+
+/* V31 FlashPortal Cloud Saves */
+.cloud-save-badge,
+.cloud-save-message {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 7px 10px;
+  border: 1px solid rgba(102, 192, 244, .26);
+  background: rgba(102, 192, 244, .1);
+  color: #dff5ff;
+  font-size: .74rem;
+  font-weight: 1000;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.cloud-save-message {
+  margin-top: 10px;
+  color: #dfffd0;
+  border-color: rgba(155, 232, 112, .28);
+  background: rgba(155, 232, 112, .1);
+}

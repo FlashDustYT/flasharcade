@@ -8,14 +8,14 @@ const PRODUCTS = [
     key: "free_first_upload",
     title: "First Game Free",
     price: "$0",
-    text: "Your first FlashArcade game submission is free. No Stripe checkout needed.",
+    text: "Your first FlashPortal game submission is free. No Stripe checkout needed.",
     free: true,
   },
   {
     key: "game_upload",
     title: "Extra Game Upload",
     price: "$1.99",
-    text: "Submit another browser game to FlashArcade for review.",
+    text: "Submit another browser game to FlashPortal for review.",
   },
   {
     key: "featured_7",
@@ -70,7 +70,7 @@ export default function CreatorCheckoutPage() {
     <main className="checkout-page">
       <section className="checkout-card">
         <span className="pill">Creator Studio</span>
-        <h1>Publish on FlashArcade</h1>
+        <h1>Publish on FlashPortal</h1>
         <p>
           New creators get their first game submission free. Paid options are for extra uploads
           and featured placement once creators want more promotion.
@@ -92,7 +92,7 @@ export default function CreatorCheckoutPage() {
         </div>
 
         <Link href="/" className="checkout-back-link">
-          Back to FlashArcade
+          Back to FlashPortal
         </Link>
       </section>
     </main>

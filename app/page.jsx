@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { loadCloudSave, saveCloudSave } from "../lib/cloudSaves";
 
 import {
   Search,
@@ -83,13 +84,13 @@ const defaultAchievements = [
   {
     id: "first-profile",
     title: "Arcade Identity",
-    text: "Create a FlashArcade local profile.",
+    text: "Create a FlashPortal local profile.",
     unlocked: false,
   },
   {
     id: "first-play",
     title: "First Play",
-    text: "Launch How Many Rings from FlashArcade.",
+    text: "Launch How Many Rings from FlashPortal.",
     unlocked: false,
   },
   {
@@ -110,7 +111,7 @@ const ADMIN_EMAIL = "isaac.akinola122@gmail.com";
 
 const defaultPlatformCopy = {
   label: "Platform Status",
-  title: "FlashArcade is online",
+  title: "FlashPortal is online",
   description:
     "Google login is connected. Next up: cloud profiles, synced achievements, game saves, and public uploads powered by Supabase.",
   cards: [
@@ -433,23 +434,23 @@ export default function HomePage() {
   const featured = baseGames[0];
 
   useEffect(() => {
-    setPlayer(getStoredJson("flasharcade-player", null));
-    const savedRatings = getStoredJson("flasharcade-ratings", {});
+    setPlayer(getStoredJson("flashportal-player", null));
+    const savedRatings = getStoredJson("flashportal-ratings", {});
     setRatingData(savedRatings);
-    setAchievements(getStoredJson("flasharcade-achievements", defaultAchievements));
-    setCommunityGames(getStoredJson("flasharcade-community-games", []));
-    const savedCopy = getStoredJson("flasharcade-platform-copy", defaultPlatformCopy);
+    setAchievements(getStoredJson("flashportal-achievements", defaultAchievements));
+    setCommunityGames(getStoredJson("flashportal-community-games", []));
+    const savedCopy = getStoredJson("flashportal-platform-copy", defaultPlatformCopy);
     setPlatformCopy(savedCopy);
     setAdminDraft(savedCopy);
 
     function unlockLocalAchievement(id) {
-      const stored = getStoredJson("flasharcade-achievements", defaultAchievements);
+      const stored = getStoredJson("flashportal-achievements", defaultAchievements);
       const next = stored.map((achievement) =>
         achievement.id === id ? { ...achievement, unlocked: true } : achievement
       );
 
       setAchievements(next);
-      setStoredJson("flasharcade-achievements", next);
+      setStoredJson("flashportal-achievements", next);
     }
 
     function userToProfile(user) {
@@ -458,7 +459,7 @@ export default function HomePage() {
           user.user_metadata?.full_name ||
           user.user_metadata?.name ||
           user.email?.split("@")[0] ||
-          "FlashArcade Player",
+          "FlashPortal Player",
         email: user.email || "",
         avatar: user.user_metadata?.avatar_url || "",
         provider: "Google",
@@ -473,7 +474,7 @@ export default function HomePage() {
       if (data.session?.user) {
         const profile = userToProfile(data.session.user);
         setPlayer(profile);
-        setStoredJson("flasharcade-player", profile);
+        setStoredJson("flashportal-player", profile);
         unlockLocalAchievement("first-profile");
       }
 
@@ -488,11 +489,11 @@ export default function HomePage() {
       if (nextSession?.user) {
         const profile = userToProfile(nextSession.user);
         setPlayer(profile);
-        setStoredJson("flasharcade-player", profile);
+        setStoredJson("flashportal-player", profile);
         unlockLocalAchievement("first-profile");
       } else {
         setPlayer(null);
-        localStorage.removeItem("flasharcade-player");
+        localStorage.removeItem("flashportal-player");
       }
     });
 
@@ -549,7 +550,7 @@ export default function HomePage() {
       const gameIds = allGames.map((game) => game.id);
       if (!gameIds.length) return;
 
-      const localRatings = getStoredJson("flasharcade-ratings", {});
+      const localRatings = getStoredJson("flashportal-ratings", {});
 
       const { data, error } = await supabase
         .from("game_ratings")
@@ -577,7 +578,7 @@ export default function HomePage() {
       }
 
       setRatingData(next);
-      setStoredJson("flasharcade-ratings", next);
+      setStoredJson("flashportal-ratings", next);
     }
 
     loadCloudRatings();
@@ -619,7 +620,7 @@ export default function HomePage() {
         user.user_metadata?.full_name ||
         user.user_metadata?.name ||
         user.email?.split("@")[0] ||
-        "FlashArcade Player",
+        "FlashPortal Player",
       email: user.email || "",
       avatar: user.user_metadata?.avatar_url || "",
       provider: "Google",
@@ -640,7 +641,7 @@ export default function HomePage() {
     await supabase.auth.signOut();
     setPlayer(null);
     setSession(null);
-    localStorage.removeItem("flasharcade-player");
+    localStorage.removeItem("flashportal-player");
   }
 
   function saveAdminChanges(event) {
@@ -652,13 +653,13 @@ export default function HomePage() {
       title: adminDraft.title.trim() || defaultPlatformCopy.title,
       description: adminDraft.description.trim() || defaultPlatformCopy.description,
       cards: adminDraft.cards.map((card, index) => ({
-        title: card.title.trim() || defaultPlatformCopy.cards[index]?.title || "FlashArcade Update",
+        title: card.title.trim() || defaultPlatformCopy.cards[index]?.title || "FlashPortal Update",
         text: card.text.trim() || defaultPlatformCopy.cards[index]?.text || "Update details coming soon.",
       })),
     };
 
     setPlatformCopy(cleaned);
-    setStoredJson("flasharcade-platform-copy", cleaned);
+    setStoredJson("flashportal-platform-copy", cleaned);
     setAdminOpen(false);
   }
 
@@ -676,7 +677,7 @@ export default function HomePage() {
     );
 
     setAchievements(next);
-    setStoredJson("flasharcade-achievements", next);
+    setStoredJson("flashportal-achievements", next);
   }
 
   function launchGame(game = featured) {
@@ -693,14 +694,14 @@ export default function HomePage() {
   function createLocalProfile(event) {
     event.preventDefault();
 
-    const name = (username || "FlashArcade Player").trim().slice(0, 24);
+    const name = (username || "FlashPortal Player").trim().slice(0, 24);
     const localPlayer = {
       name,
       provider: "Local Profile",
     };
 
     setPlayer(localPlayer);
-    setStoredJson("flasharcade-player", localPlayer);
+    setStoredJson("flashportal-player", localPlayer);
     setProfileOpen(false);
     unlockAchievement("first-profile");
   }
@@ -714,7 +715,7 @@ export default function HomePage() {
     }
 
     setPlayer(null);
-    localStorage.removeItem("flasharcade-player");
+    localStorage.removeItem("flashportal-player");
   }
 
   async function rateGame(gameId, stars) {
@@ -732,7 +733,7 @@ export default function HomePage() {
     };
 
     setRatingData(nextRatings);
-    setStoredJson("flasharcade-ratings", nextRatings);
+    setStoredJson("flashportal-ratings", nextRatings);
     unlockAchievement("first-rating");
 
     if (session?.user?.id) {
@@ -767,7 +768,7 @@ export default function HomePage() {
 
     const next = [game, ...communityGames].slice(0, 24);
     setCommunityGames(next);
-    setStoredJson("flasharcade-community-games", next);
+    setStoredJson("flashportal-community-games", next);
     setNewGame({ title: "", subtitle: "", genre: "Community", url: "" });
     setAddGameOpen(false);
     unlockAchievement("first-upload");
@@ -776,8 +777,28 @@ export default function HomePage() {
   function removeCommunityGame(id) {
     const next = communityGames.filter((game) => game.id !== id);
     setCommunityGames(next);
-    setStoredJson("flasharcade-community-games", next);
+    setStoredJson("flashportal-community-games", next);
   }
+
+  async function syncGameLaunchSave(game) {
+    if (!game?.id) return;
+
+    const existing = await loadCloudSave(game.id);
+    const nextData = {
+      gameId: game.id,
+      title: game.title,
+      lastPlayedAt: new Date().toISOString(),
+      launches: Number(existing?.save_data?.launches || 0) + 1,
+      note: "FlashPortal launch save. Full in-game save API comes next.",
+    };
+
+    const result = await saveCloudSave(game.id, nextData);
+    setCloudSaveStatus((current) => ({
+      ...current,
+      [game.id]: result.ok ? "Cloud save updated" : "Local save only",
+    }));
+  }
+
 
   return (
     <main>
@@ -791,8 +812,8 @@ export default function HomePage() {
           <div className="login-modal" onClick={(event) => event.stopPropagation()}>
             <button className="close" onClick={() => setProfileOpen(false)}>×</button>
             <div className="modal-icon"><User size={30} /></div>
-            <h2>FlashArcade Profile</h2>
-            <p>Sign in with Google to keep your FlashArcade account across visits. Local profile is still here as a backup.</p>
+            <h2>FlashPortal Profile</h2>
+            <p>Sign in with Google to keep your FlashPortal account across visits. Local profile is still here as a backup.</p>
 
             <div className="profile-form">
               <button type="button" onClick={signInWithGoogle}>
@@ -824,7 +845,7 @@ export default function HomePage() {
           <div className="login-modal admin-modal" onClick={(event) => event.stopPropagation()}>
             <button className="close" onClick={() => setAdminOpen(false)}>×</button>
             <div className="modal-icon"><Settings size={30} /></div>
-            <h2>FlashArcade Admin</h2>
+            <h2>FlashPortal Admin</h2>
             <p>Owner mode is active for {ADMIN_EMAIL}. Edit the platform status section below.</p>
 
             <form className="profile-form admin-form" onSubmit={saveAdminChanges}>
@@ -876,7 +897,7 @@ export default function HomePage() {
             <button className="close" onClick={() => setAddGameOpen(false)}>×</button>
             <div className="modal-icon"><Upload size={30} /></div>
             <h2>Add Game</h2>
-            <p>Add a browser game link to your local FlashArcade library. It will stay saved on this device.</p>
+            <p>Add a browser game link to your local FlashPortal library. It will stay saved on this device.</p>
 
             <form className="profile-form" onSubmit={addCommunityGame}>
               <input
@@ -1034,7 +1055,7 @@ export default function HomePage() {
                   {creatorStats.level.badge} {creatorStats.level.name}
                 </span>
                 <span className="official-badge">
-                  <BadgeCheck size={15} /> FDC Original Publisher
+                  <BadgeCheck size={15} /> FlashPortal Original Creator
                 </span>
               </div>
               <p>
@@ -1074,14 +1095,14 @@ export default function HomePage() {
             <h2>Revenue split groundwork</h2>
             <p>
               Paid games are not activated yet, but the platform is now designed around a future
-              creator marketplace: creators can sell games, FlashArcade can keep 15%, and creators
+              creator marketplace: creators can sell games, FlashPortal can keep 15%, and creators
               can receive 85% through Stripe Connect once verification and payouts are ready.
             </p>
           </div>
 
           <div className="split-card">
             <div><strong>85%</strong><span>Creator</span></div>
-            <div><strong>15%</strong><span>FlashArcade</span></div>
+            <div><strong>15%</strong><span>FlashPortal</span></div>
           </div>
         </section>
 
@@ -1090,7 +1111,7 @@ export default function HomePage() {
             <span className="pill">V26 Discovery</span>
             <h2>Find your next game faster</h2>
             <p>
-              FlashArcade now organizes the library into storefront-style rows: trending,
+              FlashPortal now organizes the library into storefront-style rows: trending,
               top rated, most played, new releases, hidden gems, FDC originals, and community picks.
             </p>
           </div>
@@ -1169,7 +1190,7 @@ export default function HomePage() {
             <div className="game-content">
               <span className="pill">Community</span>
               <h3>Publish Your Game</h3>
-              <p>Submit your browser game through FlashArcade Creator Studio.</p>
+              <p>Submit your browser game through FlashPortal Creator Studio.</p>
               <button className="play-link" type="button">Start Publishing</button>
             </div>
           </article>
@@ -1180,7 +1201,7 @@ export default function HomePage() {
             <div>
               <span className="pill">Player Progress</span>
               <h2>Achievements</h2>
-              <p>Achievements unlock from actions on FlashArcade. Cloud achievements need Supabase/Firebase later.</p>
+              <p>Achievements unlock from actions on FlashPortal. Cloud achievements need Supabase/Firebase later.</p>
             </div>
             <Medal size={54} />
           </div>
@@ -1222,7 +1243,7 @@ export default function HomePage() {
         </section>
 
         <footer>
-          <span>© {new Date().getFullYear()} FlashArcade by FlashDust.</span>
+          <span>© {new Date().getFullYear()} FlashPortal by FlashDust.</span>
           <a href={MAIN_SITE}>Back to FlashDust.dev</a>
         </footer>
       </section>
@@ -1290,6 +1311,12 @@ function GameCard({ game, ratingData, rateGame, launchGame, removeCommunityGame 
             );
           })()}
         </div>
+
+        {cloudSaveStatus[game.id] && (
+          <div className="cloud-save-message">
+            <Cloud size={14} /> {cloudSaveStatus[game.id]}
+          </div>
+        )}
 
         <div className="mini-review-row">
           <MessageSquare size={15} />
