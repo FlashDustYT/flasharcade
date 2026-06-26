@@ -311,3 +311,13 @@ Major changes:
 
 Commit summary:
 Rebuild FlashPortal homepage with updates tab
+
+
+# V33.1 Duplicate Home Fix
+
+Fixes:
+- Removed duplicate `export default function Home()` from `app/page.jsx`.
+- Keeps the V33 clean platform rebuild, Updates tab, themes, and thumbnails.
+
+Commit summary:
+Fix duplicate Home component
