@@ -491,3 +491,14 @@ Fixes:
 
 Commit summary:
 Fix project root and add Guess the Celebrity
+
+
+# FlashPortal V40.4 Rating Build Fix
+
+Fixes:
+- Changed new game's rating from string to number.
+- Added safe rating formatter so unrated/new games do not crash build.
+- Keeps Guess the Celebrity game files from V40.3.
+
+Commit summary:
+Fix unrated game rating build error

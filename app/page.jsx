@@ -119,7 +119,7 @@ const BASE_GAMES = [
     description: "Guess the celebrity from clues and test how well you know famous faces.",
     genre: "Strategy",
     status: "New Release",
-    rating: "Unrated",
+    rating: 0,
     plays: 0,
     playable: true,
     official: true,
@@ -129,6 +129,11 @@ const BASE_GAMES = [
     path: "/play/guess-the-celebrity",
   },
 ];
+
+function formatRating(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric.toFixed(1) : "New";
+}
 
 function parsePlayCount(value) {
   if (typeof value === "number") return value;
@@ -590,8 +595,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V40.3 Online</strong>
-          <p>Packaging fix, new game added, and upload/payment hotfixes.</p>
+          <strong>V40.4 Online</strong>
+          <p>Rating build fix, new game added, and project root cleanup.</p>
         </div>
       </aside>
 
@@ -1162,7 +1167,7 @@ function GameCard({ game, onPlay, compact = false }) {
         <h3>{game.title}</h3>
         <p>{game.tagline}</p>
         <div className="game-meta">
-          <span>{game.rating.toFixed(1)}★</span>
+          <span>{formatRating(game.rating)}★</span>
           <span>{formatNumber(game.plays)} plays</span>
         </div>
         <div className="card-tags">
