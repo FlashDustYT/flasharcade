@@ -15,3 +15,7 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_iOCOM6wDQoQ6royCPjX84g_ZC5oM
 
 Commit summary:
 Connect FlashArcade to Supabase Google login
+
+
+Patch:
+- Fixed JSX typo in local profile username input.

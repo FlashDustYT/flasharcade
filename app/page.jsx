@@ -505,7 +505,7 @@ export default function HomePage() {
             <form className="profile-form" onSubmit={createLocalProfile}>
               <input
                 value={username}
-                onChange={(event) => setUsername(event.target.value))}
+                onChange={(event) => setUsername(event.target.value)}
                 placeholder="Choose a display name"
                 maxLength={24}
               />
