@@ -292,3 +292,22 @@ Fixes:
 
 Commit summary:
 Fix broken stats icon JSX
+
+
+# FlashPortal V33 Clean Platform Rebuild
+
+Major changes:
+- Rebuilt homepage cleanly instead of patching broken JSX.
+- Full FlashPortal branding.
+- Black/orange dark mode.
+- Blue/green light mode.
+- Working theme toggle.
+- New Updates tab/changelog.
+- Better accessible navigation.
+- Improved official game thumbnails.
+- Play count updates locally on launch.
+- Signed-in game launches update cloud-save metadata.
+- Keeps existing Supabase tables/storage/Stripe setup.
+
+Commit summary:
+Rebuild FlashPortal homepage with updates tab

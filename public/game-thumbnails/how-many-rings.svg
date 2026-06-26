@@ -1,44 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#050608"/>
-      <stop offset="0.52" stop-color="#15100a"/>
-      <stop offset="1" stop-color="#301506"/>
-    </linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fff2a8"/>
-      <stop offset="0.42" stop-color="#f6b936"/>
-      <stop offset="1" stop-color="#9a5a0b"/>
-    </linearGradient>
-    <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff8a00"/>
-      <stop offset="1" stop-color="#ff4d00"/>
-    </linearGradient>
-    <filter id="shadow"><feDropShadow dx="0" dy="18" stdDeviation="18" flood-opacity=".45"/></filter>
-  </defs>
-  <rect width="1200" height="675" fill="url(#bg)"/>
-  <g opacity=".18">
-    <circle cx="180" cy="120" r="180" fill="#ff6a00"/>
-    <circle cx="1040" cy="540" r="240" fill="#ffb000"/>
-    <path d="M0 560 C240 460 410 700 620 560 S970 430 1200 520 L1200 675 L0 675Z" fill="#ff6a00"/>
-  </g>
-  <g transform="translate(760 92)" filter="url(#shadow)">
-    <path d="M122 398h150v46H122z" fill="#f1b737"/>
-    <path d="M172 316h49v92h-49z" fill="url(#gold)"/>
-    <path d="M90 68h214v108c0 88-45 156-107 156S90 264 90 176V68z" fill="url(#gold)" stroke="#fff2a8" stroke-width="10"/>
-    <path d="M75 112H22c0 86 42 139 94 150v-48c-30-13-50-44-52-78h11z" fill="none" stroke="#f6b936" stroke-width="34" stroke-linejoin="round"/>
-    <path d="M319 112h53c0 86-42 139-94 150v-48c30-13 50-44 52-78h-11z" fill="none" stroke="#f6b936" stroke-width="34" stroke-linejoin="round"/>
-    <path d="M111 92h172v36H111z" fill="#fff2a8" opacity=".65"/>
-  </g>
-  <g transform="translate(86 98)">
-    <text x="0" y="72" font-family="Inter, Arial, sans-serif" font-weight="900" font-size="64" fill="#fff">HOW MANY</text>
-    <text x="0" y="156" font-family="Inter, Arial, sans-serif" font-weight="900" font-size="92" fill="url(#orange)">RINGS?</text>
-    <text x="4" y="220" font-family="Inter, Arial, sans-serif" font-weight="800" font-size="28" fill="#ffdca8">10-YEAR TITLE WINDOW</text>
-    <rect x="0" y="282" width="430" height="72" rx="36" fill="#111820" stroke="#ff8a00" stroke-opacity=".45"/>
-    <circle cx="48" cy="318" r="32" fill="url(#gold)"/>
-    <text x="24" y="328" font-family="Inter, Arial, sans-serif" font-weight="900" font-size="20" fill="#111">FDC</text>
-    <text x="96" y="328" font-family="Inter, Arial, sans-serif" font-weight="900" font-size="24" fill="#fff">PRESENTED BY FLASHDUST</text>
-    <text x="4" y="430" font-family="Inter, Arial, sans-serif" font-weight="700" font-size="31" fill="#d9d0c8">Build a dynasty. Chase banners.</text>
-    <text x="4" y="475" font-family="Inter, Arial, sans-serif" font-weight="700" font-size="31" fill="#d9d0c8">Find out how many rings you can win.</text>
-  </g>
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#050505"/><stop offset=".55" stop-color="#17110a"/><stop offset="1" stop-color="#301506"/></linearGradient><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4b8"/><stop offset=".45" stop-color="#f8b833"/><stop offset="1" stop-color="#9a5a0b"/></linearGradient><linearGradient id="orange" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a00"/><stop offset="1" stop-color="#ff4d00"/></linearGradient><filter id="s"><feDropShadow dx="0" dy="18" stdDeviation="18" flood-opacity=".45"/></filter></defs>
+<rect width="1200" height="675" fill="url(#bg)"/><circle cx="1010" cy="95" r="235" fill="#ff6a00" opacity=".16"/><circle cx="170" cy="610" r="260" fill="#f8b833" opacity=".12"/>
+<g transform="translate(760 90)" filter="url(#s)"><path d="M122 398h150v46H122z" fill="#f1b737"/><path d="M172 316h49v92h-49z" fill="url(#gold)"/><path d="M90 68h214v108c0 88-45 156-107 156S90 264 90 176V68z" fill="url(#gold)" stroke="#fff2a8" stroke-width="10"/><path d="M75 112H22c0 86 42 139 94 150v-48c-30-13-50-44-52-78h11z" fill="none" stroke="#f6b936" stroke-width="34" stroke-linejoin="round"/><path d="M319 112h53c0 86-42 139-94 150v-48c30-13 50-44 52-78h-11z" fill="none" stroke="#f6b936" stroke-width="34" stroke-linejoin="round"/></g>
+<g transform="translate(82 96)"><text x="0" y="76" font-family="Inter,Arial" font-weight="900" font-size="70" fill="#fff">HOW MANY</text><text x="0" y="166" font-family="Inter,Arial" font-weight="900" font-size="98" fill="url(#orange)">RINGS?</text><text x="4" y="230" font-family="Inter,Arial" font-weight="800" font-size="30" fill="#ffdca8">10-YEAR TITLE WINDOW</text><rect x="0" y="286" width="455" height="76" rx="38" fill="#111820" stroke="#ff8a00" stroke-opacity=".45"/><circle cx="48" cy="324" r="32" fill="url(#gold)"/><text x="24" y="334" font-family="Inter,Arial" font-weight="900" font-size="20" fill="#111">FDC</text><text x="96" y="334" font-family="Inter,Arial" font-weight="900" font-size="24" fill="#fff">PRESENTED BY FLASHDUST</text><text x="4" y="445" font-family="Inter,Arial" font-weight="700" font-size="32" fill="#d9d0c8">Build a dynasty. Chase banners.</text></g>
 </svg>
