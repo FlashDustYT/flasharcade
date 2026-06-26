@@ -988,21 +988,34 @@ function GameCard({ game, ratingData, rateGame, launchGame, removeCommunityGame 
         </div>
 
         <div className="rating-box">
-          <span>Average rating: {averageRating}</span>
-          <div className="star-buttons">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                className={gameRating.myRating >= star ? "selected" : ""}
-                onClick={() => rateGame(game.id, star)}
-                aria-label={`Rate ${game.title} ${star} stars`}
-              >
-                ★
-              </button>
-            ))}
-          </div>
-          <small>{gameRating.count || 0} rating{gameRating.count === 1 ? "" : "s"}</small>
+          {(() => {
+            const currentRating = ratingData[game.id] || { total: 0, count: 0, myRating: 0 };
+            const currentAverage = currentRating.count
+              ? (currentRating.total / currentRating.count).toFixed(1)
+              : "Unrated";
+
+            return (
+              <>
+                <span>Average rating: {currentAverage}</span>
+                <div className="star-buttons">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      className={currentRating.myRating >= star ? "selected" : ""}
+                      onClick={() => rateGame(game.id, star)}
+                      aria-label={`Rate ${game.title} ${star} stars`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+                <small>
+                  {currentRating.count || 0} rating{currentRating.count === 1 ? "" : "s"}
+                </small>
+              </>
+            );
+          })()}
         </div>
 
         {game.playable ? (

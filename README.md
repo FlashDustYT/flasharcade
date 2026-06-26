@@ -120,3 +120,14 @@ Run `supabase/game_ratings.sql` in Supabase SQL Editor to enable real global rat
 
 Commit summary:
 Add arcade checkout link and global game ratings
+
+
+# FlashArcade V22 Game Rating Prerender Fix
+
+Changes:
+- Fixed `gameRating is not defined` prerender error.
+- Rating UI now calculates each game's rating safely inside the card render.
+- Keeps arcade checkout link and Supabase global ratings.
+
+Commit summary:
+Fix game rating prerender error
