@@ -779,24 +779,23 @@ export default function HomePage() {
     setCommunityGames(next);
     setStoredJson("flashportal-community-games", next);
   }
-
   async function syncGameLaunchSave(game) {
     if (!game?.id) return;
 
-    const existing = await loadCloudSave(game.id);
-    const nextData = {
-      gameId: game.id,
-      title: game.title,
-      lastPlayedAt: new Date().toISOString(),
-      launches: Number(existing?.save_data?.launches || 0) + 1,
-      note: "FlashPortal launch save. Full in-game save API comes next.",
-    };
+    try {
+      const existing = await loadCloudSave(game.id);
+      const nextData = {
+        gameId: game.id,
+        title: game.title,
+        lastPlayedAt: new Date().toISOString(),
+        launches: Number(existing?.save_data?.launches || 0) + 1,
+        note: "FlashPortal launch save. Full in-game save API comes next.",
+      };
 
-    const result = await saveCloudSave(game.id, nextData);
-    setCloudSaveStatus((current) => ({
-      ...current,
-      [game.id]: result.ok ? "Cloud save updated" : "Local save only",
-    }));
+      await saveCloudSave(game.id, nextData);
+    } catch (error) {
+      console.warn("FlashPortal cloud save sync skipped:", error?.message || error);
+    }
   }
 
 
@@ -1311,13 +1310,6 @@ function GameCard({ game, ratingData, rateGame, launchGame, removeCommunityGame 
             );
           })()}
         </div>
-
-        {cloudSaveStatus[game.id] && (
-          <div className="cloud-save-message">
-            <Cloud size={14} /> {cloudSaveStatus[game.id]}
-          </div>
-        )}
-
         <div className="mini-review-row">
           <MessageSquare size={15} />
           <span>Reviews coming soon</span>

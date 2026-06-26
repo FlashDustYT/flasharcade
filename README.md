@@ -241,3 +241,15 @@ Run `supabase/cloud_saves.sql` in Supabase SQL Editor.
 
 Commit summary:
 Rebrand to FlashPortal and add cloud save foundation
+
+
+# V31.1 Build Fix
+
+Fixes:
+- Removed broken `cloudSaveStatus` homepage render that caused Vercel prerender failure.
+- Keeps FlashPortal rebrand.
+- Keeps cloud save SQL and helper.
+- Still tracks launch cloud-save metadata for signed-in players.
+
+Commit summary:
+Fix FlashPortal cloud save build error
