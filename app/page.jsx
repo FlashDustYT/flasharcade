@@ -1,41 +1,35 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
+
 import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState } from "react";,
-  import { supabase } from "../lib/supabaseClient";,
-  import {,
   Search,
-  Filter,
   Play,
-  ExternalLink,
   Trophy,
-  Star,
-  Dice5,
-  Flame,
-  Sparkles,
   Gamepad2,
-  Tv,
+  Sparkles,
+  ExternalLink,
+  Filter,
+  Dice5,
   Home,
+  User,
+  LogIn,
+  PlusCircle,
+  Lock,
+  Medal,
   Volume2,
   VolumeX,
   Music,
-  LogIn,
-  User,
-  PlusCircle,
+  Music2,
+  Star,
+  ShieldCheck,
   Upload,
+  X,
   Cloud,
   Settings,
   Save,
   Edit3,
-  CreditCard,
-  Rocket,
-  ShieldCheck,
-  Medal,
-  Crown,
-  Award,
 } from "lucide-react";
 
 const MAIN_SITE = "https://flashdust.dev";
@@ -244,8 +238,6 @@ export default function HomePage() {
   const [category, setCategory] = useState("All");
   const [profileOpen, setProfileOpen] = useState(false);
   const [addGameOpen, setAddGameOpen] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [paymentNotice, setPaymentNotice] = useState("");
   const [clickSoundOn, setClickSoundOn] = useState(false);
   const [musicOn, setMusicOn] = useState(false);
   const [player, setPlayer] = useState(null);
@@ -334,16 +326,6 @@ export default function HomePage() {
     return () => {
       listener.subscription.unsubscribe();
     };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("paid")) {
-        setPaymentNotice("Payment received. You can now add your game details for review.");
-        setAddGameOpen(true);
-      }
-    }
   }, []);
 
   useEffect(() => {
@@ -527,23 +509,6 @@ export default function HomePage() {
     setRatingData(next);
     setStoredJson("flasharcade-rating-how-many-rings", next);
     unlockAchievement("first-rating");
-  }
-
-  async function startCheckout(productKey = "game_upload") {
-    try {
-      setCheckoutLoading(true);
-      const response = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productKey }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data?.error || "Checkout failed.");
-      window.location.href = data.url;
-    } catch (error) {
-      alert(error.message || "Could not start checkout.");
-      setCheckoutLoading(false);
-    }
   }
 
   function addCommunityGame(event) {
@@ -793,8 +758,8 @@ export default function HomePage() {
               <button className="button secondary" onClick={() => launchGame(featured)}>
                 <Dice5 size={20} /> Random Playable Game
               </button>
-              <button className="button ghost" onClick={() => startCheckout("game_upload")} disabled={checkoutLoading}>
-                <CreditCard size={20} /> {checkoutLoading ? "Loading..." : "Submit Game - $1.99"}
+              <button className="button ghost" onClick={() => setAddGameOpen(true)}>
+                <PlusCircle size={20} /> Add Game
               </button>
             </div>
 
@@ -818,38 +783,6 @@ export default function HomePage() {
             </div>
           </button>
         </section>
-
-        <section className="monetize-panel">
-          <div>
-            <span className="pill">Creator Studio</span>
-            <h2>Publish on FlashArcade</h2>
-            <p>Submit a browser game for review, or promote a game with featured placement. Payments are handled securely by Stripe.</p>
-          </div>
-          <div className="price-grid">
-            <button onClick={() => startCheckout("game_upload")} disabled={checkoutLoading}>
-              <CreditCard size={22} />
-              <strong>$1.99</strong>
-              <span>Submit Game</span>
-            </button>
-            <button onClick={() => startCheckout("featured_7")} disabled={checkoutLoading}>
-              <Rocket size={22} />
-              <strong>$4.99</strong>
-              <span>Featured 7 Days</span>
-            </button>
-            <button onClick={() => startCheckout("featured_30")} disabled={checkoutLoading}>
-              <Rocket size={22} />
-              <strong>$9.99</strong>
-              <span>Featured 30 Days</span>
-            </button>
-          </div>
-        </section>
-
-        {paymentNotice && (
-          <section className="payment-notice">
-            <ShieldCheck size={20} />
-            <span>{paymentNotice}</span>
-          </section>
-        )}
 
         <section className="toolbar" id="library">
           <div>
@@ -892,7 +825,7 @@ export default function HomePage() {
             />
           ))}
 
-          <article className="game-card add-game-card" onClick={() => startCheckout("game_upload")}>
+          <article className="game-card add-game-card" onClick={() => setAddGameOpen(true)}>
             <div className="submit-lock">
               <PlusCircle size={76} />
             </div>
@@ -900,7 +833,7 @@ export default function HomePage() {
               <span className="pill">Community</span>
               <h3>Add Your Own Game</h3>
               <p>Add a browser game link to your local arcade library.</p>
-              <button className="play-link" type="button">Submit - $1.99</button>
+              <button className="play-link" type="button">Add Game</button>
             </div>
           </article>
         </section>

@@ -84,40 +84,22 @@ Commit summary:
 Fix Legacy League embedded asset loading
 
 
-# FlashArcade V17 Clean Stripe Build
+# FlashArcade V20 Safe Stripe
+
+Important:
+- Starts from stable V14.
+- Does not modify app/page.jsx/homepage.
+- Stripe checkout is isolated on /creator-checkout.
+- This prevents the import corruption from previous deployments.
+
+New route:
+- /creator-checkout
 
 Changes:
-- Rebuilt from last stable pre-Stripe version
-- Cleanly added Stripe dependencies
-- Added checkout API route
-- Added success/cancel checkout pages
-- Added monetization panel
-- Fixed React import syntax
-- Fixed lucide-react imports for CreditCard, Rocket, and ShieldCheck
-- Keeps Google login, admin mode, Legacy League fix, optimization, and FDC badges
+- Added Stripe dependency
+- Added API route: /api/create-checkout-session
+- Added checkout success/cancel pages
+- Added safe creator checkout test page
 
 Commit summary:
-Clean rebuild Stripe checkout flow
-
-
-# FlashArcade V18 Import Repair
-
-Changes:
-- Fully rebuilt the top of app/page.jsx imports
-- Fixed broken React import syntax
-- Fixed missing icon imports
-- Preserves Stripe checkout starter flow
-
-Commit summary:
-Repair broken page imports
-
-
-# FlashArcade V19 Medal Fix
-
-Changes:
-- Added missing Medal icon import
-- Added Crown/Award safety imports
-- Keeps Stripe checkout flow and prior fixes
-
-Commit summary:
-Fix missing Medal icon import
+Add safe isolated Stripe checkout
