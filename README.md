@@ -195,3 +195,24 @@ Add free first upload and honest creator stats
 - Added /creator/upload
 - First free upload opens upload portal.
 - UI foundation for moderation workflow.
+
+
+# V29 Functional Uploads
+
+Changes:
+- `/creator/upload` is now functional.
+- Users must be signed in to submit.
+- Uploads thumbnail to Supabase Storage bucket `game-thumbnails`.
+- Uploads game ZIP to Supabase Storage bucket `game-files`.
+- Inserts a row into `public.game_submissions`.
+- Submission status starts as `pending`.
+- FDC Original is automatically true for `isaac.akinola122@gmail.com`.
+- Shows success/error messages instead of redirecting home.
+
+Required Supabase setup:
+- Public bucket: `game-files`
+- Public bucket: `game-thumbnails`
+- SQL: `supabase/game_submissions_uploads.sql`
+
+Commit summary:
+Add functional creator game uploads
