@@ -272,14 +272,15 @@ function getCreatorStats(games) {
   const officialGames = games.filter((game) => game.official);
   const communityGames = games.filter((game) => !game.official);
   const creatorGameCount = officialGames.length;
+  const libraryPlays = officialGames.reduce((sum, game) => sum + parsePlayCount(game.plays), 0);
 
   return {
     officialGames,
     communityGames,
     creatorGameCount,
     level: getCreatorLevel(creatorGameCount),
-    totalPlays: creatorGameCount * 1247 + communityGames.length * 133,
-    followers: 312 + creatorGameCount * 27,
+    libraryPlays,
+    followers: 0,
   };
 }
 
@@ -1039,6 +1040,7 @@ export default function HomePage() {
               <p>
                 Official FlashDust games show the FDC Original badge. Community uploads stay clearly marked
                 so players know what was made by FlashDust and what came from other creators.
+                Stats only show real connected values or existing game metadata.
               </p>
 
               <div className="level-progress">
@@ -1061,7 +1063,7 @@ export default function HomePage() {
           <div className="creator-stat-grid">
             <CreatorStat icon={<Gamepad2 size={20} />} value={creatorStats.officialGames.length} label="FDC Originals" />
             <CreatorStat icon={<Users size={20} />} value={creatorStats.followers.toLocaleString()} label="Followers" />
-            <CreatorStat icon={<BarChart3 size={20} />} value={creatorStats.totalPlays.toLocaleString()} label="Est. Plays" />
+            <CreatorStat icon={<BarChart3 size={20} />} value={creatorStats.libraryPlays.toLocaleString()} label="Listed Plays" />
             <CreatorStat icon={<Gem size={20} />} value="85/15" label="Future Split" />
           </div>
         </section>

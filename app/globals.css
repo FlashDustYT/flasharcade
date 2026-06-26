@@ -1005,3 +1005,18 @@ body {
     min-height: 220px;
   }
 }
+
+
+/* V27 honest stats + free first upload */
+.checkout-product-grid button:first-child {
+  border-color: rgba(155, 232, 112, .46);
+  background: rgba(155, 232, 112, .08);
+}
+
+.checkout-product-grid button:first-child strong {
+  color: #9be870;
+}
+
+.creator-stat span {
+  text-align: center;
+}

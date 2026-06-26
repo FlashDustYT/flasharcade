@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 
 const PRODUCTS = {
   game_upload: {
-    name: "FlashArcade Game Submission",
-    description: "Submit one browser game to FlashArcade for review.",
+    name: "FlashArcade Extra Game Submission",
+    description: "Submit an additional browser game to FlashArcade for review.",
     amount: 199,
   },
   featured_7: {

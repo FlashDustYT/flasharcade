@@ -173,3 +173,19 @@ Notes:
 
 Commit summary:
 Add discovery storefront rows
+
+
+# FlashArcade V27 Free First + Honest Stats
+
+Changes:
+- Creator checkout now includes a $0 first game submission option.
+- Paid upload is now labeled as an extra game upload.
+- Removed fake follower/play calculations from creator stats.
+- Creator stats now use:
+  - real official game count
+  - listed play metadata from official games
+  - followers set to 0 until the follower system is live
+- Added honest copy explaining stats are connected values or existing metadata only.
+
+Commit summary:
+Add free first upload and honest creator stats

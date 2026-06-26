@@ -5,10 +5,17 @@ import { useState } from "react";
 
 const PRODUCTS = [
   {
+    key: "free_first_upload",
+    title: "First Game Free",
+    price: "$0",
+    text: "Your first FlashArcade game submission is free. No Stripe checkout needed.",
+    free: true,
+  },
+  {
     key: "game_upload",
-    title: "Submit Game",
+    title: "Extra Game Upload",
     price: "$1.99",
-    text: "Submit one browser game to FlashArcade for review.",
+    text: "Submit another browser game to FlashArcade for review.",
   },
   {
     key: "featured_7",
@@ -28,6 +35,13 @@ export default function CreatorCheckoutPage() {
   const [loading, setLoading] = useState("");
 
   async function startCheckout(productKey) {
+    const product = PRODUCTS.find((item) => item.key === productKey);
+
+    if (product?.free) {
+      window.location.href = "/?free_upload=true#library";
+      return;
+    }
+
     try {
       setLoading(productKey);
 
@@ -58,8 +72,8 @@ export default function CreatorCheckoutPage() {
         <span className="pill">Creator Studio</span>
         <h1>Publish on FlashArcade</h1>
         <p>
-          This is the safe Stripe test page. It does not touch the homepage code,
-          so your main arcade stays stable while we test payments.
+          New creators get their first game submission free. Paid options are for extra uploads
+          and featured placement once creators want more promotion.
         </p>
 
         <div className="checkout-product-grid">
