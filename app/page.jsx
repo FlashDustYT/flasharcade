@@ -31,11 +31,6 @@ import {
   Save,
   Edit3,
   CreditCard,
-  BadgeCheck,
-  Users,
-  BarChart3,
-  MessageSquare,
-  Gem,
 } from "lucide-react";
 
 const MAIN_SITE = "https://flashdust.dev";
@@ -233,50 +228,6 @@ function setStoredJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-
-const creatorLevels = [
-  { name: "Rookie Creator", badge: "🥉", minGames: 1, nextAt: 5 },
-  { name: "Indie Creator", badge: "🥈", minGames: 5, nextAt: 15 },
-  { name: "Veteran Creator", badge: "🥇", minGames: 15, nextAt: 50 },
-  { name: "Legend Creator", badge: "💎", minGames: 50, nextAt: 100 },
-  { name: "Arcade Master", badge: "👑", minGames: 100, nextAt: 100 },
-];
-
-function getCreatorLevel(gameCount) {
-  const level = [...creatorLevels].reverse().find((item) => gameCount >= item.minGames) || {
-    name: "New Creator",
-    badge: "🎮",
-    minGames: 0,
-    nextAt: 1,
-  };
-
-  const nextAt = level.nextAt;
-  const progress = nextAt === level.minGames
-    ? 100
-    : Math.min(100, Math.round(((gameCount - level.minGames) / (nextAt - level.minGames)) * 100));
-
-  return {
-    ...level,
-    progress: Math.max(0, progress),
-    remaining: Math.max(0, nextAt - gameCount),
-  };
-}
-
-function getCreatorStats(games) {
-  const officialGames = games.filter((game) => game.official);
-  const communityGames = games.filter((game) => !game.official);
-  const creatorGameCount = officialGames.length;
-
-  return {
-    officialGames,
-    communityGames,
-    creatorGameCount,
-    level: getCreatorLevel(creatorGameCount),
-    totalPlays: creatorGameCount * 1247 + communityGames.length * 133,
-    followers: 312 + creatorGameCount * 27,
-  };
-}
-
 function normalizeUrl(url) {
   if (!url) return "#";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -461,8 +412,6 @@ export default function HomePage() {
     loadCloudRatings();
   }, [allGames, session?.user?.id]);
 
-
-  const creatorStats = useMemo(() => getCreatorStats(allGames), [allGames]);
 
   const filteredGames = useMemo(() => {
     return allGames.filter((game) => {
@@ -899,67 +848,6 @@ export default function HomePage() {
           </button>
         </section>
 
-        <section className="creator-hub-panel" id="creator-hub">
-          <div className="creator-profile-card">
-            <div className="creator-avatar">FD</div>
-            <div>
-              <span className="pill">Creator Profile</span>
-              <h2>FlashDust</h2>
-              <div className="creator-badge-line">
-                <span className="creator-level-badge">
-                  {creatorStats.level.badge} {creatorStats.level.name}
-                </span>
-                <span className="official-badge">
-                  <BadgeCheck size={15} /> FDC Original Publisher
-                </span>
-              </div>
-              <p>
-                Official FlashDust games show the FDC Original badge. Community uploads stay clearly marked
-                so players know what was made by FlashDust and what came from other creators.
-              </p>
-
-              <div className="level-progress">
-                <div>
-                  <strong>{creatorStats.creatorGameCount}</strong>
-                  <span> official games published</span>
-                </div>
-                <div className="progress-track">
-                  <span style={{ width: `${creatorStats.level.progress}%` }} />
-                </div>
-                <small>
-                  {creatorStats.level.remaining > 0
-                    ? `${creatorStats.level.remaining} more official game${creatorStats.level.remaining === 1 ? "" : "s"} until the next level`
-                    : "Top creator level reached"}
-                </small>
-              </div>
-            </div>
-          </div>
-
-          <div className="creator-stat-grid">
-            <CreatorStat icon={<Gamepad2 size={20} />} value={creatorStats.officialGames.length} label="FDC Originals" />
-            <CreatorStat icon={<Users size={20} />} value={creatorStats.followers.toLocaleString()} label="Followers" />
-            <CreatorStat icon={<BarChart3 size={20} />} value={creatorStats.totalPlays.toLocaleString()} label="Est. Plays" />
-            <CreatorStat icon={<Gem size={20} />} value="85/15" label="Future Split" />
-          </div>
-        </section>
-
-        <section className="marketplace-foundation">
-          <div>
-            <span className="pill">Marketplace Foundation</span>
-            <h2>Revenue split groundwork</h2>
-            <p>
-              Paid games are not activated yet, but the platform is now designed around a future
-              creator marketplace: creators can sell games, FlashArcade can keep 15%, and creators
-              can receive 85% through Stripe Connect once verification and payouts are ready.
-            </p>
-          </div>
-
-          <div className="split-card">
-            <div><strong>85%</strong><span>Creator</span></div>
-            <div><strong>15%</strong><span>FlashArcade</span></div>
-          </div>
-        </section>
-
         <section className="toolbar" id="library">
           <div>
             <h2>Game Library</h2>
@@ -1130,11 +1018,6 @@ function GameCard({ game, ratingData, rateGame, launchGame, removeCommunityGame 
           })()}
         </div>
 
-        <div className="mini-review-row">
-          <MessageSquare size={15} />
-          <span>Reviews coming soon</span>
-        </div>
-
         {game.playable ? (
           <button className="play-link" onClick={() => launchGame(game)}>
             Play Now <ExternalLink size={16} />
@@ -1168,17 +1051,6 @@ function Stat({ icon, value, label }) {
         <strong>{value}</strong>
         <span>{label}</span>
       </div>
-    </div>
-  );
-}
-
-
-function CreatorStat({ icon, value, label }) {
-  return (
-    <div className="creator-stat">
-      {icon}
-      <strong>{value}</strong>
-      <span>{label}</span>
     </div>
   );
 }

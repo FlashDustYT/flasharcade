@@ -131,22 +131,3 @@ Changes:
 
 Commit summary:
 Fix game rating prerender error
-
-
-# FlashArcade V23 Creator Update
-
-Changes:
-- Added Creator Level system UI
-- Added FlashDust creator profile panel
-- Added FDC Original badge language for official games
-- Added Community badge for non-FDC games
-- Added Creator stats panel
-- Added marketplace revenue-split foundation display (85% creator / 15% FlashArcade)
-- Added review placeholder row on game cards
-- Added Supabase SQL foundation for creator profiles, reviews, and future payouts
-
-Optional Supabase setup:
-Run `supabase/creator_marketplace_foundation.sql` in Supabase SQL Editor.
-
-Commit summary:
-Add creator levels and marketplace foundation
