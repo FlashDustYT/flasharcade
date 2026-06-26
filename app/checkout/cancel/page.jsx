@@ -8,15 +8,9 @@ export default function CheckoutCancelPage() {
         <CreditCard size={58} />
         <span className="pill">Checkout Cancelled</span>
         <h1>No worries.</h1>
-        <p>
-          The payment was cancelled and you were not charged. You can return to
-          FlashArcade whenever you're ready.
-        </p>
-
+        <p>The payment was cancelled and you were not charged.</p>
         <div className="checkout-actions">
-          <Link href="/" className="button primary">
-            <ArrowLeft size={19} /> Back to FlashArcade
-          </Link>
+          <Link href="/" className="button primary"><ArrowLeft size={19} /> Back to FlashArcade</Link>
         </div>
       </section>
     </main>

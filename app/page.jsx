@@ -531,21 +531,13 @@ export default function HomePage() {
   async function startCheckout(productKey = "game_upload") {
     try {
       setCheckoutLoading(true);
-
       const response = await fetch("/api/create-checkout-session", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productKey }),
       });
-
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Checkout failed.");
-      }
-
+      if (!response.ok) throw new Error(data?.error || "Checkout failed.");
       window.location.href = data.url;
     } catch (error) {
       alert(error.message || "Could not start checkout.");
@@ -830,12 +822,8 @@ export default function HomePage() {
           <div>
             <span className="pill">Creator Studio</span>
             <h2>Publish on FlashArcade</h2>
-            <p>
-              Submit a browser game for review, or promote a game with featured placement.
-              Payments are handled securely by Stripe.
-            </p>
+            <p>Submit a browser game for review, or promote a game with featured placement. Payments are handled securely by Stripe.</p>
           </div>
-
           <div className="price-grid">
             <button onClick={() => startCheckout("game_upload")} disabled={checkoutLoading}>
               <CreditCard size={22} />

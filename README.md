@@ -84,41 +84,17 @@ Commit summary:
 Fix Legacy League embedded asset loading
 
 
-# FlashArcade V15 Stripe Starter
+# FlashArcade V17 Clean Stripe Build
 
 Changes:
-- Added Stripe dependencies
-- Added `/api/create-checkout-session` API route
-- Added Stripe Checkout buttons for:
-  - Game Submission: $1.99
-  - Featured 7 Days: $4.99
-  - Featured 30 Days: $9.99
-- Added checkout success page
-- Added checkout cancel page
-- Added Creator Studio monetization panel
-- Game submission card now starts Stripe Checkout
-- Vercel installs Stripe automatically from package.json
-
-Required Vercel environment variables:
-- NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-- STRIPE_SECRET_KEY
-- NEXT_PUBLIC_SITE_URL=https://arcade.flashdust.dev
+- Rebuilt from last stable pre-Stripe version
+- Cleanly added Stripe dependencies
+- Added checkout API route
+- Added success/cancel checkout pages
+- Added monetization panel
+- Fixed React import syntax
+- Fixed lucide-react imports for CreditCard, Rocket, and ShieldCheck
+- Keeps Google login, admin mode, Legacy League fix, optimization, and FDC badges
 
 Commit summary:
-Add Stripe checkout starter flow
-
-
-Patch:
-- Fixed missing lucide-react imports for Stripe checkout UI.
-
-
-# FlashArcade V16 Build Fix
-
-Changes:
-- Force-fixed missing Stripe checkout icon imports in app/page.jsx
-- Confirmed CreditCard, Rocket, and ShieldCheck are imported from lucide-react
-- Kept Stripe checkout starter flow
-- Added this README update so GitHub Desktop should detect changed files
-
-Commit summary:
-Fix Stripe build import error
+Clean rebuild Stripe checkout flow
