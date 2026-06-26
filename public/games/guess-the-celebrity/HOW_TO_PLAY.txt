@@ -1,0 +1,43 @@
+HOW TO PLAY: GUESS THE CELEBRITY
+
+Guess the Celebrity is a fast, simple trivia game where you get three clues and try to name the famous person, group, creator, athlete, actor, singer, or icon.
+
+GOAL
+Score as many points as possible before you run out of lives.
+
+HOW EACH ROUND WORKS
+1. Read the three hints on the screen.
+2. Guess the celebrity by typing their name and pressing Guess.
+3. You can also tap one of the quick-answer buttons if you see the right name.
+4. If you are correct, you earn points and move to the next round.
+5. If you are wrong or the timer runs out, you lose a life.
+
+SCORING
+Correct answers give you points.
+Faster answers give you bonus points.
+Long streaks give you bigger bonuses.
+Your best score is saved on the same device.
+
+LIVES AND SKIPS
+You start with 3 lives.
+Wrong answers and time-outs cost 1 life.
+You start with 3 skips.
+Skipping reveals the answer and moves you to a new round, but it resets your streak.
+
+MODES
+Chill Mode gives you more time and is best for casual play.
+Blitz Mode gives you less time and higher pressure.
+Daily Mix gives everyone the same seeded run for the day.
+Shuffle Round instantly swaps in a fresh celebrity.
+
+SOUNDS AND EFFECTS
+Buttons have click sounds.
+Correct answers play a success sound and confetti.
+Wrong answers play a miss sound.
+You can mute sounds with the Sound button.
+
+WHY IT STAYS FRESH
+The game uses a curated celebrity clue engine with 100,000+ possible clue mixes, so rounds can feel different even when familiar names come back.
+
+TIP
+Partial names often work. If the answer is Taylor Swift, typing Taylor is enough.

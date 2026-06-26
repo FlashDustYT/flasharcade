@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<rect width="900" height="520" fill="#0b0b0b"/>
+<circle cx="680" cy="150" r="120" fill="#ff7a00" opacity=".25"/>
+<rect x="55" y="60" width="790" height="400" rx="42" fill="#151515" stroke="#ff7a00" stroke-width="5"/>
+<text x="95" y="165" fill="#fff" font-family="Arial Black, Arial" font-size="64">GUESS THE</text>
+<text x="95" y="245" fill="#ff7a00" font-family="Arial Black, Arial" font-size="82">CELEBRITY</text>
+<text x="100" y="320" fill="#cfcfcf" font-family="Arial" font-size="34">Can you name the star?</text>
+<text x="620" y="330" fill="#ffb02e" font-family="Arial Black, Arial" font-size="140">?</text>
+</svg>

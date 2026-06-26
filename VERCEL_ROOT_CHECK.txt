@@ -1,0 +1,4 @@
+IMPORTANT:
+Upload/commit the CONTENTS of this folder to your GitHub repo root.
+The repo root must contain package.json, app/, public/, next.config.js.
+Do not upload a parent folder that contains this folder inside it.

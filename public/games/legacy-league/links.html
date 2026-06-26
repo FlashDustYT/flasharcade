@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Legacy League Links</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #f3eee7;
+        color: #17231c;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main {
+        width: min(720px, calc(100% - 32px));
+        background: #fffaf2;
+        border: 1px solid #e6d8c8;
+        border-radius: 18px;
+        box-shadow: 0 22px 55px rgba(55, 39, 25, 0.14);
+        padding: 24px;
+      }
+      a, code {
+        color: #0f766e;
+        font-weight: 800;
+      }
+      .links {
+        display: grid;
+        gap: 14px;
+        margin-top: 20px;
+      }
+      .card {
+        background: #f7efe5;
+        border: 1px solid #ead9c6;
+        border-radius: 14px;
+        padding: 16px;
+      }
+      p {
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Legacy League Links</h1>
+      <p>Use the desktop link on this computer. For a phone, run <code>start-mobile-server.bat</code> and use the mobile link it prints.</p>
+      <div class="links">
+        <section class="card">
+          <h2>Desktop</h2>
+          <p><a href="./index.html">Open Legacy League</a></p>
+        </section>
+        <section class="card">
+          <h2>Mobile</h2>
+          <p>Double-click <code>start-mobile-server.bat</code>, keep the window open, then open the printed phone link on the same Wi-Fi.</p>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
