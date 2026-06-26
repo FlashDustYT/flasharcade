@@ -71,3 +71,14 @@ Changes:
 
 Commit summary:
 Add FDC badge to official games
+
+
+# FlashArcade V14 Legacy League Asset Fix
+
+Changes:
+- Fixed Legacy League asset paths so CSS/JS/images load correctly from `/games/legacy-league/`
+- Updated embedded Legacy League route to load `/games/legacy-league/index.html`
+- Keeps FDC badges and prior V13 changes
+
+Commit summary:
+Fix Legacy League embedded asset loading

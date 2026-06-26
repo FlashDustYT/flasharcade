@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
-const GAME_URL = "/games/legacy-league/";
+const GAME_URL = "/games/legacy-league/index.html";
 
 export default function LegacyLeaguePage() {
   return (
