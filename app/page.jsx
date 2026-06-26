@@ -814,6 +814,16 @@ export default function HomePage() {
       <div className="bg-orbit two" />
       <div className="scanlines" />
 
+      
+      <button
+        className="theme-toggle-floating"
+        type="button"
+        onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
+        aria-label="Toggle theme"
+      >
+        {themeMode === "dark" ? "Light" : "Dark"}
+      </button>
+
       {profileOpen && (
         <section className="modal-backdrop" onClick={() => setProfileOpen(false)}>
           <div className="login-modal" onClick={(event) => event.stopPropagation()}>
@@ -989,14 +999,7 @@ export default function HomePage() {
                 )}
               </div>
             ) : (
-              <button
-              className="theme-toggle-button"
-              type="button"
-              onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
-            >
-              {themeMode === "dark" ? "Light Mode" : "Dark Mode"}
-            </button>
-            <button className="login-button" onClick={() => setProfileOpen(true)}>
+<button className="login-button" onClick={() => setProfileOpen(true)}>
                 <LogIn size={16} /> {authLoading ? "Checking..." : "Login"}
               </button>
             )}

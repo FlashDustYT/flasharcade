@@ -270,3 +270,14 @@ Changes:
 
 Commit summary:
 Refresh FlashPortal UI and add official game thumbnails
+
+
+# V32.1 Build Fix
+
+Fixes:
+- Fixed invalid JSX caused by the theme toggle being inserted inside the login conditional.
+- Theme toggle is now a safe floating button.
+- Keeps V32 UI refresh and official thumbnails.
+
+Commit summary:
+Fix FlashPortal theme toggle JSX

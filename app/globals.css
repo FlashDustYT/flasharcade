@@ -1451,3 +1451,19 @@ html[data-theme="light"] .play-button {
     z-index: 50;
   }
 }
+
+
+.theme-toggle-floating {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 999;
+  border: 1px solid var(--portal-line);
+  background: color-mix(in srgb, var(--portal-surface) 92%, transparent);
+  color: var(--portal-text);
+  border-radius: 999px;
+  padding: 12px 16px;
+  font-weight: 1000;
+  box-shadow: 0 18px 45px rgba(0,0,0,.28);
+  cursor: pointer;
+}
