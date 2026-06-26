@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
+
 import {
   Search,
   Play,
   Trophy,
-  Flame,
   Gamepad2,
   Sparkles,
   ExternalLink,
@@ -17,19 +18,20 @@ import {
   PlusCircle,
   Lock,
   Medal,
-  Crown,
   Volume2,
   VolumeX,
   Music,
   Music2,
   Star,
   ShieldCheck,
-  Award,
+  Upload,
+  X,
+  Cloud,
 } from "lucide-react";
 
 const MAIN_SITE = "https://flashdust.dev";
 
-const games = [
+const baseGames = [
   {
     id: "how-many-rings",
     title: "How Many Rings?",
@@ -40,8 +42,9 @@ const games = [
     tag: "Featured",
     image: "rings",
     url: "/how-many-rings",
-    accent: "gold",
+    accent: "cyan",
     playable: true,
+    official: true,
   },
   {
     id: "legacy-league",
@@ -53,23 +56,24 @@ const games = [
     tag: "Coming Soon",
     image: "legacy",
     url: "#",
-    accent: "purple",
+    accent: "violet",
     playable: false,
+    official: true,
   },
 ];
 
-const categories = ["All", "Playable", "Sports Strategy", "Sports Simulation", "Coming Soon"];
+const categories = ["All", "Playable", "Sports Strategy", "Sports Simulation", "Community", "Coming Soon"];
 
 const defaultAchievements = [
   {
-    id: "first-login",
-    title: "Signed to the Arcade",
-    text: "Create a FlashArcade local player profile.",
+    id: "first-profile",
+    title: "Arcade Identity",
+    text: "Create a FlashArcade local profile.",
     unlocked: false,
   },
   {
     id: "first-play",
-    title: "First Tip-Off",
+    title: "First Play",
     text: "Launch How Many Rings from FlashArcade.",
     unlocked: false,
   },
@@ -77,6 +81,12 @@ const defaultAchievements = [
     id: "first-rating",
     title: "Critic Mode",
     text: "Rate How Many Rings.",
+    unlocked: false,
+  },
+  {
+    id: "first-upload",
+    title: "Game Curator",
+    text: "Add a community game to your arcade library.",
     unlocked: false,
   },
 ];
@@ -91,16 +101,16 @@ function playClickSound(enabled) {
     const gain = ctx.createGain();
 
     osc.type = "square";
-    osc.frequency.setValueAtTime(760, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(420, ctx.currentTime + 0.055);
+    osc.frequency.setValueAtTime(920, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(340, ctx.currentTime + 0.06);
 
-    gain.gain.setValueAtTime(0.035, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+    gain.gain.setValueAtTime(0.045, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start();
-    osc.stop(ctx.currentTime + 0.075);
+    osc.stop(ctx.currentTime + 0.085);
   } catch {}
 }
 
@@ -111,9 +121,9 @@ function createArcadeAmbience() {
   const master = ctx.createGain();
   const filter = ctx.createBiquadFilter();
 
-  master.gain.value = 0.045;
+  master.gain.value = 0.04;
   filter.type = "lowpass";
-  filter.frequency.value = 1200;
+  filter.frequency.value = 1450;
 
   filter.connect(master);
   master.connect(ctx.destination);
@@ -121,24 +131,24 @@ function createArcadeAmbience() {
   const bass = ctx.createOscillator();
   const bassGain = ctx.createGain();
   bass.type = "triangle";
-  bass.frequency.value = 55;
-  bassGain.gain.value = 0.055;
+  bass.frequency.value = 49;
+  bassGain.gain.value = 0.045;
   bass.connect(bassGain);
   bassGain.connect(filter);
 
   const pad = ctx.createOscillator();
   const padGain = ctx.createGain();
   pad.type = "sine";
-  pad.frequency.value = 220;
-  padGain.gain.value = 0.028;
+  pad.frequency.value = 196;
+  padGain.gain.value = 0.024;
   pad.connect(padGain);
   padGain.connect(filter);
 
   const pulse = ctx.createOscillator();
   const pulseGain = ctx.createGain();
   pulse.type = "square";
-  pulse.frequency.value = 110;
-  pulseGain.gain.value = 0.012;
+  pulse.frequency.value = 98;
+  pulseGain.gain.value = 0.01;
   pulse.connect(pulseGain);
   pulseGain.connect(filter);
 
@@ -146,18 +156,20 @@ function createArcadeAmbience() {
   pad.start();
   pulse.start();
 
-  const notes = [55, 65.41, 73.42, 82.41, 98, 110];
+  const notes = [49, 58.27, 65.41, 73.42, 87.31, 98];
   let step = 0;
 
   const interval = setInterval(() => {
     const now = ctx.currentTime;
     const note = notes[step % notes.length];
+
     bass.frequency.exponentialRampToValueAtTime(note, now + 0.25);
-    pad.frequency.exponentialRampToValueAtTime(note * 4, now + 0.4);
-    pulseGain.gain.setValueAtTime(0.02, now);
-    pulseGain.gain.exponentialRampToValueAtTime(0.004, now + 0.16);
+    pad.frequency.exponentialRampToValueAtTime(note * 4, now + 0.35);
+    pulseGain.gain.setValueAtTime(0.018, now);
+    pulseGain.gain.exponentialRampToValueAtTime(0.003, now + 0.16);
+
     step += 1;
-  }, 700);
+  }, 640);
 
   return {
     stop() {
@@ -189,23 +201,98 @@ function setStoredJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function normalizeUrl(url) {
+  if (!url) return "#";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `https://${url}`;
+}
+
 export default function HomePage() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
-  const [loginOpen, setLoginOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [addGameOpen, setAddGameOpen] = useState(false);
   const [clickSoundOn, setClickSoundOn] = useState(false);
   const [musicOn, setMusicOn] = useState(false);
   const [player, setPlayer] = useState(null);
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [username, setUsername] = useState("");
+  const [communityGames, setCommunityGames] = useState([]);
   const [ratingData, setRatingData] = useState({ total: 0, count: 0, myRating: 0 });
   const [achievements, setAchievements] = useState(defaultAchievements);
+  const [newGame, setNewGame] = useState({
+    title: "",
+    subtitle: "",
+    genre: "Community",
+    url: "",
+  });
   const musicRef = useRef(null);
-  const featured = games[0];
+  const featured = baseGames[0];
 
   useEffect(() => {
     setPlayer(getStoredJson("flasharcade-player", null));
     setRatingData(getStoredJson("flasharcade-rating-how-many-rings", { total: 0, count: 0, myRating: 0 }));
     setAchievements(getStoredJson("flasharcade-achievements", defaultAchievements));
+    setCommunityGames(getStoredJson("flasharcade-community-games", []));
+
+    function unlockLocalAchievement(id) {
+      const stored = getStoredJson("flasharcade-achievements", defaultAchievements);
+      const next = stored.map((achievement) =>
+        achievement.id === id ? { ...achievement, unlocked: true } : achievement
+      );
+
+      setAchievements(next);
+      setStoredJson("flasharcade-achievements", next);
+    }
+
+    function userToProfile(user) {
+      return {
+        name:
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.email?.split("@")[0] ||
+          "FlashArcade Player",
+        email: user.email || "",
+        avatar: user.user_metadata?.avatar_url || "",
+        provider: "Google",
+        id: user.id,
+      };
+    }
+
+    async function loadSession() {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session || null);
+
+      if (data.session?.user) {
+        const profile = userToProfile(data.session.user);
+        setPlayer(profile);
+        setStoredJson("flasharcade-player", profile);
+        unlockLocalAchievement("first-profile");
+      }
+
+      setAuthLoading(false);
+    }
+
+    loadSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession || null);
+
+      if (nextSession?.user) {
+        const profile = userToProfile(nextSession.user);
+        setPlayer(profile);
+        setStoredJson("flasharcade-player", profile);
+        unlockLocalAchievement("first-profile");
+      } else {
+        setPlayer(null);
+        localStorage.removeItem("flasharcade-player");
+      }
+    });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -235,8 +322,24 @@ export default function HomePage() {
     };
   }, [musicOn]);
 
+  const allGames = useMemo(() => {
+    return [
+      ...baseGames,
+      ...communityGames.map((game) => ({
+        ...game,
+        playable: true,
+        status: "Community",
+        plays: "Added",
+        tag: "Community",
+        image: "community",
+        accent: "pink",
+        official: false,
+      })),
+    ];
+  }, [communityGames]);
+
   const filteredGames = useMemo(() => {
-    return games.filter((game) => {
+    return allGames.filter((game) => {
       const q = query.toLowerCase();
       const matchesQuery =
         game.title.toLowerCase().includes(q) ||
@@ -247,14 +350,45 @@ export default function HomePage() {
         category === "All" ||
         game.genre === category ||
         game.status === category ||
-        game.tag === category;
+        game.tag === category ||
+        (category === "Playable" && game.playable);
 
       return matchesQuery && matchesCategory;
     });
-  }, [query, category]);
+  }, [query, category, allGames]);
 
   const averageRating = ratingData.count ? (ratingData.total / ratingData.count).toFixed(1) : "Unrated";
   const unlockedCount = achievements.filter((item) => item.unlocked).length;
+
+  function profileFromUser(user) {
+    return {
+      name:
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email?.split("@")[0] ||
+        "FlashArcade Player",
+      email: user.email || "",
+      avatar: user.user_metadata?.avatar_url || "",
+      provider: "Google",
+      id: user.id,
+    };
+  }
+
+  async function signInWithGoogle() {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    setPlayer(null);
+    setSession(null);
+    localStorage.removeItem("flasharcade-player");
+  }
 
   function unlockAchievement(id) {
     const next = achievements.map((achievement) =>
@@ -265,8 +399,15 @@ export default function HomePage() {
     setStoredJson("flasharcade-achievements", next);
   }
 
-  function randomGame() {
-    launchGame();
+  function launchGame(game = featured) {
+    if (game.id === "how-many-rings") unlockAchievement("first-play");
+
+    if (game.url.startsWith("/")) {
+      window.location.href = game.url;
+      return;
+    }
+
+    window.open(game.url, "_blank", "noopener,noreferrer");
   }
 
   function createLocalProfile(event) {
@@ -280,18 +421,18 @@ export default function HomePage() {
 
     setPlayer(localPlayer);
     setStoredJson("flasharcade-player", localPlayer);
-    setLoginOpen(false);
-    unlockAchievement("first-login");
+    setProfileOpen(false);
+    unlockAchievement("first-profile");
   }
 
   function logout() {
+    if (session) {
+      signOut();
+      return;
+    }
+
     setPlayer(null);
     localStorage.removeItem("flasharcade-player");
-  }
-
-  function launchGame() {
-    unlockAchievement("first-play");
-    window.location.href = featured.url;
   }
 
   function rateGame(stars) {
@@ -307,35 +448,111 @@ export default function HomePage() {
     unlockAchievement("first-rating");
   }
 
+  function addCommunityGame(event) {
+    event.preventDefault();
+
+    const title = newGame.title.trim().slice(0, 46);
+    const subtitle = newGame.subtitle.trim().slice(0, 120);
+    const url = normalizeUrl(newGame.url.trim());
+
+    if (!title || !url || url === "#") return;
+
+    const game = {
+      id: `community-${Date.now()}`,
+      title,
+      subtitle: subtitle || "A community-added browser game.",
+      genre: newGame.genre.trim().slice(0, 32) || "Community",
+      url,
+    };
+
+    const next = [game, ...communityGames].slice(0, 24);
+    setCommunityGames(next);
+    setStoredJson("flasharcade-community-games", next);
+    setNewGame({ title: "", subtitle: "", genre: "Community", url: "" });
+    setAddGameOpen(false);
+    unlockAchievement("first-upload");
+  }
+
+  function removeCommunityGame(id) {
+    const next = communityGames.filter((game) => game.id !== id);
+    setCommunityGames(next);
+    setStoredJson("flasharcade-community-games", next);
+  }
+
   return (
     <main>
       <div className="bg-grid" />
       <div className="bg-orbit one" />
       <div className="bg-orbit two" />
+      <div className="scanlines" />
 
-      {loginOpen && (
-        <section className="modal-backdrop" onClick={() => setLoginOpen(false)}>
+      {profileOpen && (
+        <section className="modal-backdrop" onClick={() => setProfileOpen(false)}>
           <div className="login-modal" onClick={(event) => event.stopPropagation()}>
-            <button className="close" onClick={() => setLoginOpen(false)}>×</button>
+            <button className="close" onClick={() => setProfileOpen(false)}>×</button>
             <div className="modal-icon"><User size={30} /></div>
             <h2>FlashArcade Profile</h2>
-            <p>Create a local player profile for achievements. Real Google/Discord login needs Firebase or Supabase connected next.</p>
+            <p>Sign in with Google to keep your FlashArcade account across visits. Local profile is still here as a backup.</p>
+
+            <div className="profile-form">
+              <button type="button" onClick={signInWithGoogle}>
+                Continue with Google
+              </button>
+            </div>
+
+            <div className="divider-text">or use this device only</div>
 
             <form className="profile-form" onSubmit={createLocalProfile}>
               <input
                 value={username}
-                onChange={(event) => setUsername(event.target.value)}
+                onChange={(event) => setUsername(event.target.value))}
                 placeholder="Choose a display name"
                 maxLength={24}
               />
-              <button type="submit">Create Local Profile</button>
+              <button type="submit" className="secondary-profile-button">Create Local Profile</button>
             </form>
 
             <div className="auth-disabled">
-              <button disabled>Google Login Coming Soon</button>
-              <button disabled>Discord Login Coming Soon</button>
-              <button disabled>GitHub Login Coming Soon</button>
+              <button disabled><Cloud size={16} /> GitHub Login Coming Next</button>
             </div>
+          </div>
+        </section>
+      )}
+
+      {addGameOpen && (
+        <section className="modal-backdrop" onClick={() => setAddGameOpen(false)}>
+          <div className="login-modal add-modal" onClick={(event) => event.stopPropagation()}>
+            <button className="close" onClick={() => setAddGameOpen(false)}>×</button>
+            <div className="modal-icon"><Upload size={30} /></div>
+            <h2>Add Game</h2>
+            <p>Add a browser game link to your local FlashArcade library. It will stay saved on this device.</p>
+
+            <form className="profile-form" onSubmit={addCommunityGame}>
+              <input
+                value={newGame.title}
+                onChange={(event) => setNewGame({ ...newGame, title: event.target.value })}
+                placeholder="Game title"
+                maxLength={46}
+              />
+              <input
+                value={newGame.url}
+                onChange={(event) => setNewGame({ ...newGame, url: event.target.value })}
+                placeholder="Game URL"
+              />
+              <input
+                value={newGame.genre}
+                onChange={(event) => setNewGame({ ...newGame, genre: event.target.value })}
+                placeholder="Genre"
+                maxLength={32}
+              />
+              <textarea
+                value={newGame.subtitle}
+                onChange={(event) => setNewGame({ ...newGame, subtitle: event.target.value })}
+                placeholder="Short description"
+                maxLength={120}
+              />
+              <button type="submit">Add Game to Arcade</button>
+            </form>
           </div>
         </section>
       )}
@@ -358,12 +575,13 @@ export default function HomePage() {
               {musicOn ? <Music2 size={16} /> : <Music size={16} />}
             </button>
             {player ? (
-              <button className="login-button" onClick={logout}>
-                <User size={16} /> {player.name}
+              <button className="login-button" onClick={logout} title="Click to sign out">
+                {player.avatar ? <img className="nav-avatar" src={player.avatar} alt="" /> : <User size={16} />}
+                {player.name}
               </button>
             ) : (
-              <button className="login-button" onClick={() => setLoginOpen(true)}>
-                <LogIn size={16} /> Login
+              <button className="login-button" onClick={() => setProfileOpen(true)}>
+                <LogIn size={16} /> {authLoading ? "Checking..." : "Login"}
               </button>
             )}
           </nav>
@@ -373,36 +591,39 @@ export default function HomePage() {
           <div className="hero-copy">
             <div className="eyebrow">
               <Sparkles size={16} />
-              FlashDust Games Storefront
+              FlashDust Game Portal
             </div>
 
             <h1>
-              Your own arcade.
-              <span>Your own universe.</span>
+              Neon games.
+              <span>Built to play.</span>
             </h1>
 
             <p>
-              The official home for FlashDust games, browser experiments,
-              stream challenges, and future releases.
+              The official home for FlashDust games, community links,
+              browser experiments, and future releases.
             </p>
 
             <div className="hero-actions">
-              <button className="button primary" onClick={launchGame}>
+              <button className="button primary" onClick={() => launchGame(featured)}>
                 <Play size={20} /> Play How Many Rings
               </button>
-              <button className="button secondary" onClick={randomGame}>
+              <button className="button secondary" onClick={() => launchGame(featured)}>
                 <Dice5 size={20} /> Random Playable Game
+              </button>
+              <button className="button ghost" onClick={() => setAddGameOpen(true)}>
+                <PlusCircle size={20} /> Add Game
               </button>
             </div>
 
             <div className="stats">
-              <Stat icon={<Gamepad2 />} value="1" label="Playable Game" />
+              <Stat icon={<Gamepad2 />} value={allGames.filter((game) => game.playable).length} label="Playable Games" />
               <Stat icon={<Trophy />} value={unlockedCount} label="Achievements" />
               <Stat icon={<Star />} value={averageRating} label="Player Rating" />
             </div>
           </div>
 
-          <button className="featured-card" onClick={launchGame}>
+          <button className="featured-card" onClick={() => launchGame(featured)}>
             <GameArt type={featured.image} />
             <div className="featured-info">
               <span className="pill">{featured.tag}</span>
@@ -419,7 +640,7 @@ export default function HomePage() {
         <section className="toolbar" id="library">
           <div>
             <h2>Game Library</h2>
-            <p>How Many Rings? is playable now. Legacy League is the next future project.</p>
+            <p>How Many Rings? is playable now. Legacy League is the next future project. Added games save on this device.</p>
           </div>
 
           <div className="search-box">
@@ -447,21 +668,26 @@ export default function HomePage() {
 
         <section className="game-grid">
           {filteredGames.map((game) => (
-            <GameCard game={game} key={game.id} ratingData={ratingData} rateGame={rateGame} launchGame={launchGame} />
+            <GameCard
+              game={game}
+              key={game.id}
+              ratingData={ratingData}
+              rateGame={rateGame}
+              launchGame={launchGame}
+              removeCommunityGame={removeCommunityGame}
+            />
           ))}
 
-          <article className="game-card submit-card">
+          <article className="game-card add-game-card" onClick={() => setAddGameOpen(true)}>
             <div className="submit-lock">
               <PlusCircle size={76} />
-              <Lock size={28} className="lock" />
             </div>
             <div className="game-content">
-              <span className="pill">Creator Tools</span>
+              <span className="pill">Community</span>
               <h3>Add Your Own Game</h3>
-              <p>Upload your own web game to FlashArcade and get a store page.</p>
-              <button className="play-link disabled" disabled>Coming Soon</button>
+              <p>Add a browser game link to your local arcade library.</p>
+              <button className="play-link" type="button">Add Game</button>
             </div>
-            <div className="hover-message">Coming Soon</div>
           </article>
         </section>
 
@@ -470,7 +696,7 @@ export default function HomePage() {
             <div>
               <span className="pill">Player Progress</span>
               <h2>Achievements</h2>
-              <p>Achievements unlock from actions on FlashArcade. Real score-based achievements can be connected once the game sends results back.</p>
+              <p>Achievements unlock from actions on FlashArcade. Cloud achievements need Supabase/Firebase later.</p>
             </div>
             <Medal size={54} />
           </div>
@@ -493,18 +719,18 @@ export default function HomePage() {
 
         <section className="roadmap">
           <div>
-            <span className="pill">Coming Next</span>
-            <h2>FlashArcade Roadmap</h2>
+            <span className="pill">Cloud Upgrade Path</span>
+            <h2>Real Login Comes Next</h2>
             <p>
-              Next upgrades can include real accounts, cloud leaderboards, Google login,
-              automatic score syncing, game pages, and creator-uploaded games.
+              To make Google/GitHub login, shared game uploads, global ratings, and saved cloud profiles,
+              FlashArcade needs Supabase or Firebase connected.
             </p>
           </div>
 
           <div className="roadmap-list">
-            <RoadmapItem icon={<Trophy />} title="Cloud Score Saving" text="Games submit scores automatically instead of users typing them." />
-            <RoadmapItem icon={<Star />} title="Real Ratings" text="Save ratings for everyone, not just one browser." />
-            <RoadmapItem icon={<Gamepad2 />} title="Legacy League" text="Your future sports game gets its own full store page." />
+            <RoadmapItem icon={<Cloud />} title="Supabase Auth" text="Real Google and GitHub login with saved accounts." />
+            <RoadmapItem icon={<Upload />} title="Cloud Game Uploads" text="Added games save for everyone, not just one browser." />
+            <RoadmapItem icon={<Trophy />} title="Global Achievements" text="Achievements and stats follow players across devices." />
           </div>
         </section>
 
@@ -517,11 +743,17 @@ export default function HomePage() {
   );
 }
 
-function GameCard({ game, ratingData, rateGame, launchGame }) {
+function GameCard({ game, ratingData, rateGame, launchGame, removeCommunityGame }) {
   const averageRating = ratingData.count ? (ratingData.total / ratingData.count).toFixed(1) : "Unrated";
 
   return (
     <article className={`game-card ${game.accent}`}>
+      {!game.official && (
+        <button className="remove-game" onClick={() => removeCommunityGame(game.id)} title="Remove game">
+          <X size={16} />
+        </button>
+      )}
+
       <GameArt type={game.image} />
 
       <div className="game-content">
@@ -538,7 +770,7 @@ function GameCard({ game, ratingData, rateGame, launchGame }) {
           <span>{game.plays}</span>
         </div>
 
-        {game.playable && (
+        {game.id === "how-many-rings" && (
           <div className="rating-box">
             <span>Rate this game: {averageRating}</span>
             <div className="star-buttons">
@@ -558,7 +790,7 @@ function GameCard({ game, ratingData, rateGame, launchGame }) {
         )}
 
         {game.playable ? (
-          <button className="play-link" onClick={launchGame}>
+          <button className="play-link" onClick={() => launchGame(game)}>
             Play Now <ExternalLink size={16} />
           </button>
         ) : (
@@ -577,6 +809,7 @@ function GameArt({ type }) {
       <div className="shine" />
       {type === "rings" ? <Trophy size={72} /> : null}
       {type === "legacy" ? <Gamepad2 size={72} /> : null}
+      {type === "community" ? <Sparkles size={72} /> : null}
     </div>
   );
 }
