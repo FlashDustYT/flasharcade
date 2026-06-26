@@ -57,3 +57,164 @@ footer{padding:42px 0 34px;color:var(--muted);display:flex;justify-content:space
   color: var(--text) !important;
   border: 1px solid var(--soft) !important;
 }
+
+
+/* V10 Steam-style dashboard polish */
+body {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(38, 96, 172, .32), transparent 30%),
+    radial-gradient(circle at 85% 6%, rgba(105, 68, 255, .28), transparent 34%),
+    linear-gradient(135deg, #07111f 0%, #0b1220 38%, #11172a 100%) !important;
+}
+
+.shell {
+  width: min(1280px, calc(100% - 32px));
+}
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 18px 0;
+  backdrop-filter: blur(18px);
+}
+
+.brand-mark {
+  background: linear-gradient(135deg, #66c0f4, #2a475e) !important;
+  color: #dff6ff !important;
+  box-shadow: 0 0 30px rgba(102, 192, 244, .25) !important;
+}
+
+.brand span span,
+.nav nav a:hover,
+.login-button:hover,
+.roadmap-item svg,
+.leaderboard-head svg,
+.search-box svg {
+  color: #66c0f4 !important;
+}
+
+.hero {
+  min-height: 72vh;
+  align-items: center;
+}
+
+.eyebrow,
+.pill {
+  color: #9be870 !important;
+}
+
+.button.primary,
+.play-link,
+.profile-form button {
+  background: linear-gradient(135deg, #66c0f4, #2a9fd6) !important;
+  color: #07111f !important;
+}
+
+.button.ghost,
+.categories button.active {
+  background: linear-gradient(135deg, #9be870, #66c0f4) !important;
+  color: #07111f !important;
+}
+
+.featured-card,
+.game-card,
+.achievements,
+.roadmap,
+.login-modal {
+  border-color: rgba(102, 192, 244, .22) !important;
+  background:
+    linear-gradient(145deg, rgba(27, 40, 56, .92), rgba(14, 22, 35, .92)) !important;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, .45) !important;
+}
+
+.game-card:hover,
+.featured-card:hover {
+  border-color: rgba(102, 192, 244, .55) !important;
+  box-shadow: 0 28px 90px rgba(102, 192, 244, .12) !important;
+}
+
+.game-art {
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255,255,255,.18), transparent 24%),
+    linear-gradient(135deg, rgba(102,192,244,.42), rgba(42,71,94,.48), rgba(0,0,0,.55)) !important;
+}
+
+.game-art.legacy {
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255,255,255,.16), transparent 24%),
+    linear-gradient(135deg, rgba(126,87,255,.42), rgba(42,71,94,.48), rgba(0,0,0,.55)) !important;
+}
+
+.game-art.community {
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255,255,255,.16), transparent 24%),
+    linear-gradient(135deg, rgba(155,232,112,.3), rgba(102,192,244,.32), rgba(0,0,0,.55)) !important;
+}
+
+.steam-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.steam-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(102,192,244,.18), transparent 35%),
+    linear-gradient(90deg, rgba(102,192,244,.06), transparent 42%);
+  pointer-events: none;
+}
+
+.steam-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-nav-button {
+  border-color: rgba(155,232,112,.36) !important;
+  color: #9be870 !important;
+}
+
+.admin-edit-button {
+  margin-top: 22px;
+  background: rgba(102,192,244,.12) !important;
+  color: #dff6ff !important;
+  border: 1px solid rgba(102,192,244,.34) !important;
+}
+
+.admin-modal {
+  width: min(760px, 100%);
+  max-height: 88vh;
+  overflow: auto;
+}
+
+.admin-form button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.admin-card-editor {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-card-fields {
+  border: 1px solid var(--soft);
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(255,255,255,.04);
+  display: grid;
+  gap: 10px;
+}
+
+.admin-card-fields span {
+  color: #9be870;
+  font-weight: 1000;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .75rem;
+}

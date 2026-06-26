@@ -27,6 +27,9 @@ import {
   Upload,
   X,
   Cloud,
+  Settings,
+  Save,
+  Edit3,
 } from "lucide-react";
 
 const MAIN_SITE = "https://flashdust.dev";
@@ -90,6 +93,29 @@ const defaultAchievements = [
     unlocked: false,
   },
 ];
+
+const ADMIN_EMAIL = "isaac.akinola122@gmail.com";
+
+const defaultPlatformCopy = {
+  label: "Platform Status",
+  title: "FlashArcade is online",
+  description:
+    "Google login is connected. Next up: cloud profiles, synced achievements, game saves, and public uploads powered by Supabase.",
+  cards: [
+    {
+      title: "Supabase Auth",
+      text: "Google login is live. GitHub and Discord can be added next.",
+    },
+    {
+      title: "Cloud Profiles",
+      text: "Player profiles, ratings, saves, and achievements are ready to move into the database.",
+    },
+    {
+      title: "Admin Control",
+      text: "Owner-only tools can manage games, copy, featured content, and platform updates.",
+    },
+  ],
+};
 
 function playClickSound(enabled) {
   if (!enabled || typeof window === "undefined") return;
@@ -219,6 +245,9 @@ export default function HomePage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [username, setUsername] = useState("");
   const [communityGames, setCommunityGames] = useState([]);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [platformCopy, setPlatformCopy] = useState(defaultPlatformCopy);
+  const [adminDraft, setAdminDraft] = useState(defaultPlatformCopy);
   const [ratingData, setRatingData] = useState({ total: 0, count: 0, myRating: 0 });
   const [achievements, setAchievements] = useState(defaultAchievements);
   const [newGame, setNewGame] = useState({
@@ -235,6 +264,9 @@ export default function HomePage() {
     setRatingData(getStoredJson("flasharcade-rating-how-many-rings", { total: 0, count: 0, myRating: 0 }));
     setAchievements(getStoredJson("flasharcade-achievements", defaultAchievements));
     setCommunityGames(getStoredJson("flasharcade-community-games", []));
+    const savedCopy = getStoredJson("flasharcade-platform-copy", defaultPlatformCopy);
+    setPlatformCopy(savedCopy);
+    setAdminDraft(savedCopy);
 
     function unlockLocalAchievement(id) {
       const stored = getStoredJson("flasharcade-achievements", defaultAchievements);
@@ -359,6 +391,7 @@ export default function HomePage() {
 
   const averageRating = ratingData.count ? (ratingData.total / ratingData.count).toFixed(1) : "Unrated";
   const unlockedCount = achievements.filter((item) => item.unlocked).length;
+  const isAdmin = player?.email?.toLowerCase() === ADMIN_EMAIL;
 
   function profileFromUser(user) {
     return {
@@ -388,6 +421,33 @@ export default function HomePage() {
     setPlayer(null);
     setSession(null);
     localStorage.removeItem("flasharcade-player");
+  }
+
+  function saveAdminChanges(event) {
+    event.preventDefault();
+
+    const cleaned = {
+      ...adminDraft,
+      label: adminDraft.label.trim() || defaultPlatformCopy.label,
+      title: adminDraft.title.trim() || defaultPlatformCopy.title,
+      description: adminDraft.description.trim() || defaultPlatformCopy.description,
+      cards: adminDraft.cards.map((card, index) => ({
+        title: card.title.trim() || defaultPlatformCopy.cards[index]?.title || "FlashArcade Update",
+        text: card.text.trim() || defaultPlatformCopy.cards[index]?.text || "Update details coming soon.",
+      })),
+    };
+
+    setPlatformCopy(cleaned);
+    setStoredJson("flasharcade-platform-copy", cleaned);
+    setAdminOpen(false);
+  }
+
+  function updateAdminCard(index, key, value) {
+    const nextCards = adminDraft.cards.map((card, cardIndex) =>
+      cardIndex === index ? { ...card, [key]: value } : card
+    );
+
+    setAdminDraft({ ...adminDraft, cards: nextCards });
   }
 
   function unlockAchievement(id) {
@@ -519,6 +579,57 @@ export default function HomePage() {
         </section>
       )}
 
+      {adminOpen && isAdmin && (
+        <section className="modal-backdrop" onClick={() => setAdminOpen(false)}>
+          <div className="login-modal admin-modal" onClick={(event) => event.stopPropagation()}>
+            <button className="close" onClick={() => setAdminOpen(false)}>×</button>
+            <div className="modal-icon"><Settings size={30} /></div>
+            <h2>FlashArcade Admin</h2>
+            <p>Owner mode is active for {ADMIN_EMAIL}. Edit the platform status section below.</p>
+
+            <form className="profile-form admin-form" onSubmit={saveAdminChanges}>
+              <input
+                value={adminDraft.label}
+                onChange={(event) => setAdminDraft({ ...adminDraft, label: event.target.value })}
+                placeholder="Small label"
+              />
+              <input
+                value={adminDraft.title}
+                onChange={(event) => setAdminDraft({ ...adminDraft, title: event.target.value })}
+                placeholder="Section title"
+              />
+              <textarea
+                value={adminDraft.description}
+                onChange={(event) => setAdminDraft({ ...adminDraft, description: event.target.value })}
+                placeholder="Section description"
+              />
+
+              <div className="admin-card-editor">
+                {adminDraft.cards.map((card, index) => (
+                  <div className="admin-card-fields" key={index}>
+                    <span>Card {index + 1}</span>
+                    <input
+                      value={card.title}
+                      onChange={(event) => updateAdminCard(index, "title", event.target.value)}
+                      placeholder="Card title"
+                    />
+                    <textarea
+                      value={card.text}
+                      onChange={(event) => updateAdminCard(index, "text", event.target.value)}
+                      placeholder="Card text"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <button type="submit">
+                <Save size={17} /> Save Admin Changes
+              </button>
+            </form>
+          </div>
+        </section>
+      )}
+
       {addGameOpen && (
         <section className="modal-backdrop" onClick={() => setAddGameOpen(false)}>
           <div className="login-modal add-modal" onClick={(event) => event.stopPropagation()}>
@@ -582,6 +693,11 @@ export default function HomePage() {
             ) : (
               <button className="login-button" onClick={() => setProfileOpen(true)}>
                 <LogIn size={16} /> {authLoading ? "Checking..." : "Login"}
+              </button>
+            )}
+            {isAdmin && (
+              <button className="login-button admin-nav-button" onClick={() => setAdminOpen(true)}>
+                <Settings size={16} /> Admin
               </button>
             )}
           </nav>
@@ -717,20 +833,23 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="roadmap">
+        <section className="roadmap steam-panel">
           <div>
-            <span className="pill">Cloud Upgrade Path</span>
-            <h2>Real Login Comes Next</h2>
-            <p>
-              To make Google/GitHub login, shared game uploads, global ratings, and saved cloud profiles,
-              FlashArcade needs Supabase or Firebase connected.
-            </p>
+            <span className="pill">{platformCopy.label}</span>
+            <h2>{platformCopy.title}</h2>
+            <p>{platformCopy.description}</p>
+
+            {isAdmin && (
+              <button className="button admin-edit-button" onClick={() => setAdminOpen(true)}>
+                <Edit3 size={18} /> Edit This Section
+              </button>
+            )}
           </div>
 
           <div className="roadmap-list">
-            <RoadmapItem icon={<Cloud />} title="Supabase Auth" text="Real Google and GitHub login with saved accounts." />
-            <RoadmapItem icon={<Upload />} title="Cloud Game Uploads" text="Added games save for everyone, not just one browser." />
-            <RoadmapItem icon={<Trophy />} title="Global Achievements" text="Achievements and stats follow players across devices." />
+            <RoadmapItem icon={<Cloud />} title={platformCopy.cards[0].title} text={platformCopy.cards[0].text} />
+            <RoadmapItem icon={<Upload />} title={platformCopy.cards[1].title} text={platformCopy.cards[1].text} />
+            <RoadmapItem icon={<Trophy />} title={platformCopy.cards[2].title} text={platformCopy.cards[2].text} />
           </div>
         </section>
 
