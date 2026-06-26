@@ -103,3 +103,20 @@ Changes:
 
 Commit summary:
 Add safe isolated Stripe checkout
+
+
+# FlashArcade V21 Arcade Checkout + Ratings
+
+Changes:
+- Added Publish link to the main arcade nav
+- Main Add/Publish buttons now go to `/creator-checkout`
+- Header/brand no longer sticks and overlaps while scrolling
+- Every game can now be rated
+- Ratings show average + rating count per game
+- Ratings save locally and also sync globally through Supabase if the `game_ratings` table exists
+
+Supabase setup:
+Run `supabase/game_ratings.sql` in Supabase SQL Editor to enable real global ratings.
+
+Commit summary:
+Add arcade checkout link and global game ratings

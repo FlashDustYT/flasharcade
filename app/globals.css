@@ -462,3 +462,28 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* V21: keep brand/header from sticking over content while scrolling */
+.nav {
+  position: relative !important;
+  top: auto !important;
+  z-index: 3 !important;
+  backdrop-filter: none !important;
+}
+
+.brand {
+  white-space: nowrap;
+}
+
+.rating-box small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-weight: 800;
+  font-size: .78rem;
+}
+
+.add-game-card {
+  border-color: rgba(102, 192, 244, .38) !important;
+}

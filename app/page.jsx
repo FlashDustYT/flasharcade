@@ -30,6 +30,7 @@ import {
   Settings,
   Save,
   Edit3,
+  CreditCard,
 } from "lucide-react";
 
 const MAIN_SITE = "https://flashdust.dev";
@@ -249,7 +250,7 @@ export default function HomePage() {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [platformCopy, setPlatformCopy] = useState(defaultPlatformCopy);
   const [adminDraft, setAdminDraft] = useState(defaultPlatformCopy);
-  const [ratingData, setRatingData] = useState({ total: 0, count: 0, myRating: 0 });
+  const [ratingData, setRatingData] = useState({});
   const [achievements, setAchievements] = useState(defaultAchievements);
   const [newGame, setNewGame] = useState({
     title: "",
@@ -262,7 +263,8 @@ export default function HomePage() {
 
   useEffect(() => {
     setPlayer(getStoredJson("flasharcade-player", null));
-    setRatingData(getStoredJson("flasharcade-rating-how-many-rings", { total: 0, count: 0, myRating: 0 }));
+    const savedRatings = getStoredJson("flasharcade-ratings", {});
+    setRatingData(savedRatings);
     setAchievements(getStoredJson("flasharcade-achievements", defaultAchievements));
     setCommunityGames(getStoredJson("flasharcade-community-games", []));
     const savedCopy = getStoredJson("flasharcade-platform-copy", defaultPlatformCopy);
@@ -371,6 +373,46 @@ export default function HomePage() {
     ];
   }, [communityGames]);
 
+  useEffect(() => {
+    async function loadCloudRatings() {
+      const gameIds = allGames.map((game) => game.id);
+      if (!gameIds.length) return;
+
+      const localRatings = getStoredJson("flasharcade-ratings", {});
+
+      const { data, error } = await supabase
+        .from("game_ratings")
+        .select("game_id,rating,user_id")
+        .in("game_id", gameIds);
+
+      if (error || !data) {
+        setRatingData(localRatings);
+        return;
+      }
+
+      const next = { ...localRatings };
+
+      for (const gameId of gameIds) {
+        const rows = data.filter((row) => row.game_id === gameId);
+        const mine = session?.user?.id
+          ? rows.find((row) => row.user_id === session.user.id)?.rating || localRatings[gameId]?.myRating || 0
+          : localRatings[gameId]?.myRating || 0;
+
+        next[gameId] = {
+          total: rows.reduce((sum, row) => sum + Number(row.rating || 0), 0),
+          count: rows.length,
+          myRating: mine,
+        };
+      }
+
+      setRatingData(next);
+      setStoredJson("flasharcade-ratings", next);
+    }
+
+    loadCloudRatings();
+  }, [allGames, session?.user?.id]);
+
+
   const filteredGames = useMemo(() => {
     return allGames.filter((game) => {
       const q = query.toLowerCase();
@@ -390,7 +432,10 @@ export default function HomePage() {
     });
   }, [query, category, allGames]);
 
-  const averageRating = ratingData.count ? (ratingData.total / ratingData.count).toFixed(1) : "Unrated";
+  const howManyRingsRating = ratingData["how-many-rings"];
+  const averageRating = howManyRingsRating?.count
+    ? (howManyRingsRating.total / howManyRingsRating.count).toFixed(1)
+    : "Unrated";
   const unlockedCount = achievements.filter((item) => item.unlocked).length;
   const isAdmin = player?.email?.toLowerCase() === ADMIN_EMAIL;
 
@@ -498,17 +543,35 @@ export default function HomePage() {
     localStorage.removeItem("flasharcade-player");
   }
 
-  function rateGame(stars) {
-    const previous = ratingData.myRating || 0;
-    const next = {
+  async function rateGame(gameId, stars) {
+    const current = ratingData[gameId] || { total: 0, count: 0, myRating: 0 };
+    const previous = current.myRating || 0;
+    const nextGameRating = {
       myRating: stars,
-      total: previous ? ratingData.total - previous + stars : ratingData.total + stars,
-      count: previous ? ratingData.count : ratingData.count + 1,
+      total: previous ? current.total - previous + stars : current.total + stars,
+      count: previous ? current.count : current.count + 1,
     };
 
-    setRatingData(next);
-    setStoredJson("flasharcade-rating-how-many-rings", next);
+    const nextRatings = {
+      ...ratingData,
+      [gameId]: nextGameRating,
+    };
+
+    setRatingData(nextRatings);
+    setStoredJson("flasharcade-ratings", nextRatings);
     unlockAchievement("first-rating");
+
+    if (session?.user?.id) {
+      await supabase.from("game_ratings").upsert(
+        {
+          game_id: gameId,
+          user_id: session.user.id,
+          rating: stars,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "game_id,user_id" }
+      );
+    }
   }
 
   function addCommunityGame(event) {
@@ -681,6 +744,7 @@ export default function HomePage() {
           <nav>
             <a href="#library">Library</a>
             <a href="#achievements">Achievements</a>
+            <a href="/creator-checkout"><CreditCard size={16} /> Publish</a>
             <a href={MAIN_SITE}><Home size={16} /> FlashDust</a>
             <button className="login-button audio-button" onClick={() => setClickSoundOn((value) => !value)} title="Toggle click sound">
               {clickSoundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
@@ -758,8 +822,8 @@ export default function HomePage() {
               <button className="button secondary" onClick={() => launchGame(featured)}>
                 <Dice5 size={20} /> Random Playable Game
               </button>
-              <button className="button ghost" onClick={() => setAddGameOpen(true)}>
-                <PlusCircle size={20} /> Add Game
+              <button className="button ghost" onClick={() => window.location.href = "/creator-checkout"}>
+                <CreditCard size={20} /> Publish Game
               </button>
             </div>
 
@@ -825,15 +889,15 @@ export default function HomePage() {
             />
           ))}
 
-          <article className="game-card add-game-card" onClick={() => setAddGameOpen(true)}>
+          <article className="game-card add-game-card" onClick={() => window.location.href = "/creator-checkout"}>
             <div className="submit-lock">
               <PlusCircle size={76} />
             </div>
             <div className="game-content">
               <span className="pill">Community</span>
-              <h3>Add Your Own Game</h3>
-              <p>Add a browser game link to your local arcade library.</p>
-              <button className="play-link" type="button">Add Game</button>
+              <h3>Publish Your Game</h3>
+              <p>Submit your browser game through FlashArcade Creator Studio.</p>
+              <button className="play-link" type="button">Start Publishing</button>
             </div>
           </article>
         </section>
@@ -894,7 +958,10 @@ export default function HomePage() {
 }
 
 function GameCard({ game, ratingData, rateGame, launchGame, removeCommunityGame }) {
-  const averageRating = ratingData.count ? (ratingData.total / ratingData.count).toFixed(1) : "Unrated";
+  const howManyRingsRating = ratingData["how-many-rings"];
+  const averageRating = howManyRingsRating?.count
+    ? (howManyRingsRating.total / howManyRingsRating.count).toFixed(1)
+    : "Unrated";
 
   return (
     <article className={`game-card ${game.accent}`}>
@@ -920,24 +987,23 @@ function GameCard({ game, ratingData, rateGame, launchGame, removeCommunityGame 
           <span>{game.plays}</span>
         </div>
 
-        {game.id === "how-many-rings" && (
-          <div className="rating-box">
-            <span>Rate this game: {averageRating}</span>
-            <div className="star-buttons">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  className={ratingData.myRating >= star ? "selected" : ""}
-                  onClick={() => rateGame(star)}
-                  aria-label={`Rate ${star} stars`}
-                >
-                  ★
-                </button>
-              ))}
-            </div>
+        <div className="rating-box">
+          <span>Average rating: {averageRating}</span>
+          <div className="star-buttons">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                className={gameRating.myRating >= star ? "selected" : ""}
+                onClick={() => rateGame(game.id, star)}
+                aria-label={`Rate ${game.title} ${star} stars`}
+              >
+                ★
+              </button>
+            ))}
           </div>
-        )}
+          <small>{gameRating.count || 0} rating{gameRating.count === 1 ? "" : "s"}</small>
+        </div>
 
         {game.playable ? (
           <button className="play-link" onClick={() => launchGame(game)}>
