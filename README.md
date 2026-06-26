@@ -106,3 +106,7 @@ Required Vercel environment variables:
 
 Commit summary:
 Add Stripe checkout starter flow
+
+
+Patch:
+- Fixed missing lucide-react imports for Stripe checkout UI.
