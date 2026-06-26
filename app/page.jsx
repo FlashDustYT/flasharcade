@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import {
-  Bell,
+  useEffect,
+  useMemo,
+  useState } from "react";import {  Bell,
   BookOpen,
   Cloud,
   Compass,
@@ -22,17 +23,61 @@ import {
   Upload,
   User,
   Zap,
+  Shield,
+  Volume2,
+  VolumeX,
+  Megaphone,
+  Music2,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { loadCloudSave, saveCloudSave } from "../lib/cloudSaves";
 
-const ADMIN_EMAIL = "isaac.akinola122@gmail.com";
+const ADMIN_EMAILS = [
+  "isaac.akinola122@gmail.com",
+  "isaac.akinola122@icloud.com",
+  "flashdustcorp@gmail.com",
+  "flashdustyt@gmail.com",
+];
+
+function isAdminUser(user) {
+  const email = user?.email?.toLowerCase();
+  if (!email) return false;
+  const extraAdmins = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+
+  return ADMIN_EMAILS.includes(email) || extraAdmins.includes(email);
+}
 
 const PLATFORM_UPDATES = [
   {
+    version: "V36",
+    title: "Admin, audio, and payments update",
+    date: "Current",
+    changes: [
+      "Added a real notification panel explaining future alerts",
+      "Added admin-only tools for global announcements and moderation foundation",
+      "Added stronger UI sounds and optional background music",
+      "Connected paid creator plans to Stripe payment link environment variables",
+      "Added redirects from old FlashArcade URLs to FlashPortal",
+      "Improved account menu behavior so logging out requires confirmation",
+    ],
+  },
+  {
+    version: "V35",
+    title: "Stripe and domain redirect foundation",
+    date: "Recent",
+    changes: [
+      "Added payment link environment variable support",
+      "Added old-domain redirects to flashportal.dev",
+      "Added sound toggle groundwork",
+    ],
+  },
+  {
     version: "V33",
     title: "FlashPortal platform refresh",
-    date: "Current",
+    date: "Recent",
     changes: [
       "Full FlashPortal rebrand cleanup",
       "New black and orange dark mode",
@@ -41,27 +86,6 @@ const PLATFORM_UPDATES = [
       "New Updates section so players can see what changed",
       "Improved official thumbnails for existing FlashDust games",
       "Cloud-save foundation remains connected",
-    ],
-  },
-  {
-    version: "V31",
-    title: "Cloud saves foundation",
-    date: "Recent",
-    changes: [
-      "Added game_saves database support",
-      "Signed-in players can now have launch/save metadata stored",
-      "Prepared the site for full cross-device save syncing",
-    ],
-  },
-  {
-    version: "V29",
-    title: "Creator upload foundation",
-    date: "Recent",
-    changes: [
-      "Added a functional creator upload form",
-      "Uploads ZIP files to Supabase Storage",
-      "Uploads thumbnails to Supabase Storage",
-      "Creates pending review submissions",
     ],
   },
 ];
@@ -140,6 +164,9 @@ export default function Home() {
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
   const [toast, setToast] = useState("");
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -292,35 +319,112 @@ export default function Home() {
     { id: "updates", label: "Updates", icon: Newspaper },
     { id: "achievements", label: "Achievements", icon: Trophy },
     { id: "publish", label: "Publish", icon: Upload },
+    ...(isAdminUser(user) ? [{ id: "admin", label: "Admin", icon: Shield }] : []),
   ];
 
   function playUISound(type = "click") {
+    if (!audioEnabled || typeof window === "undefined") return;
+
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+
+      if (!window.__flashPortalAudioCtx) {
+        window.__flashPortalAudioCtx = new AudioContext();
+      }
+
+      const ctx = window.__flashPortalAudioCtx;
+      if (ctx.state === "suspended") ctx.resume();
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      const sounds = {
+        click: { freq: 420, end: 700, length: 0.11, volume: 0.16 },
+        hover: { freq: 330, end: 420, length: 0.08, volume: 0.08 },
+        success: { freq: 520, end: 980, length: 0.18, volume: 0.18 },
+        tab: { freq: 480, end: 760, length: 0.12, volume: 0.14 },
+        alert: { freq: 740, end: 540, length: 0.16, volume: 0.14 },
+      };
+
+      const sound = sounds[type] || sounds.click;
+      const now = ctx.currentTime;
+
+      osc.type = "square";
+      osc.frequency.setValueAtTime(sound.freq, now);
+      osc.frequency.exponentialRampToValueAtTime(sound.end, now + sound.length);
+
+      gain.gain.setValueAtTime(sound.volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + sound.length);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + sound.length);
+    } catch {}
+  }
+
+  function toggleBackgroundMusic() {
     if (typeof window === "undefined") return;
 
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
 
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      if (!window.__flashPortalAudioCtx) {
+        window.__flashPortalAudioCtx = new AudioContext();
+      }
 
-      const frequencies = {
-        click: 520,
-        hover: 420,
-        success: 760,
-        tab: 610,
+      const ctx = window.__flashPortalAudioCtx;
+      if (ctx.state === "suspended") ctx.resume();
+
+      if (window.__flashPortalMusicStop) {
+        window.__flashPortalMusicStop();
+        window.__flashPortalMusicStop = null;
+        setMusicEnabled(false);
+        return;
+      }
+
+      const master = ctx.createGain();
+      master.gain.value = 0.028;
+      master.connect(ctx.destination);
+
+      const notes = [110, 146.83, 164.81, 196, 220, 196, 164.81, 146.83];
+      let step = 0;
+      let stopped = false;
+
+      function playStep() {
+        if (stopped) return;
+
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.value = notes[step % notes.length];
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.7, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(now);
+        osc.stop(now + 0.5);
+
+        step += 1;
+        window.__flashPortalMusicTimer = setTimeout(playStep, 430);
+      }
+
+      window.__flashPortalMusicStop = () => {
+        stopped = true;
+        clearTimeout(window.__flashPortalMusicTimer);
+        master.disconnect();
       };
 
-      osc.frequency.value = frequencies[type] || frequencies.click;
-      osc.type = "sine";
-      gain.gain.setValueAtTime(0.035, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.08);
+      playStep();
+      setMusicEnabled(true);
+      playUISound("success");
     } catch {}
   }
 
@@ -366,8 +470,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V33 Online</strong>
-          <p>New UI, cleaner navigation, FlashPortal branding, and an Updates tab.</p>
+          <strong>V36 Online</strong>
+          <p>Audio, admin tools, Stripe payment links, notifications, and FlashPortal branding.</p>
         </div>
       </aside>
 
@@ -388,8 +492,48 @@ export default function Home() {
           </label>
 
           <div className="portal-actions">
-            <button className="icon-button" type="button" aria-label="Notifications">
-              <Bell size={18} />
+            <div className="notification-wrap">
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Notifications"
+                onClick={() => {
+                  playUISound("alert");
+                  setNotificationsOpen((open) => !open);
+                }}
+              >
+                <Bell size={18} />
+              </button>
+
+              {notificationsOpen && (
+                <div className="notification-panel">
+                  <strong>Notifications</strong>
+                  <p>No new alerts yet.</p>
+                  <small>This will be used for platform announcements, upload review results, friend requests, creator updates, and game notifications.</small>
+                </div>
+              )}
+            </div>
+            <button
+              className="icon-button audio-toggle-button"
+              type="button"
+              aria-label="Toggle sounds"
+              onClick={() => {
+                const next = !audioEnabled;
+                setAudioEnabled(next);
+                if (next) setTimeout(() => playUISound("success"), 0);
+              }}
+              title={audioEnabled ? "UI sounds on" : "UI sounds off"}
+            >
+              {audioEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            </button>
+            <button
+              className={`icon-button music-toggle-button ${musicEnabled ? "active" : ""}`}
+              type="button"
+              aria-label="Toggle background music"
+              onClick={toggleBackgroundMusic}
+              title={musicEnabled ? "Music on" : "Music off"}
+            >
+              <Music2 size={18} />
             </button>
             <button
               className="theme-button"
@@ -403,13 +547,13 @@ export default function Home() {
             <div className="account-menu-wrap">
               <button className="account-button" type="button" onClick={handleAccountClick} disabled={!user && authLoading}>
                 {user ? <User size={18} /> : <LogIn size={18} />}
-                <span>{user ? (user.email === ADMIN_EMAIL ? "FlashDust" : user.email?.split("@")[0]) : (authLoading ? "Checking..." : "Login")}</span>
+                <span>{user ? (isAdminUser(user) ? "FlashDust Admin" : user.email?.split("@")[0]) : (authLoading ? "Checking..." : "Login")}</span>
               </button>
 
               {user && accountMenuOpen && (
                 <div className="account-dropdown">
                   <div className="account-dropdown-header">
-                    <strong>{user.email === ADMIN_EMAIL ? "FlashDust" : user.email?.split("@")[0]}</strong>
+                    <strong>{isAdminUser(user) ? "FlashDust Admin" : user.email?.split("@")[0]}</strong>
                     <small>{user.email}</small>
                   </div>
                   <button type="button" onClick={() => handleTabChange("library")}>
@@ -592,6 +736,43 @@ export default function Home() {
           </section>
         )}
 
+
+        {activeTab === "admin" && isAdminUser(user) && (
+          <section className="portal-view">
+            <SectionHeader
+              label="Admin Control"
+              title="FlashPortal admin tools"
+              text="Owner-only tools for announcements, moderation, creator submissions, and platform updates."
+            />
+
+            <div className="admin-grid">
+              <article className="admin-card">
+                <Megaphone size={32} />
+                <h3>Global Announcement</h3>
+                <p>Send a message that appears in the Updates tab and notification bell.</p>
+                <textarea placeholder="Example: V36 is live with improved audio, admin tools, and payment setup." />
+                <button type="button" onClick={() => { playUISound("success"); setToast("Announcement draft saved locally"); }}>
+                  Save Announcement Draft
+                </button>
+              </article>
+
+              <article className="admin-card">
+                <Upload size={32} />
+                <h3>Submission Queue</h3>
+                <p>Creator upload moderation will live here: approve, reject, or feature games.</p>
+                <button type="button" onClick={() => handleTabChange("publish")}>Open Publish Tools</button>
+              </article>
+
+              <article className="admin-card">
+                <Newspaper size={32} />
+                <h3>Updates Manager</h3>
+                <p>Use this area later to add changelog posts without editing code.</p>
+                <button type="button" onClick={() => handleTabChange("updates")}>View Updates</button>
+              </article>
+            </div>
+          </section>
+        )}
+
         {recentlyPlayed.length > 0 && (
           <aside className="recent-dock">
             <h3>Continue Playing</h3>
@@ -654,7 +835,7 @@ function FeaturedCard({ game, onPlay }) {
           <em>{game.genre}</em>
           {game.official && <em className="official">Presented by FlashDust</em>}
         </div>
-        <button className="primary-button full" type="button" onClick={onPlay}>
+        <button className="primary-button full" type="button" onClick={() => { playUISound?.("success"); onPlay?.(); }}>
           Play Now
         </button>
       </div>
@@ -698,7 +879,7 @@ function GameCard({ game, onPlay, compact = false }) {
           <em>{game.genre}</em>
           <em>{game.status}</em>
         </div>
-        <button type="button" onClick={onPlay}>
+        <button type="button" onClick={() => { playUISound?.("success"); onPlay?.(); }}>
           <Play size={15} /> Play
         </button>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Check, Sparkles, Upload, Zap } from "lucide-react";
+import { ArrowLeft, Check, Sparkles, Upload } from "lucide-react";
 
 const plans = [
   {
@@ -16,22 +16,25 @@ const plans = [
     price: "$1.99",
     title: "Extra Game Upload",
     text: "Submit another browser game for FlashPortal review.",
-    cta: "Coming Soon",
-    href: "#",
+    cta: "Pay $1.99",
+    href: process.env.NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL || "#",
+    missing: !process.env.NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL,
   },
   {
     price: "$4.99",
     title: "Featured 7 Days",
     text: "Request featured placement for one approved game for 7 days.",
-    cta: "Coming Soon",
-    href: "#",
+    cta: "Pay $4.99",
+    href: process.env.NEXT_PUBLIC_STRIPE_FEATURED_7_URL || "#",
+    missing: !process.env.NEXT_PUBLIC_STRIPE_FEATURED_7_URL,
   },
   {
     price: "$9.99",
     title: "Featured 30 Days",
     text: "Request longer featured placement for one approved game.",
-    cta: "Coming Soon",
-    href: "#",
+    cta: "Pay $9.99",
+    href: process.env.NEXT_PUBLIC_STRIPE_FEATURED_30_URL || "#",
+    missing: !process.env.NEXT_PUBLIC_STRIPE_FEATURED_30_URL,
   },
 ];
 
@@ -47,7 +50,7 @@ export default function CreatorCheckout() {
         <h1>Publish on FlashPortal</h1>
         <p>
           Start free, then only pay when you want extra uploads or featured placement.
-          This keeps the platform creator-friendly while still giving serious creators promotion tools.
+          Paid buttons connect through Stripe Payment Links.
         </p>
       </section>
 
@@ -62,8 +65,11 @@ export default function CreatorCheckout() {
               <li><Check size={16} /> Creator profile support</li>
               <li><Check size={16} /> Game thumbnail support</li>
             </ul>
-            {plan.href === "#" ? (
-              <button disabled>{plan.cta}</button>
+
+            {plan.missing ? (
+              <button disabled>Connect Stripe Link</button>
+            ) : plan.href.startsWith("http") ? (
+              <a href={plan.href} target="_blank" rel="noreferrer">{plan.cta}</a>
             ) : (
               <Link href={plan.href}>{plan.cta}</Link>
             )}

@@ -355,3 +355,37 @@ Domain steps:
 
 Commit summary:
 Improve Creator Studio account menu and UI sounds
+
+
+# FlashPortal V35 Audio + Stripe + Redirects
+
+Changes:
+- Stronger UI sound system.
+- Added sound toggle button.
+- Added redirects from old domains to flashportal.dev.
+- Paid creator checkout buttons now use Stripe Payment Link environment variables.
+- Added setup guide in `docs/domain-and-stripe-setup.md`.
+
+Commit summary:
+Add audio toggle Stripe links and domain redirects
+
+
+# FlashPortal V36 Admin + Audio + Notifications
+
+Changes:
+- Adds visible notification panel explaining what notifications are for.
+- Adds admin-only tab for owner accounts.
+- Adds global announcement/admin foundation.
+- Adds stronger UI sounds and optional background music.
+- Forces checkout page to show active Stripe buttons when env vars exist.
+- Updates changelog to V36.
+- Improves game player pages with full-page iframe shell.
+
+Important:
+- After adding/updating Vercel environment variables, redeploy.
+- If paid buttons still say "Connect Stripe Link", check exact env var names.
+- If they say "Coming Soon", you are not on V36 code yet.
+- Background music starts only after clicking the music button due to browser autoplay rules.
+
+Commit summary:
+Add admin tools audio music notifications and payment buttons

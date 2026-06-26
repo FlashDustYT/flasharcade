@@ -1,35 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { Maximize2, ArrowLeft } from "lucide-react";
 
-const GAME_URL = "https://flashdustyt.github.io/perfect-season-pro/how-many-rings-source-code/";
+const game = {
+  title: "How Many Rings?",
+  src: "/games/how-many-rings/index.html",
+};
 
-export default function HowManyRingsPage() {
+export default function GamePage() {
   return (
     <main className="game-player-page">
       <header className="game-player-header">
-        <Link href="/" className="back-link">
-          <ArrowLeft size={18} />
-          Back to FlashPortal
-        </Link>
-
+        <Link href="/" className="back-link"><ArrowLeft size={18} /> Back to FlashPortal</Link>
         <div>
-          <span className="pill">Now Playing</span>
-          <h1>How Many Rings?</h1>
+          <span>Now Playing</span>
+          <h1>{game.title}</h1>
         </div>
-
-        <a className="open-external" href={GAME_URL} target="_blank" rel="noopener noreferrer">
-          Open Original <ExternalLink size={17} />
+        <a href={game.src} target="_blank" rel="noreferrer" className="secondary-link-button">
+          Open Fullscreen <Maximize2 size={16} />
         </a>
       </header>
 
-      <section className="game-frame-wrap">
+      <section className="game-frame-shell">
         <iframe
-          title="How Many Rings?"
-          src={GAME_URL}
+          title={game.title}
+          src={game.src}
           className="game-frame"
-          allow="fullscreen; autoplay; clipboard-write"
+          allow="fullscreen; gamepad; autoplay"
         />
       </section>
     </main>
