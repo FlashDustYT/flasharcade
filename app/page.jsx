@@ -270,6 +270,12 @@ export default function Home() {
     loadStats();
   }, []);
 
+  const userIsOwner = isOwnerUser(user);
+  const userIsAdmin = userIsOwner || Boolean(adminRole?.active);
+  const adminPerms = userIsOwner
+    ? { games: true, submissions: true, announcements: true, payments: true, admins: true }
+    : adminRole?.permissions || {};
+
   useEffect(() => {
     if (!userIsAdmin || !adminPerms.submissions) {
       setSubmissions([]);
@@ -317,11 +323,6 @@ export default function Home() {
       : "0.0";
 
   const totalPlays = games.reduce((sum, game) => sum + parsePlayCount(game.plays), 0);
-  const userIsOwner = isOwnerUser(user);
-  const userIsAdmin = userIsOwner || Boolean(adminRole?.active);
-  const adminPerms = userIsOwner
-    ? { games: true, submissions: true, announcements: true, payments: true, admins: true }
-    : adminRole?.permissions || {};
 
   useEffect(() => {
     if (!recentlyPlayed.length) return;

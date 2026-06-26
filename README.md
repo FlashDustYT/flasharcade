@@ -454,3 +454,13 @@ Run `supabase/v40_platform_backend.sql` in Supabase SQL Editor after deploying t
 
 Commit summary:
 Fix backend roles submissions and persistent play counts
+
+
+# FlashPortal V40.1 Client Crash Hotfix
+
+Fixes:
+- Moved owner/admin computed values before the hook that reads them.
+- Prevents client-side exception on page load.
+
+Commit summary:
+Fix owner admin hook crash
