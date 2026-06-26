@@ -82,3 +82,27 @@ Changes:
 
 Commit summary:
 Fix Legacy League embedded asset loading
+
+
+# FlashArcade V15 Stripe Starter
+
+Changes:
+- Added Stripe dependencies
+- Added `/api/create-checkout-session` API route
+- Added Stripe Checkout buttons for:
+  - Game Submission: $1.99
+  - Featured 7 Days: $4.99
+  - Featured 30 Days: $9.99
+- Added checkout success page
+- Added checkout cancel page
+- Added Creator Studio monetization panel
+- Game submission card now starts Stripe Checkout
+- Vercel installs Stripe automatically from package.json
+
+Required Vercel environment variables:
+- NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+- STRIPE_SECRET_KEY
+- NEXT_PUBLIC_SITE_URL=https://arcade.flashdust.dev
+
+Commit summary:
+Add Stripe checkout starter flow
