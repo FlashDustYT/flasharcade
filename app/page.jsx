@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
 import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState } from "react";,
+  import { supabase } from "../lib/supabaseClient";,
+  import {,
   Search,
   Filter,
   Play,
@@ -29,6 +33,9 @@ import {
   CreditCard,
   Rocket,
   ShieldCheck,
+  Medal,
+  Crown,
+  Award,
 } from "lucide-react";
 
 const MAIN_SITE = "https://flashdust.dev";
