@@ -139,6 +139,7 @@ export default function Home() {
   const [playCounts, setPlayCounts] = useState({});
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
   const [toast, setToast] = useState("");
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -293,6 +294,58 @@ export default function Home() {
     { id: "publish", label: "Publish", icon: Upload },
   ];
 
+  function playUISound(type = "click") {
+    if (typeof window === "undefined") return;
+
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      const frequencies = {
+        click: 520,
+        hover: 420,
+        success: 760,
+        tab: 610,
+      };
+
+      osc.frequency.value = frequencies[type] || frequencies.click;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.035, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.08);
+    } catch {}
+  }
+
+  function handleTabChange(tabId) {
+    playUISound("tab");
+    setActiveTab(tabId);
+  }
+
+  function handleAccountClick() {
+    playUISound("click");
+    if (user) {
+      setAccountMenuOpen((open) => !open);
+      return;
+    }
+    signIn();
+  }
+
+  async function confirmSignOut() {
+    playUISound("click");
+    const shouldSignOut = window.confirm("Log out of your FlashPortal account?");
+    if (!shouldSignOut) return;
+    await signOut();
+    setAccountMenuOpen(false);
+  }
+
   return (
     <main className="portal-shell">
       <aside className="portal-left">
@@ -347,18 +400,30 @@ export default function Home() {
               {theme === "dark" ? "Light" : "Dark"}
             </button>
 
-            {user ? (
-              <button className="account-button" type="button" onClick={signOut}>
-                <User size={18} />
-                <span>{user.email === ADMIN_EMAIL ? "FlashDust" : user.email?.split("@")[0]}</span>
-                <LogOut size={16} />
+            <div className="account-menu-wrap">
+              <button className="account-button" type="button" onClick={handleAccountClick} disabled={!user && authLoading}>
+                {user ? <User size={18} /> : <LogIn size={18} />}
+                <span>{user ? (user.email === ADMIN_EMAIL ? "FlashDust" : user.email?.split("@")[0]) : (authLoading ? "Checking..." : "Login")}</span>
               </button>
-            ) : (
-              <button className="account-button" type="button" onClick={signIn} disabled={authLoading}>
-                <LogIn size={18} />
-                {authLoading ? "Checking..." : "Login"}
-              </button>
-            )}
+
+              {user && accountMenuOpen && (
+                <div className="account-dropdown">
+                  <div className="account-dropdown-header">
+                    <strong>{user.email === ADMIN_EMAIL ? "FlashDust" : user.email?.split("@")[0]}</strong>
+                    <small>{user.email}</small>
+                  </div>
+                  <button type="button" onClick={() => handleTabChange("library")}>
+                    <BookOpen size={16} /> My Library
+                  </button>
+                  <button type="button" onClick={() => handleTabChange("updates")}>
+                    <Newspaper size={16} /> Updates
+                  </button>
+                  <button type="button" onClick={confirmSignOut} className="danger">
+                    <LogOut size={16} /> Log out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -370,7 +435,7 @@ export default function Home() {
                 key={item.id}
                 type="button"
                 className={activeTab === item.id ? "active" : ""}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleTabChange(item.id)}
               >
                 <Icon size={16} />
                 {item.label}
@@ -392,10 +457,10 @@ export default function Home() {
                   the next generation of creator-made games.
                 </p>
                 <div className="hero-buttons">
-                  <button className="primary-button" type="button" onClick={() => launchGame(featuredGame)}>
+                  <button className="primary-button" type="button" onClick={() => { playUISound("success"); launchGame(featuredGame); }}>
                     <Play size={18} /> Play {featuredGame.title}
                   </button>
-                  <button className="secondary-button" type="button" onClick={launchRandomGame}>
+                  <button className="secondary-button" type="button" onClick={() => { playUISound("click"); launchRandomGame(); }}>
                     <Gamepad2 size={18} /> Random Game
                   </button>
                 </div>
@@ -479,13 +544,50 @@ export default function Home() {
             <SectionHeader
               label="Creator Studio"
               title="Publish on FlashPortal"
-              text="Upload browser games, submit them for review, and build your creator profile."
+              text="Submit browser games, manage your creator presence, and request promotion when you're ready."
             />
-            <div className="publish-panel">
-              <Upload size={42} />
-              <h3>Ready to publish?</h3>
-              <p>Your first submission is free. ZIP uploads go into review before publishing.</p>
-              <a className="primary-link-button" href="/creator-checkout">Open Creator Studio</a>
+
+            <div className="creator-studio-grid">
+              <article className="creator-studio-hero">
+                <span className="eyebrow"><Upload size={16} /> Creator Uploads</span>
+                <h3>Your first game submission is free.</h3>
+                <p>
+                  Upload a ZIP, add a thumbnail, write a short description, and send it into review.
+                  Paid options are for extra submissions and featured placement only.
+                </p>
+                <div className="creator-studio-actions">
+                  <a className="primary-link-button" href="/creator/upload">Upload Game</a>
+                  <a className="secondary-link-button" href="/creator-checkout">View Paid Options</a>
+                </div>
+              </article>
+
+              <article className="creator-plan-card free">
+                <strong>$0</strong>
+                <h3>First Game Free</h3>
+                <p>Submit your first FlashPortal browser game without checkout.</p>
+                <span>Best for new creators</span>
+              </article>
+
+              <article className="creator-plan-card">
+                <strong>$1.99</strong>
+                <h3>Extra Upload</h3>
+                <p>Submit another browser game for review after your first free upload.</p>
+                <span>For active creators</span>
+              </article>
+
+              <article className="creator-plan-card">
+                <strong>$4.99</strong>
+                <h3>Featured 7 Days</h3>
+                <p>Request homepage placement for one approved game for 7 days.</p>
+                <span>For promotion</span>
+              </article>
+
+              <article className="creator-plan-card">
+                <strong>$9.99</strong>
+                <h3>Featured 30 Days</h3>
+                <p>Request longer featured placement for one approved game.</p>
+                <span>Most visibility</span>
+              </article>
             </div>
           </section>
         )}

@@ -1,99 +1,85 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { ArrowLeft, Check, Sparkles, Upload, Zap } from "lucide-react";
 
-const PRODUCTS = [
+const plans = [
   {
-    key: "free_first_upload",
-    title: "First Game Free",
     price: "$0",
+    title: "First Game Free",
     text: "Your first FlashPortal game submission is free. No Stripe checkout needed.",
-    free: true,
+    cta: "Upload First Game",
+    href: "/creator/upload",
+    featured: true,
   },
   {
-    key: "game_upload",
-    title: "Extra Game Upload",
     price: "$1.99",
-    text: "Submit another browser game to FlashPortal for review.",
+    title: "Extra Game Upload",
+    text: "Submit another browser game for FlashPortal review.",
+    cta: "Coming Soon",
+    href: "#",
   },
   {
-    key: "featured_7",
-    title: "Featured 7 Days",
     price: "$4.99",
-    text: "Request featured placement for one game for 7 days.",
+    title: "Featured 7 Days",
+    text: "Request featured placement for one approved game for 7 days.",
+    cta: "Coming Soon",
+    href: "#",
   },
   {
-    key: "featured_30",
-    title: "Featured 30 Days",
     price: "$9.99",
-    text: "Request featured placement for one game for 30 days.",
+    title: "Featured 30 Days",
+    text: "Request longer featured placement for one approved game.",
+    cta: "Coming Soon",
+    href: "#",
   },
 ];
 
-export default function CreatorCheckoutPage() {
-  const [loading, setLoading] = useState("");
-
-  async function startCheckout(productKey) {
-    const product = PRODUCTS.find((item) => item.key === productKey);
-
-    if (product?.free) {
-      window.location.href = "/creator/upload";
-      return;
-    }
-
-    try {
-      setLoading(productKey);
-
-      const response = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ productKey }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Checkout failed.");
-      }
-
-      window.location.href = data.url;
-    } catch (error) {
-      alert(error.message || "Could not start checkout.");
-      setLoading("");
-    }
-  }
-
+export default function CreatorCheckout() {
   return (
     <main className="checkout-page">
-      <section className="checkout-card">
-        <span className="pill">Creator Studio</span>
+      <Link className="back-link" href="/">
+        <ArrowLeft size={18} /> Back to FlashPortal
+      </Link>
+
+      <section className="checkout-hero">
+        <span><Sparkles size={16} /> Creator Studio</span>
         <h1>Publish on FlashPortal</h1>
         <p>
-          New creators get their first game submission free. Paid options are for extra uploads
-          and featured placement once creators want more promotion.
+          Start free, then only pay when you want extra uploads or featured placement.
+          This keeps the platform creator-friendly while still giving serious creators promotion tools.
         </p>
+      </section>
 
-        <div className="checkout-product-grid">
-          {PRODUCTS.map((product) => (
-            <button
-              key={product.key}
-              type="button"
-              onClick={() => startCheckout(product.key)}
-              disabled={Boolean(loading)}
-            >
-              <strong>{product.price}</strong>
-              <span>{product.title}</span>
-              <small>{loading === product.key ? "Loading checkout..." : product.text}</small>
-            </button>
-          ))}
+      <section className="plan-grid">
+        {plans.map((plan) => (
+          <article className={`plan-card ${plan.featured ? "featured" : ""}`} key={plan.title}>
+            <strong>{plan.price}</strong>
+            <h2>{plan.title}</h2>
+            <p>{plan.text}</p>
+            <ul>
+              <li><Check size={16} /> Manual review before publishing</li>
+              <li><Check size={16} /> Creator profile support</li>
+              <li><Check size={16} /> Game thumbnail support</li>
+            </ul>
+            {plan.href === "#" ? (
+              <button disabled>{plan.cta}</button>
+            ) : (
+              <Link href={plan.href}>{plan.cta}</Link>
+            )}
+          </article>
+        ))}
+      </section>
+
+      <section className="checkout-note">
+        <Upload size={24} />
+        <div>
+          <h3>How uploads work</h3>
+          <p>
+            Creators submit a ZIP and thumbnail. Games go into a pending review queue before being
+            shown publicly on FlashPortal.
+          </p>
         </div>
-
-        <Link href="/" className="checkout-back-link">
-          Back to FlashPortal
-        </Link>
       </section>
     </main>
   );

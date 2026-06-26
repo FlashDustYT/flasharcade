@@ -332,3 +332,26 @@ Fixes:
 
 Commit summary:
 Fix Home icon naming conflict
+
+
+# FlashPortal V34 Creator Studio + Account Menu + Sounds
+
+Fixes/changes:
+- Rebuilt Creator Studio / Publish tab to look polished.
+- Rebuilt `/creator-checkout` into a real pricing/options page.
+- Account button no longer instantly logs out.
+- Logged-in account button opens a dropdown.
+- Logout now asks for confirmation first.
+- Restored lightweight UI click/tab/success sounds.
+- Domain note: changing the URL requires Vercel domain settings, not code.
+
+Domain steps:
+1. Buy or use the domain you want, such as flashportal.dev.
+2. In Vercel, open the FlashPortal project.
+3. Go to Settings > Domains.
+4. Add flashportal.dev.
+5. Follow Vercel's DNS instructions at your domain registrar.
+6. Remove or redirect the old FlashArcade domain after the new one works.
+
+Commit summary:
+Improve Creator Studio account menu and UI sounds
