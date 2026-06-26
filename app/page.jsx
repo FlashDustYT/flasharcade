@@ -38,59 +38,43 @@ import { loadCloudSave, saveCloudSave } from "../lib/cloudSaves";
 
 const OWNER_EMAIL = "isaac.akinola122@gmail.com";
 
-function getExtraAdmins() {
-  return (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "")
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-}
-
 function isOwnerUser(user) {
   return user?.email?.toLowerCase() === OWNER_EMAIL;
 }
 
-function isAdminUser(user) {
-  const email = user?.email?.toLowerCase();
-  if (!email) return false;
-  return isOwnerUser(user) || getExtraAdmins().includes(email);
-}
-
 const PLATFORM_UPDATES = [
+  {
+    version: "V40",
+    title: "Backend logic and ownership fix",
+    date: "Current",
+    changes: [
+      "Owner/admin access now requires Supabase admin_roles or the owner email",
+      "Added persistent play counts through Supabase RPC",
+      "Added real submission queue reading for owner/admin accounts",
+      "Owner can add admins by email with permission choices after running the V40 SQL",
+      "Added payment diagnostics so Stripe errors are easier to understand",
+      "Removed old environment-variable-only admin behavior that could give the wrong account admin access",
+    ],
+  },
+  {
+    version: "V39",
+    title: "Real game files added",
+    date: "Recent",
+    changes: [
+      "Added uploaded How Many Rings files",
+      "Added uploaded Legacy League files",
+      "Updated play pages to load real game index files",
+    ],
+  },
   {
     version: "V38",
     title: "Owner tools and platform management",
-    date: "Current",
+    date: "Recent",
     changes: [
       "Changed the main account label from Admin to Owner",
-      "Restricted owner tools to the main owner email only",
-      "Added game management controls for editing, privating, and deleting games",
-      "Added owner-only admin invite UI with permission choices",
-      "Changed Continue Playing to show only the latest game with a close button",
-      "Cleaned up the top Publish button so it does not crowd the header",
-      "Added payment troubleshooting links and clearer owner controls",
-    ],
-  },
-  {
-    version: "V37",
-    title: "Functionality fix update",
-    date: "Recent",
-    changes: [
-      "Fixed game play buttons and created stable /play game routes",
-      "Added a real Settings section",
-      "Made Publish more visible in the nav",
-      "Added stronger global click sounds",
-      "Expanded admin tools with announcement draft and platform shortcuts",
-    ],
-  },
-  {
-    version: "V36",
-    title: "Admin, audio, and payments update",
-    date: "Recent",
-    changes: [
-      "Added a notification panel explaining future alerts",
-      "Added admin-only tools foundation",
-      "Added stronger UI sounds and optional background music",
-      "Connected paid creator plans to Stripe payment link environment variables",
+      "Added game management controls",
+      "Added Continue Playing close button",
+      "Added owner-only admin invite UI",
     ],
   },
 ];
@@ -183,6 +167,9 @@ export default function Home() {
     announcements: false,
     payments: false,
   });
+  const [adminRole, setAdminRole] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [paymentDebugOpen, setPaymentDebugOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -244,6 +231,63 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!user?.email) {
+      setAdminRole(null);
+      return;
+    }
+
+    async function loadAdminRole() {
+      const { data, error } = await supabase
+        .from("admin_roles")
+        .select("email, role, permissions, active")
+        .eq("email", user.email.toLowerCase())
+        .eq("active", true)
+        .maybeSingle();
+
+      if (!error && data) setAdminRole(data);
+      else setAdminRole(null);
+    }
+
+    loadAdminRole();
+  }, [user?.email]);
+
+  useEffect(() => {
+    async function loadStats() {
+      const { data, error } = await supabase
+        .from("game_play_counts")
+        .select("game_id, plays");
+
+      if (!error && Array.isArray(data)) {
+        const next = {};
+        data.forEach((row) => {
+          next[row.game_id] = Number(row.plays || 0);
+        });
+        setPlayCounts((current) => ({ ...next, ...current }));
+      }
+    }
+
+    loadStats();
+  }, []);
+
+  useEffect(() => {
+    if (!userIsAdmin || !adminPerms.submissions) {
+      setSubmissions([]);
+      return;
+    }
+
+    async function loadSubmissions() {
+      const { data, error } = await supabase
+        .from("game_submissions")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && Array.isArray(data)) setSubmissions(data);
+    }
+
+    loadSubmissions();
+  }, [userIsAdmin, adminPerms.submissions]);
+
   const games = useMemo(
     () =>
       managedGames.map((game) => ({
@@ -273,6 +317,11 @@ export default function Home() {
       : "0.0";
 
   const totalPlays = games.reduce((sum, game) => sum + parsePlayCount(game.plays), 0);
+  const userIsOwner = isOwnerUser(user);
+  const userIsAdmin = userIsOwner || Boolean(adminRole?.active);
+  const adminPerms = userIsOwner
+    ? { games: true, submissions: true, announcements: true, payments: true, admins: true }
+    : adminRole?.permissions || {};
 
   useEffect(() => {
     if (!recentlyPlayed.length) return;
@@ -314,10 +363,22 @@ export default function Home() {
   }
 
   async function trackPlay(game) {
+    const nextCount = Number(playCounts[game.id] ?? game.plays ?? 0) + 1;
+
     setPlayCounts((current) => ({
       ...current,
-      [game.id]: Number(current[game.id] ?? game.plays ?? 0) + 1,
+      [game.id]: nextCount,
     }));
+
+    try {
+      const { data, error } = await supabase.rpc("increment_game_play", {
+        target_game_id: game.id,
+      });
+
+      if (!error && typeof data === "number") {
+        setPlayCounts((current) => ({ ...current, [game.id]: data }));
+      }
+    } catch {}
 
     saveRecentlyPlayed(game);
 
@@ -361,7 +422,7 @@ export default function Home() {
     { id: "achievements", label: "Achievements", icon: Trophy },
     { id: "publish", label: "Publish", icon: Upload, highlight: true },
     { id: "settings", label: "Settings", icon: Settings },
-    ...(isAdminUser(user) ? [{ id: "admin", label: isOwnerUser(user) ? "Owner" : "Admin", icon: Shield }] : []),
+    ...(userIsAdmin ? [{ id: "admin", label: userIsOwner ? "Owner" : "Admin", icon: Shield }] : []),
   ];
 
   function playUISound(type = "click") {
@@ -512,8 +573,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V38 Online</strong>
-          <p>Owner tools, game management, admin roles, payments troubleshooting, and cleaner publishing.</p>
+          <strong>V40 Online</strong>
+          <p>Persistent play counts, real submission queue policies, owner-only roles, and payment diagnostics.</p>
         </div>
       </aside>
 
@@ -589,13 +650,13 @@ export default function Home() {
             <div className="account-menu-wrap">
               <button className="account-button" type="button" onClick={handleAccountClick} disabled={!user && authLoading}>
                 {user ? <User size={18} /> : <LogIn size={18} />}
-                <span>{user ? (isOwnerUser(user) ? "FlashDust Owner" : isAdminUser(user) ? "FlashPortal Admin" : user.email?.split("@")[0]) : (authLoading ? "Checking..." : "Login")}</span>
+                <span>{user ? (userIsOwner ? "FlashDust Owner" : userIsAdmin ? "FlashPortal Admin" : user.email?.split("@")[0]) : (authLoading ? "Checking..." : "Login")}</span>
               </button>
 
               {user && accountMenuOpen && (
                 <div className="account-dropdown">
                   <div className="account-dropdown-header">
-                    <strong>{isOwnerUser(user) ? "FlashDust Owner" : isAdminUser(user) ? "FlashPortal Admin" : user.email?.split("@")[0]}</strong>
+                    <strong>{userIsOwner ? "FlashDust Owner" : userIsAdmin ? "FlashPortal Admin" : user.email?.split("@")[0]}</strong>
                     <small>{user.email}</small>
                   </div>
                   <button type="button" onClick={() => handleTabChange("library")}>
@@ -607,7 +668,7 @@ export default function Home() {
                   <button type="button" onClick={() => handleTabChange("settings")}>
                     <Settings size={16} /> Account Settings
                   </button>
-                  {isAdminUser(user) && (
+                  {userIsAdmin && (
                     <button type="button" onClick={() => handleTabChange("admin")}>
                       <Shield size={16} /> Owner/Admin Tools
                     </button>
@@ -838,11 +899,11 @@ export default function Home() {
           </section>
         )}
 
-        {activeTab === "admin" && isAdminUser(user) && (
+        {activeTab === "admin" && userIsAdmin && (
           <section className="portal-view">
             <SectionHeader
-              label={isOwnerUser(user) ? "Owner Control" : "Admin Control"}
-              title={isOwnerUser(user) ? "FlashPortal owner dashboard" : "FlashPortal admin dashboard"}
+              label={userIsOwner ? "Owner Control" : "Admin Control"}
+              title={userIsOwner ? "FlashPortal owner dashboard" : "FlashPortal admin dashboard"}
               text="Manage games, review future submissions, edit announcements, and control who can help moderate the platform."
             />
 
@@ -898,9 +959,31 @@ export default function Home() {
                 <h3>Submission Queue</h3>
                 <p>Future uploaded games appear here for accept/decline review.</p>
                 <div className="submission-placeholder">
-                  <strong>No pending submissions</strong>
-                  <small>When creators upload games, review cards will appear here.</small>
-                  <button type="button" onClick={() => setToast("Submission queue is ready for backend wiring")}>Check Queue</button>
+                  {submissions.length === 0 ? (
+                    <>
+                      <strong>No pending submissions</strong>
+                      <small>If someone submitted a game and this is empty, run the V40 SQL so owner/admin read policies are active.</small>
+                      <button type="button" onClick={() => setToast("Submission queue checked")}>Check Queue</button>
+                    </>
+                  ) : (
+                    submissions.map((submission) => (
+                      <div className="submission-row" key={submission.id}>
+                        <strong>{submission.title || submission.game_title || "Untitled Game"}</strong>
+                        <small>{submission.category || "Uncategorized"} · {submission.status || "pending"}</small>
+                        <p>{submission.description || "No description."}</p>
+                        <div className="admin-button-row">
+                          <button type="button" onClick={async () => {
+                            await supabase.from("game_submissions").update({ status: "approved" }).eq("id", submission.id);
+                            setSubmissions((current) => current.map((item) => item.id === submission.id ? { ...item, status: "approved" } : item));
+                          }}>Accept</button>
+                          <button className="danger" type="button" onClick={async () => {
+                            await supabase.from("game_submissions").update({ status: "declined" }).eq("id", submission.id);
+                            setSubmissions((current) => current.map((item) => item.id === submission.id ? { ...item, status: "declined" } : item));
+                          }}>Decline</button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </article>
 
@@ -914,7 +997,7 @@ export default function Home() {
                 </div>
               </article>
 
-              {isOwnerUser(user) && (
+              {userIsOwner && (
                 <article className="admin-card wide">
                   <Shield size={32} />
                   <h3>Add Admin</h3>
@@ -932,16 +1015,30 @@ export default function Home() {
                       </label>
                     ))}
                   </div>
-                  <button type="button" onClick={() => {
+                  <button type="button" onClick={async () => {
                     if (!newAdminEmail.includes("@")) {
                       setToast("Enter a valid admin email");
                       return;
                     }
-                    setToast(`Admin invite prepared for ${newAdminEmail}. Add it to NEXT_PUBLIC_ADMIN_EMAILS to activate.`);
+                    const email = newAdminEmail.trim().toLowerCase();
+                    const { error } = await supabase.from("admin_roles").upsert({
+                      email,
+                      role: "admin",
+                      permissions: adminPermissions,
+                      active: true,
+                      added_by: user.id,
+                    }, { onConflict: "email" });
+
+                    if (error) {
+                      setToast(`Admin save failed: ${error.message}`);
+                    } else {
+                      setToast(`Admin added: ${email}`);
+                      setNewAdminEmail("");
+                    }
                   }}>
                     Prepare Admin Invite
                   </button>
-                  <small className="admin-note">For now, Vercel env variable required: NEXT_PUBLIC_ADMIN_EMAILS. A database admin table comes next.</small>
+                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V40 SQL.</small>
                 </article>
               )}
             </div>

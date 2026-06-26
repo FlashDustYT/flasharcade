@@ -1,259 +1,166 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { ArrowLeft, Upload, CheckCircle2, AlertTriangle } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 
-const MAX_ZIP_SIZE_MB = 50;
-const MAX_THUMBNAIL_SIZE_MB = 8;
-
-function slugify(value) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "")
-    .slice(0, 70);
-}
-
-function getFileExt(file) {
-  return file?.name?.split(".").pop()?.toLowerCase() || "";
-}
-
-function formatBytes(bytes) {
-  if (!bytes) return "0 MB";
-  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+function safeFileName(name) {
+  return name.toLowerCase().replace(/[^a-z0-9.\-_]+/g, "-");
 }
 
 export default function CreatorUploadPage() {
+  const [user, setUser] = useState(null);
   const [form, setForm] = useState({
     title: "",
-    description: "",
     category: "",
-    websiteUrl: "",
+    description: "",
+    website_url: "",
   });
   const [thumbnail, setThumbnail] = useState(null);
-  const [zipFile, setZipFile] = useState(null);
-  const [status, setStatus] = useState({ type: "idle", message: "" });
-  const [uploading, setUploading] = useState(false);
+  const [zip, setZip] = useState(null);
+  const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const previewUrl = useMemo(() => {
-    if (!thumbnail) return "";
-    return URL.createObjectURL(thumbnail);
-  }, [thumbnail]);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setUser(data?.session?.user || null));
+  }, []);
 
-  function updateField(field, value) {
-    setForm((current) => ({ ...current, [field]: value }));
-  }
-
-  function validateForm(user) {
-    if (!user) return "You need to sign in before submitting a game.";
-    if (!form.title.trim()) return "Add a game title.";
-    if (!form.description.trim()) return "Add a short description.";
-    if (!form.category.trim()) return "Add a category.";
-    if (!zipFile) return "Upload a ZIP file for your game.";
-    if (getFileExt(zipFile) !== "zip") return "Your game file must be a .zip file.";
-    if (zipFile.size > MAX_ZIP_SIZE_MB * 1024 * 1024) {
-      return `Your ZIP is ${formatBytes(zipFile.size)}. The current limit is ${MAX_ZIP_SIZE_MB} MB.`;
-    }
-    if (thumbnail) {
-      const ext = getFileExt(thumbnail);
-      if (!["jpg", "jpeg", "png", "webp", "gif"].includes(ext)) {
-        return "Thumbnail must be an image file.";
-      }
-      if (thumbnail.size > MAX_THUMBNAIL_SIZE_MB * 1024 * 1024) {
-        return `Your thumbnail is ${formatBytes(thumbnail.size)}. The current limit is ${MAX_THUMBNAIL_SIZE_MB} MB.`;
-      }
-    }
-    return "";
-  }
-
-  async function uploadFile(bucket, path, file) {
-    const { error } = await supabase.storage.from(bucket).upload(path, file, {
-      cacheControl: "3600",
-      upsert: false,
+  async function signIn() {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/creator/upload` },
     });
-
-    if (error) throw error;
-
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-    return data.publicUrl;
   }
 
-  async function submitGame(event) {
+  async function submit(event) {
     event.preventDefault();
-    setStatus({ type: "idle", message: "" });
-    setUploading(true);
+
+    if (!user) {
+      setStatus("Please log in first.");
+      return;
+    }
+
+    if (!form.title || !form.description || !zip) {
+      setStatus("Game title, description, and ZIP are required.");
+      return;
+    }
+
+    setBusy(true);
+    setStatus("Uploading...");
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData?.session?.user;
-      const validationError = validateForm(user);
+      const slug = safeFileName(form.title).replace(/\.[^.]+$/, "") || `game-${Date.now()}`;
+      const basePath = `${user.id}/${Date.now()}-${slug}`;
 
-      if (validationError) {
-        setStatus({ type: "error", message: validationError });
-        setUploading(false);
-        return;
-      }
+      let zipPath = null;
+      let thumbnailPath = null;
 
-      const slug = slugify(form.title);
-      const stamp = Date.now();
-      const basePath = `${user.id}/${slug || "game"}-${stamp}`;
+      const zipName = `${basePath}/${safeFileName(zip.name)}`;
+      const zipUpload = await supabase.storage.from("game-files").upload(zipName, zip, {
+        upsert: false,
+        contentType: zip.type || "application/zip",
+      });
 
-      const zipPath = `${basePath}/game.zip`;
-      const zipUrl = await uploadFile("game-files", zipPath, zipFile);
+      if (zipUpload.error) throw zipUpload.error;
+      zipPath = zipUpload.data.path;
 
-      let thumbnailUrl = "";
       if (thumbnail) {
-        const ext = getFileExt(thumbnail);
-        const thumbnailPath = `${basePath}/thumbnail.${ext}`;
-        thumbnailUrl = await uploadFile("game-thumbnails", thumbnailPath, thumbnail);
+        const thumbName = `${basePath}/${safeFileName(thumbnail.name)}`;
+        const thumbUpload = await supabase.storage.from("game-thumbnails").upload(thumbName, thumbnail, {
+          upsert: false,
+          contentType: thumbnail.type || "image/png",
+        });
+
+        if (thumbUpload.error) throw thumbUpload.error;
+        thumbnailPath = thumbUpload.data.path;
       }
 
-      const { error: insertError } = await supabase.from("game_submissions").insert({
+      const insert = await supabase.from("game_submissions").insert({
         creator_id: user.id,
-        title: form.title.trim(),
-        description: form.description.trim(),
-        category: form.category.trim(),
-        website_url: form.websiteUrl.trim() || null,
-        thumbnail_url: thumbnailUrl || null,
-        zip_url: zipUrl,
+        title: form.title,
+        game_title: form.title,
+        category: form.category,
+        description: form.description,
+        website_url: form.website_url,
+        zip_path: zipPath,
+        thumbnail_path: thumbnailPath,
         status: "pending",
-        is_fdc_original: user.email === "isaac.akinola122@gmail.com",
       });
 
-      if (insertError) throw insertError;
+      if (insert.error) throw insert.error;
 
-      setForm({ title: "", description: "", category: "", websiteUrl: "" });
+      setStatus("Submitted successfully. Your game is now pending review.");
+      setForm({ title: "", category: "", description: "", website_url: "" });
+      setZip(null);
       setThumbnail(null);
-      setZipFile(null);
-      setStatus({
-        type: "success",
-        message: "Submitted for review. Your game is now pending approval.",
-      });
     } catch (error) {
-      setStatus({
-        type: "error",
-        message: error?.message || "Upload failed. Try again.",
-      });
+      setStatus(`Upload failed: ${error.message || String(error)}`);
     } finally {
-      setUploading(false);
+      setBusy(false);
     }
   }
 
   return (
-    <main className="creator-upload-page">
-      <section className="creator-upload-shell">
-        <div className="upload-hero">
-          <span className="pill">Creator Portal</span>
-          <h1>Publish Your Game</h1>
-          <p>
-            Your first game submission is free. Uploads go into a pending review queue before
-            they appear on FlashPortal.
-          </p>
-        </div>
+    <main className="checkout-page creator-upload-page">
+      <Link className="back-link" href="/">
+        <ArrowLeft size={18} /> Back to FlashPortal
+      </Link>
 
-        <form className="upload-form" onSubmit={submitGame}>
-          <label>
-            <span>Game title</span>
-            <input
-              value={form.title}
-              onChange={(event) => updateField("title", event.target.value)}
-              placeholder="Legacy League"
-              maxLength={80}
-            />
-          </label>
-
-          <label>
-            <span>Description</span>
-            <textarea
-              value={form.description}
-              onChange={(event) => updateField("description", event.target.value)}
-              placeholder="Tell players what your game is about."
-              rows={5}
-              maxLength={500}
-            />
-          </label>
-
-          <div className="upload-grid">
-            <label>
-              <span>Category</span>
-              <input
-                value={form.category}
-                onChange={(event) => updateField("category", event.target.value)}
-                placeholder="Sports, Horror, Strategy..."
-                maxLength={60}
-              />
-            </label>
-
-            <label>
-              <span>Website / playable link optional</span>
-              <input
-                value={form.websiteUrl}
-                onChange={(event) => updateField("websiteUrl", event.target.value)}
-                placeholder="https://example.com"
-              />
-            </label>
-          </div>
-
-          <div className="upload-grid">
-            <label className="file-box">
-              <span>Thumbnail image</span>
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                onChange={(event) => setThumbnail(event.target.files?.[0] || null)}
-              />
-              <small>{thumbnail ? `${thumbnail.name} · ${formatBytes(thumbnail.size)}` : "PNG, JPG, WEBP, or GIF"}</small>
-            </label>
-
-            <label className="file-box">
-              <span>Game ZIP</span>
-              <input
-                type="file"
-                accept=".zip,application/zip,application/x-zip-compressed"
-                onChange={(event) => setZipFile(event.target.files?.[0] || null)}
-              />
-              <small>{zipFile ? `${zipFile.name} · ${formatBytes(zipFile.size)}` : "Must include index.html. Max 50 MB."}</small>
-            </label>
-          </div>
-
-          {previewUrl && (
-            <div className="thumbnail-preview">
-              <img src={previewUrl} alt="Thumbnail preview" />
-            </div>
-          )}
-
-          <div className="submission-checklist">
-            <h2>Submission checklist</h2>
-            <ul>
-              <li>ZIP should contain an <strong>index.html</strong> file.</li>
-              <li>Game should run in a browser.</li>
-              <li>No malicious scripts, downloads, or redirects.</li>
-              <li>Thumbnail should clearly represent the game.</li>
-            </ul>
-            <p>
-              V29 stores the ZIP and creates a pending submission. Automatic ZIP inspection and
-              admin approval tools come next.
-            </p>
-          </div>
-
-          {status.message && (
-            <div className={`upload-status ${status.type}`}>
-              {status.message}
-            </div>
-          )}
-
-          <div className="upload-actions">
-            <Link href="/creator-checkout" className="checkout-back-link">
-              Back
-            </Link>
-            <button type="submit" disabled={uploading}>
-              {uploading ? "Uploading..." : "Submit for Review"}
-            </button>
-          </div>
-        </form>
+      <section className="checkout-hero">
+        <span><Upload size={16} /> Creator Portal</span>
+        <h1>Publish Your Game</h1>
+        <p>Your first game submission is free. Uploads go into a pending review queue before they appear on FlashPortal.</p>
       </section>
+
+      {!user ? (
+        <section className="checkout-note">
+          <AlertTriangle size={24} />
+          <div>
+            <h3>Login required</h3>
+            <p>You need to log in before submitting a game.</p>
+            <button type="button" onClick={signIn}>Login with Google</button>
+          </div>
+        </section>
+      ) : (
+        <form className="upload-form" onSubmit={submit}>
+          <label>
+            Game title
+            <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Legacy League" />
+          </label>
+
+          <label>
+            Category
+            <input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} placeholder="Sports, Horror, Strategy..." />
+          </label>
+
+          <label className="wide">
+            Description
+            <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Tell players what your game is about." />
+          </label>
+
+          <label className="wide">
+            Website / playable link optional
+            <input value={form.website_url} onChange={(event) => setForm({ ...form, website_url: event.target.value })} placeholder="https://example.com" />
+          </label>
+
+          <label>
+            Thumbnail image
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => setThumbnail(event.target.files?.[0] || null)} />
+          </label>
+
+          <label>
+            Game ZIP
+            <input type="file" accept=".zip,application/zip" onChange={(event) => setZip(event.target.files?.[0] || null)} />
+          </label>
+
+          <button type="submit" disabled={busy}>
+            <CheckCircle2 size={18} /> {busy ? "Submitting..." : "Submit for Review"}
+          </button>
+
+          {status && <p className="upload-status">{status}</p>}
+        </form>
+      )}
     </main>
   );
 }

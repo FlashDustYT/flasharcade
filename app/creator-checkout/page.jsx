@@ -43,6 +43,16 @@ export default function CreatorCheckout() {
     alert(`Stripe link missing for ${plan.title}. Add ${plan.env} in Vercel Environment Variables, then redeploy.`);
   }
 
+  function openPayment(plan) {
+    if (!plan.href?.startsWith("http")) {
+      handleMissing(plan);
+      return;
+    }
+
+    const win = window.open(plan.href, "_blank", "noopener,noreferrer");
+    if (!win) window.location.href = plan.href;
+  }
+
   return (
     <main className="checkout-page">
       <Link className="back-link" href="/">
@@ -71,7 +81,7 @@ export default function CreatorCheckout() {
             </ul>
 
             {plan.href?.startsWith("http") ? (
-              <a href={plan.href} target="_blank" rel="noreferrer">{plan.cta}</a>
+              <button type="button" onClick={() => openPayment(plan)}>{plan.cta}</button>
             ) : plan.href ? (
               <Link href={plan.href}>{plan.cta}</Link>
             ) : (

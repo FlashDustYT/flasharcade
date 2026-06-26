@@ -1443,3 +1443,86 @@ a {
   display: block;
   background: #000;
 }
+
+
+/* V40 backend/admin/upload polish */
+.upload-form {
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  padding: clamp(22px, 4vw, 36px);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 86%, transparent));
+  box-shadow: var(--shadow);
+}
+
+.upload-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.upload-form label.wide {
+  grid-column: span 2;
+}
+
+.upload-form input,
+.upload-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+  color: var(--text);
+  padding: 12px 14px;
+  font: inherit;
+}
+
+.upload-form textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+.upload-form button,
+.checkout-note button {
+  border: 0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--accent-text);
+  font-weight: 1000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.upload-status {
+  grid-column: span 2;
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.submission-row {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+}
+
+.submission-row p {
+  margin: 8px 0;
+}
+
+@media (max-width: 700px) {
+  .upload-form {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-form label.wide,
+  .upload-status {
+    grid-column: auto;
+  }
+}

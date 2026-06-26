@@ -436,3 +436,21 @@ Updated play routes:
 
 Commit summary:
 Add real uploaded game files to play routes
+
+
+# FlashPortal V40 Backend Fix
+
+Changes:
+- Persistent play counts using Supabase `game_play_counts` and `increment_game_play`.
+- Owner/admin access moved toward Supabase `admin_roles`.
+- Removed env-only admin behavior that could accidentally show admin on the wrong account.
+- Creator upload page now inserts into `game_submissions`.
+- Owner/admin submission queue now reads actual submissions after SQL is run.
+- Owner can add admins to Supabase from the Owner dashboard after SQL is run.
+- Added `supabase/v40_platform_backend.sql`.
+
+Important:
+Run `supabase/v40_platform_backend.sql` in Supabase SQL Editor after deploying this version.
+
+Commit summary:
+Fix backend roles submissions and persistent play counts
