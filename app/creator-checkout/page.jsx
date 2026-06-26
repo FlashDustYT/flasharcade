@@ -38,7 +38,7 @@ export default function CreatorCheckoutPage() {
     const product = PRODUCTS.find((item) => item.key === productKey);
 
     if (product?.free) {
-      window.location.href = "/?free_upload=true#library";
+      window.location.href = "/creator/upload";
       return;
     }
 

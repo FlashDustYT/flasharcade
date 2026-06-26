@@ -189,3 +189,9 @@ Changes:
 
 Commit summary:
 Add free first upload and honest creator stats
+
+
+# V28 Creator Portal
+- Added /creator/upload
+- First free upload opens upload portal.
+- UI foundation for moderation workflow.
