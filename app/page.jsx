@@ -8,7 +8,7 @@ import {
   Compass,
   Flame,
   Gamepad2,
-  Home,
+  Home as HomeIcon,
   LogIn,
   LogOut,
   Moon,

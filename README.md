@@ -321,3 +321,14 @@ Fixes:
 
 Commit summary:
 Fix duplicate Home component
+
+
+# V33.2 Home Icon Fix
+
+Fixes:
+- Aliased the lucide `Home` icon to `HomeIcon`.
+- This prevents conflict with `export default function Home()`.
+- Keeps V33 clean rebuild, Updates tab, themes, and thumbnails.
+
+Commit summary:
+Fix Home icon naming conflict
