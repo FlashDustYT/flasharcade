@@ -610,3 +610,17 @@ Run `supabase/v46_backend_queue_notifications_reviews_friends.sql`.
 
 Commit summary:
 Fix queue announcements reviews friends and pricing UI
+
+
+# FlashPortal V47
+
+Fixes:
+- Interactive review/rating pages.
+- Visible Review / Rate buttons on game cards.
+- 0% audio is fully muted.
+- Audio volume scales normally from 1% to 100%.
+- Upload hotfix SQL adds missing creator_email and review columns.
+- Old v44 upload SQL is no longer needed.
+
+Required:
+Run `supabase/v47_reviews_upload_audio_fix.sql`.

@@ -75,7 +75,7 @@ export default function CreatorUploadPage() {
 
       if (insert.error) {
         if (insert.error.message?.toLowerCase().includes("permission denied")) {
-          throw new Error("Permission denied for game_submissions. Run supabase/v46_backend_queue_notifications_reviews_friends.sql in Supabase, then refresh and try again.");
+          throw new Error("Permission denied for game_submissions. Run supabase/v47_reviews_upload_audio_fix.sql in Supabase, then refresh and try again.");
         }
         throw insert.error;
       }

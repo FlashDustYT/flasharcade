@@ -50,6 +50,19 @@ function isOwnerUser(user) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V47",
+    title: "Reviews, ratings, audio, and upload hotfix",
+    date: "Current",
+    changes: [
+      "Reviews are now obvious and clickable on every game card",
+      "Review pages save star ratings and written reviews",
+      "0% audio is true mute",
+      "1%+ audio scales upward normally",
+      "Upload SQL adds missing creator_email and review columns safely",
+      "Duplicate SQL policy errors are avoided by dropping old policies first",
+    ],
+  },
+  {
     version: "V46",
     title: "Real queue, announcements, reviews, and friends cleanup",
     date: "Current",
@@ -279,6 +292,20 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("discover");
   const [uiVolume, setUiVolume] = useState(0.45);
   const [musicVolume, setMusicVolume] = useState(0.25);
+
+  function getEffectiveVolume(value) {
+    const numeric = Number(value) || 0;
+    return numeric <= 0 ? 0 : Math.min(1, numeric);
+  }
+
+  function canPlayUiSound() {
+    return soundEnabled && getEffectiveVolume(uiVolume) > 0;
+  }
+
+  function canPlayMusic() {
+    return musicEnabled && getEffectiveVolume(musicVolume) > 0;
+  }
+
   const [audioPanelOpen, setAudioPanelOpen] = useState(false);
   const [friendLookup, setFriendLookup] = useState("");
   const [friendRequests, setFriendRequests] = useState([]);
@@ -914,8 +941,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V46 Online</strong>
-          <p>Real queue fixes, cleaner payments, public announcements, reviews, and better friends.</p>
+          <strong>V47 Online</strong>
+          <p>Working reviews/ratings, true mute at 0%, upload SQL hotfix, and better audio control.</p>
         </div>
       </aside>
 
@@ -1326,11 +1353,11 @@ export default function Home() {
               <h3>Audio Controls</h3>
               <p>Adjust click effects and background music volume.</p>
               <label className="volume-control">
-                <span>UI Click Volume: {Math.round(uiVolume * 100)}%</span>
+                <span>UI Click Volume: {uiVolume <= 0 ? 'Muted' : `${Math.round(uiVolume * 100)}%`}</span>
                 <input type="range" min="0" max="1" step="0.05" value={uiVolume} onChange={(event) => setUiVolume(Number(event.target.value))} />
               </label>
               <label className="volume-control">
-                <span>Music Volume: {Math.round(musicVolume * 100)}%</span>
+                <span>Music Volume: {musicVolume <= 0 ? 'Muted' : `${Math.round(musicVolume * 100)}%`}</span>
                 <input type="range" min="0" max="1" step="0.05" value={musicVolume} onChange={(event) => setMusicVolume(Number(event.target.value))} />
               </label>
             </article>
@@ -1504,11 +1531,11 @@ export default function Home() {
           <h3>Audio Controls</h3>
           <p>Set sound effects and background music volume. Put a slider at 0% to fully mute it.</p>
           <label>
-            <span>Click Sound Effects: {Math.round(uiVolume * 100)}%</span>
+            <span>Click Sound Effects: {uiVolume <= 0 ? 'Muted' : `${Math.round(uiVolume * 100)}%`}</span>
             <input type="range" min="0" max="1" step="0.01" value={uiVolume} onChange={(event) => setUiVolume(Number(event.target.value))} />
           </label>
           <label>
-            <span>Background Music: {Math.round(musicVolume * 100)}%</span>
+            <span>Background Music: {musicVolume <= 0 ? 'Muted' : `${Math.round(musicVolume * 100)}%`}</span>
             <input type="range" min="0" max="1" step="0.01" value={musicVolume} onChange={(event) => setMusicVolume(Number(event.target.value))} />
           </label>
           <div className="audio-popover-actions">
