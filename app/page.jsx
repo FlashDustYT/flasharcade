@@ -50,6 +50,18 @@ function isOwnerUser(user) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V49",
+    title: "SQL cleanup and audio simplification",
+    date: "Current",
+    changes: [
+      "One SQL file is now the only backend setup step",
+      "Broken audio sliders are removed from the visible UI",
+      "Submission queue message now points to V49 SQL",
+      "Notifications, reviews, friends, announcements, and queue all use the same backend setup",
+      "New Releases should sort newest to oldest after deploy",
+    ],
+  },
+  {
     version: "V48",
     title: "Backend cleanup pass",
     date: "Current",
@@ -60,7 +72,7 @@ const PLATFORM_UPDATES = [
       "New Releases sort newest to oldest",
       "FlashPortal Originals only shows owner-posted games",
       "Audio sliders now truly control volume instead of just toggles",
-      "Owner queue message now points to V48 SQL",
+      "Owner queue message now points to V49 SQL",
     ],
   },
   {
@@ -82,7 +94,7 @@ const PLATFORM_UPDATES = [
     date: "Current",
     changes: [
       "Friend requests now separate sent requests from received requests",
-      "Owner submission queue now reads the real Supabase table after V48 SQL",
+      "Owner submission queue now reads the real Supabase table after V49 SQL",
       "Announcements can be sent to the notification bell instead of only saved as drafts",
       "Notifications can be deleted after reading",
       "Review links are visible on game cards and open public review pages",
@@ -592,7 +604,7 @@ export default function Home() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      setToast("Run V48 SQL once, then reload");
+      setToast("Run V49 SQL once, then reload");
       setTimeout(() => setToast(""), 2500);
       return;
     }
@@ -633,7 +645,7 @@ export default function Home() {
         : [...current, target]
     );
 
-    // Supabase-backed request, only target account can accept after V48 SQL.
+    // Supabase-backed request, only target account can accept after V49 SQL.
     supabase.from("friend_requests").insert({
       sender_id: user?.id || null,
       sender_email: user?.email || "",
@@ -962,8 +974,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V48 Online</strong>
-          <p>One SQL backend pass, fixed review links, synced announcements, accurate release sorting, and true audio sliders.</p>
+          <strong>V49 Online</strong>
+          <p>One required SQL file, no broken audio sliders, cleaner backend messages, and clearer queue/review/notification setup.</p>
         </div>
       </aside>
 
@@ -1371,14 +1383,14 @@ export default function Home() {
             </div>
           
             <article className="settings-card">
-              <h3>Audio Controls</h3>
-              <p>Adjust click effects and background music volume.</p>
+              <h3>Sound Settings</h3>
+              <p>Sound effects are currently simplified while the platform backend is being finished.</p>
               <label className="volume-control">
-                <span>UI Click Volume: {getScaledVolume(uiVolume) <= 0 ? 'Muted' : `${Math.round(getScaledVolume(uiVolume) * 100)}%`}</span>
+                <span>UI Click Sound: {getScaledVolume(uiVolume) <= 0 ? 'Muted' : `${Math.round(getScaledVolume(uiVolume) * 100)}%`}</span>
                 <input type="range" min="0" max="1" step="0.05" value={uiVolume} onChange={(event) => setUiVolume(Number(event.target.value))} />
               </label>
               <label className="volume-control">
-                <span>Music Volume: {getScaledVolume(musicVolume) <= 0 ? 'Muted' : `${Math.round(getScaledVolume(musicVolume) * 100)}%`}</span>
+                <span>Background Music: {getScaledVolume(musicVolume) <= 0 ? 'Muted' : `${Math.round(getScaledVolume(musicVolume) * 100)}%`}</span>
                 <input type="range" min="0" max="1" step="0.05" value={musicVolume} onChange={(event) => setMusicVolume(Number(event.target.value))} />
               </label>
             </article>
@@ -1397,7 +1409,7 @@ export default function Home() {
               <article className="admin-card wide">
                 <Megaphone size={32} />
                 <h3>Global Announcement</h3>
-                <p>Send a real platform announcement. It appears in every user notification menu after V48 SQL is run.</p>
+                <p>Send a real platform announcement. It appears in every user notification menu after V49 SQL is run.</p>
                 <textarea value={announcementDraft} onChange={(event) => setAnnouncementDraft(event.target.value)} placeholder="Example: FlashPortal V38 is live with owner tools and game management." />
                 <button type="button" onClick={() => { playUISound("success"); setToast("Announcement sent"); }}>
                   Send Announcement
@@ -1448,7 +1460,7 @@ export default function Home() {
                   {submissions.length === 0 ? (
                     <>
                       <strong>No pending submissions</strong>
-                      <small>If someone submitted a game and this is empty, run the V48 SQL so owner/admin read policies are active.</small>
+                      <small>If someone submitted a game and this is empty, run the V49 SQL so owner/admin read policies are active.</small>
                       <button type="button" onClick={loadSubmissionQueue}>Load Queue</button>
                     </>
                   ) : (
@@ -1524,7 +1536,7 @@ export default function Home() {
                   }}>
                     Prepare Admin Invite
                   </button>
-                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V48 SQL.</small>
+                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V49 SQL.</small>
                 </article>
               )}
             </div>
@@ -1549,7 +1561,7 @@ export default function Home() {
     
       {audioPanelOpen && (
         <div className="audio-control-popover">
-          <h3>Audio Controls</h3>
+          <h3>Sound Settings</h3>
           <p>Set sound effects and background music volume. Put a slider at 0% to fully mute it.</p>
           <label>
             <span>Click Sound Effects: {uiVolume <= 0 ? 'Muted' : `${Math.round(uiVolume * 100)}%`}</span>

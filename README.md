@@ -624,3 +624,12 @@ Fixes:
 
 Required:
 Run `supabase/v47_reviews_upload_audio_fix.sql`.
+
+
+# FlashPortal V49
+
+This version removes the broken visible audio sliders and uses one backend SQL setup file:
+
+`supabase/v49_RUN_THIS_ONCE.sql`
+
+Run that once in Supabase SQL Editor. Do not run older SQL files.

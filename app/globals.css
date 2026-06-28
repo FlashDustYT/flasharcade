@@ -2083,3 +2083,21 @@ a {
 input[type="range"] {
   accent-color: var(--accent, #ff7a00);
 }
+
+
+/* V49 hide broken audio sliders while sounds are simplified */
+.settings-section input[type="range"],
+.audio-control-popover input[type="range"],
+.audio-controls input[type="range"],
+[class*="audio"] input[type="range"] {
+  display: none !important;
+}
+
+.settings-section:has(input[type="range"]) {
+  display: none !important;
+}
+
+.audio-control-popover,
+.audio-controls {
+  display: none !important;
+}
