@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, CreditCard, Info, Rocket, Star, Upload, Zap, Lock } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 
+const EXTRA_UPLOAD_FALLBACK_URL = "https://buy.stripe.com/00weVfeaz81Kaz190ic3m00";
+
 const plans = [
   {
     title: "First Game Free",
@@ -27,7 +29,7 @@ const plans = [
     longDescription:
       "Use this when you already used your free first upload and want to submit another game. Payment covers the extra submission slot; every game still goes through review before publishing.",
     cta: "Pay $1.99",
-    href: process.env.NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL,
+    href: process.env.NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL || EXTRA_UPLOAD_FALLBACK_URL,
     env: "NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL",
     icon: Zap,
     perks: ["Additional submission", "Manual review", "Thumbnail support", "Creator listing"],
@@ -107,7 +109,14 @@ export default function CreatorCheckout() {
   }, []);
 
   function openPayment(plan) {
-    const cleanUrl = typeof plan.href === "string" ? plan.href.trim() : "";
+    // Extra Upload safety check: the $1.99 card must never accidentally use the $9.99 featured link.
+    let cleanUrl = typeof plan.href === "string" ? plan.href.trim() : "";
+    if (plan.env === "NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL") {
+      const featured30 = (process.env.NEXT_PUBLIC_STRIPE_FEATURED_30_URL || "").trim();
+      if (!cleanUrl || cleanUrl === featured30 || cleanUrl.includes("cNi14p7Mb")) {
+        cleanUrl = EXTRA_UPLOAD_FALLBACK_URL;
+      }
+    }
 
     if (!isValidStripePaymentUrl(cleanUrl)) {
       alert(`${plan.title} is not connected yet. In Vercel, edit ${plan.env} and paste the real Stripe Payment Link that starts with https://buy.stripe.com/ or https://pay.stripe.com/. Then redeploy.`);

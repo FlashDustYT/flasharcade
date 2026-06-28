@@ -61,6 +61,18 @@ function getPlaylistKey(email) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V54",
+    title: "Official release polish",
+    date: "Current",
+    changes: [
+      "Fixed creator pricing so Extra Upload uses the $1.99 Stripe link",
+      "Continue Playing now disappears after a few seconds",
+      "Added release-roadmap cards for creator profiles, weekly trending, daily challenges, badges, wishlists, and creator follows",
+      "Improved game action spacing so Save and Review feel less crowded",
+      "Volume sliders are wired to live audio gain and stay at true mute when set to 0%",
+    ],
+  },
+  {
     version: "V53",
     title: "Release polish and cleanup",
     date: "Current",
@@ -809,7 +821,7 @@ export default function Home() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      setToast("Run V53 SQL once, then reload");
+      setToast("Run V54 SQL once, then reload");
       setTimeout(() => setToast(""), 2500);
       return;
     }
@@ -987,7 +999,7 @@ export default function Home() {
   useEffect(() => {
     if (!recentlyPlayed.length) return;
     setContinueDockOpen(true);
-    const continueDockTimer = setTimeout(() => setContinueDockOpen(false), 60000);
+    const continueDockTimer = setTimeout(() => setContinueDockOpen(false), 8000);
     return () => clearTimeout(continueDockTimer);
   }, [recentlyPlayed.length]);
 
@@ -1090,6 +1102,7 @@ export default function Home() {
     { id: "updates", label: "Updates", icon: Newspaper },
     { id: "achievements", label: "Achievements", icon: Trophy },
     { id: "publish", label: "Publish", icon: Upload, highlight: true },
+    { id: "creatorHub", label: "Creator Hub", icon: Sparkles },
     { id: "settings", label: "Settings", icon: Settings },
     ...(userIsAdmin ? [{ id: "admin", label: userIsOwner ? "Owner" : "Admin", icon: Shield }] : []),
   ];
@@ -1158,8 +1171,9 @@ export default function Home() {
       }
 
       const master = ctx.createGain();
-      if (musicVolume <= 0) return;
-      master.gain.value = 0.028 * Math.max(0, Math.min(1, musicVolume));
+      const startVolume = musicVolume <= 0 ? 0.35 : musicVolume;
+      if (musicVolume <= 0) setMusicVolume(startVolume);
+      master.gain.value = 0.028 * Math.max(0, Math.min(1, startVolume));
       window.__flashPortalMusicGain = master;
       master.connect(ctx.destination);
 
@@ -1263,8 +1277,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V53 Online</strong>
-          <p>Release polish: compact cards, working volume sliders, personal playlists, fixed friends, and persistent owner deletes.</p>
+          <strong>V54 Online</strong>
+          <p>Payment link fix, shorter continue popup, creator/social polish, and cleaner release UI.</p>
         </div>
       </aside>
 
@@ -1648,6 +1662,39 @@ export default function Home() {
           </section>
         )}
 
+
+        {activeTab === "creatorHub" && (
+          <section className="portal-view creator-hub-section">
+            <SectionHeader
+              label="FlashPortal Labs"
+              title="Creator and community roadmap"
+              text="The next layer is making FlashPortal feel alive: profiles, challenges, creator follows, badges, and better discovery."
+            />
+            <div className="idea-grid">
+              <article><Sparkles size={26} /><h3>Creator Profiles</h3><p>Avatar, banner, bio, uploaded games, followers, total plays, and average rating.</p></article>
+              <article><Flame size={26} /><h3>Weekly Trending</h3><p>Trending Today, This Week, and This Month so the homepage rotates more fairly.</p></article>
+              <article><Zap size={26} /><h3>Daily Challenge</h3><p>A featured daily game/task with XP, streaks, and limited badges.</p></article>
+              <article><Trophy size={26} /><h3>Levels and Badges</h3><p>Earn profile XP for playing, reviewing, uploading, saving games, and helping creators.</p></article>
+              <article><Heart size={26} /><h3>Wishlist + Playlist</h3><p>Playlist for saved games, wishlist for upcoming games and launch notifications.</p></article>
+              <article><Users size={26} /><h3>Follow Creators</h3><p>Get notifications when a creator uploads, updates, or launches a new game.</p></article>
+            </div>
+            <div className="spotlight-grid">
+              <article className="creator-spotlight-card">
+                <span>Featured Creator</span>
+                <h3>FlashDust</h3>
+                <p>Original sports sims, guessing games, and FlashPortal platform updates.</p>
+                <strong>{publicGames.filter((game) => game.official).length} originals</strong>
+              </article>
+              <article className="daily-challenge-card">
+                <span>Daily Challenge</span>
+                <h3>Play one new release</h3>
+                <p>Try a game you have not played today and leave a review to help the creator.</p>
+                <button type="button" onClick={() => launchGame(sortNewest(publicGames)[0] || publicGames[0])}>Start Challenge</button>
+              </article>
+            </div>
+          </section>
+        )}
+
 {activeTab === "settings" && (
           <section className="portal-view">
             <SectionHeader
@@ -1707,7 +1754,7 @@ export default function Home() {
               <article className="admin-card wide">
                 <Megaphone size={32} />
                 <h3>Global Announcement</h3>
-                <p>Send a real platform announcement. It appears in every user notification menu after V53 SQL is run.</p>
+                <p>Send a real platform announcement. It appears in every user notification menu after V54 SQL is run.</p>
                 <textarea value={announcementDraft} onChange={(event) => setAnnouncementDraft(event.target.value)} placeholder="Example: FlashPortal V38 is live with owner tools and game management." />
                 <button type="button" onClick={() => { playUISound("success"); sendAnnouncementNow(); }}>
                   Send Announcement
