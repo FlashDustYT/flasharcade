@@ -2253,3 +2253,35 @@ input[type="range"] {
 .settings-section input[type="range"] {
   display: none !important;
 }
+
+/* V52 save/playlist button polish */
+.game-action-row {
+  display: grid;
+  grid-template-columns: minmax(92px, auto) 1fr;
+  gap: 10px;
+  align-items: center;
+  margin: 10px 0 12px;
+}
+
+.heart-save-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(255, 122, 0, .45);
+  border-radius: 999px;
+  background: rgba(255, 122, 0, .08);
+  color: var(--text, #fff);
+  font-weight: 1000;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.heart-save-button.saved {
+  background: linear-gradient(135deg, var(--accent, #ff7a00), #ffbd42);
+  color: #090909;
+}
+
+.game-action-row .review-action-button {
+  margin: 0;
+}

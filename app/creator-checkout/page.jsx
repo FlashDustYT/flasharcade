@@ -114,6 +114,9 @@ export default function CreatorCheckout() {
       return;
     }
 
+    if (plan.env === "NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL") {
+      localStorage.setItem("flashportal-pending-paid-plan", "extra-upload");
+    }
     window.location.assign(cleanUrl);
   }
 

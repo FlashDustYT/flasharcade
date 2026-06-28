@@ -50,6 +50,20 @@ function isOwnerUser(user) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V52",
+    title: "Release-candidate polish",
+    date: "Current",
+    changes: [
+      "Added heart/save buttons on every game card",
+      "Playlist updates immediately when a game is saved",
+      "Friends can now be removed/unfriended",
+      "Owner private/delete actions persist through Supabase/local fallback",
+      "Rejected submissions disappear from the queue",
+      "First free upload locks after a creator has a pending or approved submission",
+      "Removed the broken audio control cards from Settings",
+    ],
+  },
+  {
     version: "V50",
     title: "Reviews and ratings fix",
     date: "Current",
@@ -417,6 +431,7 @@ export default function Home() {
   const [announcementDraft, setAnnouncementDraft] = useState("");
   const [continueDockOpen, setContinueDockOpen] = useState(true);
   const [managedGames, setManagedGames] = useState(BASE_GAMES);
+  const [gameVisibility, setGameVisibility] = useState({});
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [adminPermissions, setAdminPermissions] = useState({
     games: true,
@@ -540,6 +555,31 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    async function loadGameVisibility() {
+      let localVisibility = {};
+      try {
+        localVisibility = JSON.parse(localStorage.getItem("flashportal-game-visibility") || "{}");
+      } catch {}
+
+      const { data, error } = await supabase
+        .from("game_visibility")
+        .select("game_id, hidden, deleted");
+
+      if (!error && Array.isArray(data)) {
+        const remoteVisibility = {};
+        data.forEach((row) => {
+          remoteVisibility[row.game_id] = { hidden: Boolean(row.hidden), deleted: Boolean(row.deleted) };
+        });
+        setGameVisibility({ ...localVisibility, ...remoteVisibility });
+      } else {
+        setGameVisibility(localVisibility);
+      }
+    }
+
+    loadGameVisibility();
+  }, []);
+
+  useEffect(() => {
     async function loadAnnouncements() {
       const { data, error } = await supabase
         .from("platform_announcements")
@@ -612,28 +652,37 @@ export default function Home() {
 
   const games = useMemo(
     () =>
-      managedGames.map((game) => ({
-        ...game,
-        plays: playCounts[game.id] ?? game.plays,
-      })),
-    [managedGames, playCounts]
+      managedGames
+        .filter((game) => !gameVisibility[game.id]?.deleted)
+        .map((game) => ({
+          ...game,
+          playable: gameVisibility[game.id]?.hidden ? false : game.playable,
+          status: gameVisibility[game.id]?.hidden ? "Private" : game.status,
+          plays: playCounts[game.id] ?? game.plays,
+        })),
+    [managedGames, playCounts, gameVisibility]
+  );
+
+  const publicGames = useMemo(
+    () => games.filter((game) => game.playable !== false),
+    [games]
   );
 
   const filteredGames = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return games;
+    if (!normalized) return publicGames;
 
-    return games.filter((game) =>
+    return publicGames.filter((game) =>
       [game.title, game.description, game.genre, game.creator, game.status]
         .join(" ")
         .toLowerCase()
         .includes(normalized)
     );
-  }, [games, query]);
+  }, [publicGames, query]);
 
   const trendingGames = useMemo(() => sortTrending(filteredGames), [filteredGames]);
-  const featuredGame = trendingGames[0] || games[0];
-  const ratedGamesForAverage = games.filter((game) => Number(game.rating) > 0);
+  const featuredGame = trendingGames[0] || publicGames[0] || games[0];
+  const ratedGamesForAverage = publicGames.filter((game) => Number(game.rating) > 0);
   const averageRating = ratedGamesForAverage.length
     ? (ratedGamesForAverage.reduce((sum, game) => sum + Number(game.rating), 0) / ratedGamesForAverage.length).toFixed(1)
     : "New";
@@ -689,7 +738,7 @@ export default function Home() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      setToast("Run V51 SQL once, then reload");
+      setToast("Run V52 SQL once, then reload");
       setTimeout(() => setToast(""), 2500);
       return;
     }
@@ -753,9 +802,25 @@ export default function Home() {
     setFriendRequests((current) => current.filter((request) => request !== target));
   }
 
+  function unfriend(target) {
+    setFriends((current) => current.filter((friend) => friend.toLowerCase() !== target.toLowerCase()));
+    setToast(`Removed ${target} from friends`);
+    setTimeout(() => setToast(""), 2000);
+  }
+
   useEffect(() => {
     localStorage.setItem("flashportal-playlist", JSON.stringify(playlistIds));
   }, [playlistIds]);
+
+  useEffect(() => {
+    function syncPlaylistFromStorage() {
+      try {
+        setPlaylistIds(JSON.parse(localStorage.getItem("flashportal-playlist") || "[]"));
+      } catch {}
+    }
+    window.addEventListener("flashportal-playlist-changed", syncPlaylistFromStorage);
+    return () => window.removeEventListener("flashportal-playlist-changed", syncPlaylistFromStorage);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("flashportal-reviews", JSON.stringify(reviews));
@@ -798,9 +863,9 @@ export default function Home() {
     setTimeout(() => setToast(""), 2000);
   }
 
-  const playlistGames = games.filter((game) => playlistIds.includes(game.id));
+  const playlistGames = publicGames.filter((game) => playlistIds.includes(game.id));
 
-  const totalPlays = games.reduce((sum, game) => sum + parsePlayCount(game.plays), 0);
+  const totalPlays = publicGames.reduce((sum, game) => sum + parsePlayCount(game.plays), 0);
 
   useEffect(() => {
     if (!recentlyPlayed.length) return;
@@ -882,7 +947,7 @@ export default function Home() {
   }
 
   function launchRandomGame() {
-    const playable = games.filter((game) => game.playable);
+    const playable = publicGames.filter((game) => game.playable);
     const pick = playable[Math.floor(Math.random() * playable.length)];
     if (pick) launchGame(pick);
   }
@@ -1041,6 +1106,24 @@ export default function Home() {
     setAccountMenuOpen(false);
   }
 
+  async function persistGameVisibility(gameId, changes) {
+    const nextEntry = { ...(gameVisibility[gameId] || {}), ...changes };
+    const nextVisibility = { ...gameVisibility, [gameId]: nextEntry };
+    setGameVisibility(nextVisibility);
+    localStorage.setItem("flashportal-game-visibility", JSON.stringify(nextVisibility));
+
+    try {
+      await supabase.from("game_visibility").upsert({
+        game_id: gameId,
+        hidden: Boolean(nextEntry.hidden),
+        deleted: Boolean(nextEntry.deleted),
+        updated_by: user?.id || null,
+        updated_by_email: user?.email || "",
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "game_id" });
+    } catch {}
+  }
+
   return (
     <main className="portal-shell">
       <aside className="portal-left">
@@ -1061,8 +1144,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V51 Online</strong>
-          <p>Real project fix: reviews, queue publish, notifications, and audio cleanup.</p>
+          <strong>V52 Online</strong>
+          <p>Final release tweaks: hearts playlist, unfriend, persistent hide/delete, and free-upload lock.</p>
         </div>
       </aside>
 
@@ -1227,7 +1310,7 @@ export default function Home() {
             </div>
 
             <div className="stats-grid">
-              <Stat icon={Gamepad2} value={games.length} label="Playable Games" />
+              <Stat icon={Gamepad2} value={publicGames.length} label="Playable Games" />
               <Stat icon={Cloud} value={recentlyPlayed.length} label="Cloud Saves" />
               <Stat icon={Trophy} value="0" label="Achievements" />
               <Stat icon={Star} value={averageRating} label="Avg Rating" />
@@ -1365,7 +1448,7 @@ export default function Home() {
             {playlistGames.length ? (
               <div className="game-grid">
                 {playlistGames.map((game) => (
-                  <GameCard key={game.id} game={game} />
+                  <GameCard key={game.id} game={game} onPlay={() => launchGame(game)} />
                 ))}
               </div>
             ) : (
@@ -1426,7 +1509,7 @@ export default function Home() {
               <article>
                 <h3>Friends List</h3>
                 {friends.length ? (
-                  friends.map((friend) => <div className="friend-row" key={friend}><span>{friend}</span></div>)
+                  friends.map((friend) => <div className="friend-row" key={friend}><span>{friend}</span><button className="danger" type="button" onClick={() => unfriend(friend)}>Unfriend</button></div>)
                 ) : (
                   <p>No friends added yet.</p>
                 )}
@@ -1450,24 +1533,6 @@ export default function Home() {
                 <p>Switch between the classic light look and the black/orange dark look.</p>
                 <button type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
                   Current: {theme === "dark" ? "Dark Mode" : "Light Mode"}
-                </button>
-              </article>
-
-              <article className="settings-card">
-                <Volume2 size={28} />
-                <h3>UI Sounds</h3>
-                <p>Play a small sound when clicking buttons, links, tabs, and forms.</p>
-                <button type="button" onClick={() => setAudioEnabled((enabled) => !enabled)}>
-                  Sounds: {audioEnabled ? "On" : "Off"}
-                </button>
-              </article>
-
-              <article className="settings-card">
-                <Music2 size={28} />
-                <h3>Background Music</h3>
-                <p>Optional low-volume portal ambience. Browsers require you to click first.</p>
-                <button type="button" onClick={toggleBackgroundMusic}>
-                  Music: {musicEnabled ? "On" : "Off"}
                 </button>
               </article>
 
@@ -1497,7 +1562,7 @@ export default function Home() {
               <article className="admin-card wide">
                 <Megaphone size={32} />
                 <h3>Global Announcement</h3>
-                <p>Send a real platform announcement. It appears in every user notification menu after V51 SQL is run.</p>
+                <p>Send a real platform announcement. It appears in every user notification menu after V52 SQL is run.</p>
                 <textarea value={announcementDraft} onChange={(event) => setAnnouncementDraft(event.target.value)} placeholder="Example: FlashPortal V38 is live with owner tools and game management." />
                 <button type="button" onClick={() => { playUISound("success"); sendAnnouncementNow(); }}>
                   Send Announcement
@@ -1524,12 +1589,14 @@ export default function Home() {
                         Edit Text
                       </button>
                       <button type="button" onClick={() => {
-                        setManagedGames((current) => current.map((item) => item.id === game.id ? { ...item, playable: !item.playable, status: item.playable ? "Private" : "Playable" } : item));
+                        persistGameVisibility(game.id, { hidden: game.playable !== false });
+                        setManagedGames((current) => current.map((item) => item.id === game.id ? { ...item, playable: item.playable === false, status: item.playable === false ? "Playable" : "Private" } : item));
                       }}>
                         {game.playable ? "Private" : "Public"}
                       </button>
                       <button className="danger" type="button" onClick={() => {
-                        if (window.confirm(`Delete ${game.title} from the local game list?`)) {
+                        if (window.confirm(`Delete ${game.title} from the live game list? This now persists after refresh.`)) {
+                          persistGameVisibility(game.id, { hidden: true, deleted: true });
                           setManagedGames((current) => current.filter((item) => item.id !== game.id));
                         }
                       }}>
@@ -1548,7 +1615,7 @@ export default function Home() {
                   {submissions.length === 0 ? (
                     <>
                       <strong>No pending submissions</strong>
-                      <small>If someone submitted a game and this is empty, run the V51 SQL so owner/admin read policies are active.</small>
+                      <small>If someone submitted a game and this is empty, run the V52 SQL so owner/admin read policies are active.</small>
                       <button type="button" onClick={loadSubmissionQueue}>Load Queue</button>
                     </>
                   ) : (
@@ -1565,7 +1632,8 @@ export default function Home() {
                               setToast(`Accept failed: ${error.message}`);
                               return;
                             }
-                            setManagedGames((current) => current.some((game) => game.id === approvedGame.id) ? current : [...current, approvedGame]);
+                            await persistGameVisibility(approvedGame.id, { hidden: false, deleted: false });
+                            setManagedGames((current) => current.some((game) => game.id === approvedGame.id) ? current.map((game) => game.id === approvedGame.id ? approvedGame : game) : [...current, approvedGame]);
                             setSubmissions((current) => current.filter((item) => item.id !== submission.id));
                             setSubmissionQueue((current) => current.filter((item) => item.id !== submission.id));
                             setToast(`${approvedGame.title} published`);
@@ -1638,7 +1706,7 @@ export default function Home() {
                   }}>
                     Prepare Admin Invite
                   </button>
-                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V51 SQL.</small>
+                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V52 SQL.</small>
                 </article>
               )}
             </div>
@@ -1704,7 +1772,7 @@ function FeaturedCard({ game, onPlay }) {
         <span>{game.status}</span>
         <h2>{game.title}</h2>
         <p>{game.description}</p>
-        <a className="review-action-button" href={`/reviews/${game.id}`}>⭐ Review / Rate</a>
+        <div className="game-action-row"><SaveGameButton gameId={game.id} /><a className="review-action-button" href={`/reviews/${game.id}`}>⭐ Review / Rate</a></div>
         <div className="card-tags">
           <em>{game.genre}</em>
           {game.official && <em className="official">Presented by FlashDust</em>}
@@ -1753,13 +1821,46 @@ function GameCard({ game, onPlay, compact = false }) {
           <em>{game.genre}</em>
           <em>{game.status}</em>
         </div>
-        <a className="review-action-button" href={`/reviews/${game.id}`}>
-          <Star size={15} /> Review / Rate
-        </a>
+        <div className="game-action-row">
+          <SaveGameButton gameId={game.id} />
+          <a className="review-action-button" href={`/reviews/${game.id}`}>
+            <Star size={15} /> Review / Rate
+          </a>
+        </div>
         <button type="button" onClick={onPlay}>
           <Play size={15} /> Play
         </button>
       </div>
     </article>
+  );
+}
+
+
+function SaveGameButton({ gameId }) {
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    try {
+      const ids = JSON.parse(localStorage.getItem("flashportal-playlist") || "[]");
+      setSaved(ids.includes(gameId));
+    } catch {}
+  }, [gameId]);
+
+  function toggleSaved() {
+    let ids = [];
+    try {
+      ids = JSON.parse(localStorage.getItem("flashportal-playlist") || "[]");
+    } catch {}
+    const next = ids.includes(gameId) ? ids.filter((id) => id !== gameId) : [...ids, gameId];
+    localStorage.setItem("flashportal-playlist", JSON.stringify(next));
+    setSaved(next.includes(gameId));
+    window.dispatchEvent(new Event("flashportal-playlist-changed"));
+  }
+
+  return (
+    <button className={`heart-save-button ${saved ? "saved" : ""}`} type="button" onClick={toggleSaved} aria-label={saved ? "Remove from Playlist" : "Add to Playlist"}>
+      <Heart size={16} fill={saved ? "currentColor" : "none"} />
+      {saved ? "Saved" : "Save"}
+    </button>
   );
 }
