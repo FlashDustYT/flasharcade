@@ -68,7 +68,7 @@ const PLATFORM_UPDATES = [
     changes: [
       "One SQL file is now the only backend setup step",
       "Broken audio sliders are removed from the visible UI",
-      "Submission queue message now points to V50 SQL",
+      "Submission queue message now points to V51 SQL",
       "Notifications, reviews, friends, announcements, and queue all use the same backend setup",
       "New Releases should sort newest to oldest after deploy",
     ],
@@ -84,7 +84,7 @@ const PLATFORM_UPDATES = [
       "New Releases sort newest to oldest",
       "FlashPortal Originals only shows owner-posted games",
       "Audio sliders now truly control volume instead of just toggles",
-      "Owner queue message now points to V50 SQL",
+      "Owner queue message now points to V51 SQL",
     ],
   },
   {
@@ -106,7 +106,7 @@ const PLATFORM_UPDATES = [
     date: "Current",
     changes: [
       "Friend requests now separate sent requests from received requests",
-      "Owner submission queue now reads the real Supabase table after V50 SQL",
+      "Owner submission queue now reads the real Supabase table after V51 SQL",
       "Announcements can be sent to the notification bell instead of only saved as drafts",
       "Notifications can be deleted after reading",
       "Review links are visible on game cards and open public review pages",
@@ -325,6 +325,55 @@ function sortTrending(games) {
   });
 }
 
+
+function slugFromTitle(title, fallback = "uploaded-game") {
+  const slug = String(title || fallback)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || fallback;
+}
+
+function submissionToGame(submission) {
+  const title = submission.title || submission.game_title || "Untitled Game";
+  const id = submission.game_id || `submission-${submission.id || slugFromTitle(title)}`;
+  let thumbnail = "/game-thumbnails/default.svg";
+
+  if (submission.thumbnail_url) {
+    thumbnail = submission.thumbnail_url;
+  } else if (submission.thumbnail_path) {
+    const { data } = supabase.storage.from("game-thumbnails").getPublicUrl(submission.thumbnail_path);
+    thumbnail = data?.publicUrl || thumbnail;
+  }
+
+  return {
+    id,
+    title,
+    tagline: submission.category || "Creator Game",
+    description: submission.description || "Creator-submitted FlashPortal game.",
+    genre: submission.category || "Creator",
+    creator: submission.creator_email || "FlashPortal Creator",
+    official: false,
+    playable: true,
+    featured: false,
+    status: "New Release",
+    rating: 0,
+    plays: 0,
+    thumbnail,
+    path: submission.website_url || `/reviews/${id}`,
+    created_at: submission.created_at || new Date().toISOString(),
+    submissionId: submission.id,
+  };
+}
+
+function sortNewest(games) {
+  return [...games].sort((a, b) => {
+    const at = new Date(a.created_at || a.createdAt || 0).getTime() || 0;
+    const bt = new Date(b.created_at || b.createdAt || 0).getTime() || 0;
+    return bt - at;
+  });
+}
+
 export default function Home() {
   const getScaledVolume = (value) => {
     const n = Number(value) || 0;
@@ -335,23 +384,14 @@ export default function Home() {
 
   const [theme, setTheme] = useState("dark");
   const [activeTab, setActiveTab] = useState("discover");
-  const [uiVolume, setUiVolume] = useState(0.45);
-  const [musicVolume, setMusicVolume] = useState(0.25);
+  const [uiVolume, setUiVolume] = useState(1);
+  const [musicVolume, setMusicVolume] = useState(1);
 
   function getEffectiveVolume(value) {
     const numeric = Number(value) || 0;
     return numeric <= 0 ? 0 : Math.min(1, numeric);
   }
 
-  function canPlayUiSound() {
-    return soundEnabled && getScaledVolume(uiVolume) > 0 && getEffectiveVolume(uiVolume) > 0;
-  }
-
-  function canPlayMusic() {
-    return musicEnabled && getScaledVolume(musicVolume) > 0 && getEffectiveVolume(musicVolume) > 0;
-  }
-
-  const [audioPanelOpen, setAudioPanelOpen] = useState(false);
   const [friendLookup, setFriendLookup] = useState("");
   const [friendRequests, setFriendRequests] = useState([]);
   const [sentFriendRequests, setSentFriendRequests] = useState([]);
@@ -414,10 +454,6 @@ export default function Home() {
 
   useEffect(() => {
     try {
-      const savedUiVolume = Number(localStorage.getItem("flashportal-ui-volume"));
-      const savedMusicVolume = Number(localStorage.getItem("flashportal-music-volume"));
-      if (Number.isFinite(savedUiVolume)) setUiVolume(savedUiVolume);
-      if (Number.isFinite(savedMusicVolume)) setMusicVolume(savedMusicVolume);
       setPlaylistIds(JSON.parse(localStorage.getItem("flashportal-playlist") || "[]"));
       setReviews(JSON.parse(localStorage.getItem("flashportal-reviews") || "{}"));
       setFriends(JSON.parse(localStorage.getItem("flashportal-friends") || "[]"));
@@ -483,6 +519,50 @@ export default function Home() {
   }, [user?.email]);
 
   useEffect(() => {
+    async function loadApprovedSubmissions() {
+      const { data, error } = await supabase
+        .from("game_submissions")
+        .select("*")
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        const approvedGames = data.map(submissionToGame);
+        setManagedGames((current) => {
+          const official = current.filter((game) => game.official);
+          const currentCustom = current.filter((game) => !game.official && !approvedGames.some((approved) => approved.id === game.id));
+          return [...official, ...approvedGames, ...currentCustom];
+        });
+      }
+    }
+
+    loadApprovedSubmissions();
+  }, []);
+
+  useEffect(() => {
+    async function loadAnnouncements() {
+      const { data, error } = await supabase
+        .from("platform_announcements")
+        .select("id, title, body, created_at")
+        .eq("active", true)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (!error && Array.isArray(data)) {
+        setNotifications(data.map((item) => ({
+          id: `announcement-${item.id}`,
+          title: item.title || "FlashPortal Announcement",
+          body: item.body || "",
+          created_at: item.created_at,
+          type: "announcement",
+        })));
+      }
+    }
+
+    loadAnnouncements();
+  }, []);
+
+  useEffect(() => {
     try {
       const cached = JSON.parse(localStorage.getItem("flashportal-play-counts") || "{}");
       setPlayCounts((current) => ({ ...cached, ...current }));
@@ -521,6 +601,7 @@ export default function Home() {
       const { data, error } = await supabase
         .from("game_submissions")
         .select("*")
+        .eq("status", "pending")
         .order("created_at", { ascending: false });
 
       if (!error && Array.isArray(data)) setSubmissions(data);
@@ -556,14 +637,6 @@ export default function Home() {
   const averageRating = ratedGamesForAverage.length
     ? (ratedGamesForAverage.reduce((sum, game) => sum + Number(game.rating), 0) / ratedGamesForAverage.length).toFixed(1)
     : "New";
-
-  useEffect(() => {
-    localStorage.setItem("flashportal-ui-volume", String(uiVolume));
-  }, [uiVolume]);
-
-  useEffect(() => {
-    localStorage.setItem("flashportal-music-volume", String(musicVolume));
-  }, [musicVolume]);
 
   useEffect(() => {
     localStorage.setItem("flashportal-sent-friend-requests", JSON.stringify(sentFriendRequests));
@@ -616,11 +689,12 @@ export default function Home() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      setToast("Run V50 SQL once, then reload");
+      setToast("Run V51 SQL once, then reload");
       setTimeout(() => setToast(""), 2500);
       return;
     }
 
+    setSubmissions(data || []);
     setSubmissionQueue(data || []);
     setToast((data || []).length ? "Submission queue loaded" : "No pending submissions");
     setTimeout(() => setToast(""), 2000);
@@ -657,7 +731,7 @@ export default function Home() {
         : [...current, target]
     );
 
-    // Supabase-backed request, only target account can accept after V50 SQL.
+    // Supabase-backed request, only target account can accept after V51 SQL.
     supabase.from("friend_requests").insert({
       sender_id: user?.id || null,
       sender_email: user?.email || "",
@@ -839,7 +913,7 @@ export default function Home() {
   ];
 
   function playUISound(type = "click") {
-    if (!audioEnabled || typeof window === "undefined") return;
+    if (!audioEnabled || uiVolume <= 0 || typeof window === "undefined") return;
 
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -870,7 +944,7 @@ export default function Home() {
       osc.frequency.setValueAtTime(sound.freq, now);
       osc.frequency.exponentialRampToValueAtTime(sound.end, now + sound.length);
 
-      gain.gain.setValueAtTime(sound.volume, now);
+      gain.gain.setValueAtTime(sound.volume * Math.max(0, Math.min(1, uiVolume)), now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + sound.length);
 
       osc.connect(gain);
@@ -902,7 +976,8 @@ export default function Home() {
       }
 
       const master = ctx.createGain();
-      master.gain.value = 0.028;
+      if (musicVolume <= 0) return;
+      master.gain.value = 0.028 * Math.max(0, Math.min(1, musicVolume));
       master.connect(ctx.destination);
 
       const notes = [110, 146.83, 164.81, 196, 220, 196, 164.81, 146.83];
@@ -986,8 +1061,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V50 Online</strong>
-          <p>Focused reviews and ratings fix.</p>
+          <strong>V51 Online</strong>
+          <p>Real project fix: reviews, queue publish, notifications, and audio cleanup.</p>
         </div>
       </aside>
 
@@ -1024,8 +1099,22 @@ export default function Home() {
               {notificationsOpen && (
                 <div className="notification-panel">
                   <strong>Notifications</strong>
-                  <p>No new alerts yet.</p>
-                  <small>This will be used for platform announcements, upload review results, friend requests, creator updates, and game notifications.</small>
+                  {notifications.length === 0 ? (
+                    <p>No new alerts yet.</p>
+                  ) : (
+                    <div className="notification-list">
+                      {notifications.map((note) => (
+                        <article className="notification-item" key={note.id}>
+                          <div>
+                            <b>{note.title || "FlashPortal Update"}</b>
+                            <p>{note.body || note.text || ""}</p>
+                            {note.created_at && <small>{new Date(note.created_at).toLocaleString()}</small>}
+                          </div>
+                          <button type="button" onClick={() => deleteNotification(note.id)} aria-label="Delete notification">×</button>
+                        </article>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1146,7 +1235,7 @@ export default function Home() {
             </div>
 
             <GameRow title="Trending Now" icon={Flame} games={trendingGames} onPlay={launchGame} />
-            <GameRow title="New Releases" icon={Zap} games={filteredGames.filter((game) => game.status === "New Release")} onPlay={launchGame} />
+            <GameRow title="New Releases" icon={Zap} games={sortNewest(filteredGames.filter((game) => game.status === "New Release"))} onPlay={launchGame} />
             <GameRow title="FlashPortal Originals" icon={Sparkles} games={filteredGames.filter((game) => game.official)} onPlay={launchGame} />
           </section>
         )}
@@ -1393,20 +1482,7 @@ export default function Home() {
                 )}
               </article>
             </div>
-          
-            <article className="settings-card">
-              <h3>Sound Settings</h3>
-              <p>Sound effects are currently simplified while the platform backend is being finished.</p>
-              <label className="volume-control">
-                <span>UI Click Sound: {getScaledVolume(uiVolume) <= 0 ? 'Muted' : `${Math.round(getScaledVolume(uiVolume) * 100)}%`}</span>
-                <input type="range" min="0" max="1" step="0.05" value={uiVolume} onChange={(event) => setUiVolume(Number(event.target.value))} />
-              </label>
-              <label className="volume-control">
-                <span>Background Music: {getScaledVolume(musicVolume) <= 0 ? 'Muted' : `${Math.round(getScaledVolume(musicVolume) * 100)}%`}</span>
-                <input type="range" min="0" max="1" step="0.05" value={musicVolume} onChange={(event) => setMusicVolume(Number(event.target.value))} />
-              </label>
-            </article>
-          </section>
+</section>
         )}
 
         {activeTab === "admin" && userIsAdmin && (
@@ -1421,9 +1497,9 @@ export default function Home() {
               <article className="admin-card wide">
                 <Megaphone size={32} />
                 <h3>Global Announcement</h3>
-                <p>Send a real platform announcement. It appears in every user notification menu after V50 SQL is run.</p>
+                <p>Send a real platform announcement. It appears in every user notification menu after V51 SQL is run.</p>
                 <textarea value={announcementDraft} onChange={(event) => setAnnouncementDraft(event.target.value)} placeholder="Example: FlashPortal V38 is live with owner tools and game management." />
-                <button type="button" onClick={() => { playUISound("success"); setToast("Announcement sent"); }}>
+                <button type="button" onClick={() => { playUISound("success"); sendAnnouncementNow(); }}>
                   Send Announcement
                 </button>
               </article>
@@ -1472,7 +1548,7 @@ export default function Home() {
                   {submissions.length === 0 ? (
                     <>
                       <strong>No pending submissions</strong>
-                      <small>If someone submitted a game and this is empty, run the V50 SQL so owner/admin read policies are active.</small>
+                      <small>If someone submitted a game and this is empty, run the V51 SQL so owner/admin read policies are active.</small>
                       <button type="button" onClick={loadSubmissionQueue}>Load Queue</button>
                     </>
                   ) : (
@@ -1483,12 +1559,26 @@ export default function Home() {
                         <p>{submission.description || "No description."}</p>
                         <div className="admin-button-row">
                           <button type="button" onClick={async () => {
-                            await supabase.from("game_submissions").update({ status: "approved" }).eq("id", submission.id);
-                            setSubmissions((current) => current.map((item) => item.id === submission.id ? { ...item, status: "approved" } : item));
+                            const approvedGame = submissionToGame({ ...submission, status: "approved" });
+                            const { error } = await supabase.from("game_submissions").update({ status: "approved", updated_at: new Date().toISOString() }).eq("id", submission.id);
+                            if (error) {
+                              setToast(`Accept failed: ${error.message}`);
+                              return;
+                            }
+                            setManagedGames((current) => current.some((game) => game.id === approvedGame.id) ? current : [...current, approvedGame]);
+                            setSubmissions((current) => current.filter((item) => item.id !== submission.id));
+                            setSubmissionQueue((current) => current.filter((item) => item.id !== submission.id));
+                            setToast(`${approvedGame.title} published`);
                           }}>Accept</button>
                           <button className="danger" type="button" onClick={async () => {
-                            await supabase.from("game_submissions").update({ status: "declined" }).eq("id", submission.id);
-                            setSubmissions((current) => current.map((item) => item.id === submission.id ? { ...item, status: "declined" } : item));
+                            const { error } = await supabase.from("game_submissions").update({ status: "declined", updated_at: new Date().toISOString() }).eq("id", submission.id);
+                            if (error) {
+                              setToast(`Decline failed: ${error.message}`);
+                              return;
+                            }
+                            setSubmissions((current) => current.filter((item) => item.id !== submission.id));
+                            setSubmissionQueue((current) => current.filter((item) => item.id !== submission.id));
+                            setToast("Submission declined");
                           }}>Decline</button>
                         </div>
                       </div>
@@ -1548,7 +1638,7 @@ export default function Home() {
                   }}>
                     Prepare Admin Invite
                   </button>
-                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V50 SQL.</small>
+                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V51 SQL.</small>
                 </article>
               )}
             </div>
@@ -1570,28 +1660,7 @@ export default function Home() {
 
         {toast && <div className="portal-toast">{toast}</div>}
       </section>
-    
-      {audioPanelOpen && (
-        <div className="audio-control-popover">
-          <h3>Sound Settings</h3>
-          <p>Set sound effects and background music volume. Put a slider at 0% to fully mute it.</p>
-          <label>
-            <span>Click Sound Effects: {uiVolume <= 0 ? 'Muted' : `${Math.round(uiVolume * 100)}%`}</span>
-            <input type="range" min="0" max="1" step="0.01" value={uiVolume} onChange={(event) => setUiVolume(Number(event.target.value))} />
-          </label>
-          <label>
-            <span>Background Music: {musicVolume <= 0 ? 'Muted' : `${Math.round(musicVolume * 100)}%`}</span>
-            <input type="range" min="0" max="1" step="0.01" value={musicVolume} onChange={(event) => setMusicVolume(Number(event.target.value))} />
-          </label>
-          <div className="audio-popover-actions">
-            <button type="button" onClick={() => setUiVolume(0)}>Mute Clicks</button>
-            <button type="button" onClick={() => setMusicVolume(0)}>Mute Music</button>
-            <button type="button" onClick={() => setAudioPanelOpen(false)}>Done</button>
-          </div>
-        </div>
-      )}
-
-    </main>
+</main>
   );
 }
 
@@ -1634,8 +1703,8 @@ function FeaturedCard({ game, onPlay }) {
       <div className="featured-body">
         <span>{game.status}</span>
         <h2>{game.title}</h2>
-        <p>{game.description}
-              <a className="review-action-button" href={`/reviews/${game.id}`}>⭐ Review / Rate</a></p>
+        <p>{game.description}</p>
+        <a className="review-action-button" href={`/reviews/${game.id}`}>⭐ Review / Rate</a>
         <div className="card-tags">
           <em>{game.genre}</em>
           {game.official && <em className="official">Presented by FlashDust</em>}
@@ -1684,6 +1753,9 @@ function GameCard({ game, onPlay, compact = false }) {
           <em>{game.genre}</em>
           <em>{game.status}</em>
         </div>
+        <a className="review-action-button" href={`/reviews/${game.id}`}>
+          <Star size={15} /> Review / Rate
+        </a>
         <button type="button" onClick={onPlay}>
           <Play size={15} /> Play
         </button>
