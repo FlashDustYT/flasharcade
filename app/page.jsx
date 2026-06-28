@@ -48,7 +48,31 @@ function isOwnerUser(user) {
   return user?.email?.toLowerCase() === OWNER_EMAIL;
 }
 
+function getScopedKey(prefix, email) {
+  const safeEmail = String(email || (typeof window !== "undefined" ? window.__flashPortalCurrentUserEmail : "guest") || "guest")
+    .toLowerCase()
+    .replace(/[^a-z0-9@._-]/g, "_");
+  return `${prefix}-${safeEmail || "guest"}`;
+}
+
+function getPlaylistKey(email) {
+  return getScopedKey("flashportal-playlist", email);
+}
+
 const PLATFORM_UPDATES = [
+  {
+    version: "V53",
+    title: "Release polish and cleanup",
+    date: "Current",
+    changes: [
+      "Review and Save buttons are smaller and cleaner on game cards",
+      "Playlists are now stored per signed-in account",
+      "Friend requests load as received or sent based on the current account",
+      "Owner delete removes the game from management and the public list",
+      "Notification badge appears when announcements or requests exist",
+      "Volume sliders are restored and now control click and music volume",
+    ],
+  },
   {
     version: "V52",
     title: "Release-candidate polish",
@@ -469,16 +493,22 @@ export default function Home() {
 
   useEffect(() => {
     try {
-      setPlaylistIds(JSON.parse(localStorage.getItem("flashportal-playlist") || "[]"));
+      setPlaylistIds(JSON.parse(localStorage.getItem(getPlaylistKey(user?.email)) || "[]"));
       setReviews(JSON.parse(localStorage.getItem("flashportal-reviews") || "{}"));
-      setFriends(JSON.parse(localStorage.getItem("flashportal-friends") || "[]"));
-      setFriendRequests(JSON.parse(localStorage.getItem("flashportal-friend-requests") || "[]"));
-      setSentFriendRequests(JSON.parse(localStorage.getItem("flashportal-sent-friend-requests") || "[]"));
+      setFriends(JSON.parse(localStorage.getItem(getScopedKey("flashportal-friends", user?.email)) || "[]"));
+      setFriendRequests(JSON.parse(localStorage.getItem(getScopedKey("flashportal-friend-requests", user?.email)) || "[]"));
+      setSentFriendRequests(JSON.parse(localStorage.getItem(getScopedKey("flashportal-sent-friend-requests", user?.email)) || "[]"));
       setNotifications(JSON.parse(localStorage.getItem("flashportal-notifications") || "[]"));
     } catch {}
 
     const savedTheme = localStorage.getItem("flashportal-theme");
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
+
+    const savedUiVolume = localStorage.getItem("flashportal-ui-volume");
+    if (savedUiVolume !== null) setUiVolume(Math.max(0, Math.min(1, Number(savedUiVolume) || 0)));
+
+    const savedMusicVolume = localStorage.getItem("flashportal-music-volume");
+    if (savedMusicVolume !== null) setMusicVolume(Math.max(0, Math.min(1, Number(savedMusicVolume) || 0)));
 
     const savedRecent = localStorage.getItem("flashportal-recently-played");
     if (savedRecent) {
@@ -511,6 +541,18 @@ export default function Home() {
       listener?.subscription?.unsubscribe?.();
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const playlistKey = getPlaylistKey(user?.email);
+      window.__flashPortalCurrentUserEmail = user?.email || "guest";
+      try {
+        setPlaylistIds(JSON.parse(localStorage.getItem(playlistKey) || "[]"));
+      } catch {
+        setPlaylistIds([]);
+      }
+    }
+  }, [user?.email]);
 
   useEffect(() => {
     if (!user?.email) {
@@ -589,13 +631,18 @@ export default function Home() {
         .limit(20);
 
       if (!error && Array.isArray(data)) {
-        setNotifications(data.map((item) => ({
-          id: `announcement-${item.id}`,
-          title: item.title || "FlashPortal Announcement",
-          body: item.body || "",
-          created_at: item.created_at,
-          type: "announcement",
-        })));
+        let dismissed = [];
+        try { dismissed = JSON.parse(localStorage.getItem("flashportal-dismissed-notifications") || "[]"); } catch {}
+        setNotifications(data
+          .map((item) => ({
+            id: `announcement-${item.id}`,
+            title: item.title || "FlashPortal Announcement",
+            body: item.body || "",
+            created_at: item.created_at,
+            type: "announcement",
+          }))
+          .filter((item) => !dismissed.includes(item.id))
+        );
       }
     }
 
@@ -688,8 +735,28 @@ export default function Home() {
     : "New";
 
   useEffect(() => {
-    localStorage.setItem("flashportal-sent-friend-requests", JSON.stringify(sentFriendRequests));
-  }, [sentFriendRequests]);
+    localStorage.setItem("flashportal-ui-volume", String(uiVolume));
+    if (uiVolume <= 0) setAudioEnabled(false);
+    else setAudioEnabled(true);
+  }, [uiVolume]);
+
+  useEffect(() => {
+    localStorage.setItem("flashportal-music-volume", String(musicVolume));
+    if (typeof window !== "undefined" && window.__flashPortalMusicGain) {
+      window.__flashPortalMusicGain.gain.value = musicVolume <= 0 ? 0 : 0.028 * Math.max(0, Math.min(1, musicVolume));
+    }
+    if (musicVolume <= 0) {
+      setMusicEnabled(false);
+      if (typeof window !== "undefined" && window.__flashPortalMusicStop) {
+        window.__flashPortalMusicStop();
+        window.__flashPortalMusicStop = null;
+      }
+    }
+  }, [musicVolume]);
+
+  useEffect(() => {
+    localStorage.setItem(getScopedKey("flashportal-sent-friend-requests", user?.email), JSON.stringify(sentFriendRequests));
+  }, [sentFriendRequests, user?.email]);
 
   useEffect(() => {
     localStorage.setItem("flashportal-notifications", JSON.stringify(notifications));
@@ -728,6 +795,10 @@ export default function Home() {
 
   function deleteNotification(id) {
     setNotifications((current) => current.filter((item) => item.id !== id));
+    try {
+      const dismissed = JSON.parse(localStorage.getItem("flashportal-dismissed-notifications") || "[]");
+      localStorage.setItem("flashportal-dismissed-notifications", JSON.stringify(Array.from(new Set([...dismissed, id]))));
+    } catch {}
   }
 
   async function loadSubmissionQueue() {
@@ -738,7 +809,7 @@ export default function Home() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      setToast("Run V52 SQL once, then reload");
+      setToast("Run V53 SQL once, then reload");
       setTimeout(() => setToast(""), 2500);
       return;
     }
@@ -750,14 +821,48 @@ export default function Home() {
   }
 
   useEffect(() => {
-    localStorage.setItem("flashportal-friends", JSON.stringify(friends));
-  }, [friends]);
+    localStorage.setItem(getScopedKey("flashportal-friends", user?.email), JSON.stringify(friends));
+  }, [friends, user?.email]);
 
   useEffect(() => {
-    localStorage.setItem("flashportal-friend-requests", JSON.stringify(friendRequests));
-  }, [friendRequests]);
+    localStorage.setItem(getScopedKey("flashportal-friend-requests", user?.email), JSON.stringify(friendRequests));
+  }, [friendRequests, user?.email]);
 
-  function sendFriendRequest() {
+  useEffect(() => {
+    if (!user?.email) return;
+
+    async function loadFriendsBackend() {
+      const email = user.email.toLowerCase();
+      const { data, error } = await supabase
+        .from("friend_requests")
+        .select("id, sender_email, target, status, created_at")
+        .or(`target.eq.${email},sender_email.eq.${email}`)
+        .order("created_at", { ascending: false });
+
+      if (error || !Array.isArray(data)) return;
+
+      const received = data
+        .filter((row) => String(row.status || "pending") === "pending" && String(row.target || "").toLowerCase() === email)
+        .map((row) => ({ id: row.id, from: row.sender_email || "Unknown player" }));
+
+      const sent = data
+        .filter((row) => String(row.status || "pending") === "pending" && String(row.sender_email || "").toLowerCase() === email)
+        .map((row) => ({ id: row.id, target: row.target || "Unknown player", status: "Pending" }));
+
+      const accepted = data
+        .filter((row) => String(row.status || "") === "accepted")
+        .map((row) => String(row.sender_email || "").toLowerCase() === email ? row.target : row.sender_email)
+        .filter(Boolean);
+
+      setFriendRequests(received);
+      setSentFriendRequests(sent);
+      setFriends((current) => Array.from(new Set([...current, ...accepted])));
+    }
+
+    loadFriendsBackend();
+  }, [user?.email]);
+
+  async function sendFriendRequest() {
     const target = friendLookup.trim();
     if (!target) return;
 
@@ -774,32 +879,43 @@ export default function Home() {
       return;
     }
 
+    const optimisticRequest = { id: `local-${Date.now()}`, target, status: "Pending" };
     setSentFriendRequests((current) =>
-      current.some((request) => request.toLowerCase() === target.toLowerCase())
+      current.some((request) => String(request.target || request).toLowerCase() === target.toLowerCase())
         ? current
-        : [...current, target]
+        : [...current, optimisticRequest]
     );
 
-    // Supabase-backed request, only target account can accept after V51 SQL.
-    supabase.from("friend_requests").insert({
+    const { data } = await supabase.from("friend_requests").insert({
       sender_id: user?.id || null,
       sender_email: user?.email || "",
-      target,
+      target: target.toLowerCase(),
       status: "pending",
-    }).then(() => {});
+    }).select("id, target, status").single();
+
+    if (data?.id) {
+      setSentFriendRequests((current) => current.map((request) => request.id === optimisticRequest.id ? { id: data.id, target: data.target, status: "Pending" } : request));
+    }
 
     setFriendLookup("");
     setToast("Friend request sent");
     setTimeout(() => setToast(""), 2000);
   }
 
-  function acceptFriend(target) {
-    setFriends((current) => current.includes(target) ? current : [...current, target]);
-    setFriendRequests((current) => current.filter((request) => request !== target));
+  async function acceptFriend(request) {
+    const friendEmail = request?.from || request;
+    if (request?.id) {
+      await supabase.from("friend_requests").update({ status: "accepted", updated_at: new Date().toISOString() }).eq("id", request.id);
+    }
+    setFriends((current) => current.some((friend) => friend.toLowerCase() === String(friendEmail).toLowerCase()) ? current : [...current, friendEmail]);
+    setFriendRequests((current) => current.filter((item) => (item?.id || item) !== (request?.id || request)));
   }
 
-  function declineFriend(target) {
-    setFriendRequests((current) => current.filter((request) => request !== target));
+  async function declineFriend(request) {
+    if (request?.id) {
+      await supabase.from("friend_requests").update({ status: "declined", updated_at: new Date().toISOString() }).eq("id", request.id);
+    }
+    setFriendRequests((current) => current.filter((item) => (item?.id || item) !== (request?.id || request)));
   }
 
   function unfriend(target) {
@@ -809,18 +925,19 @@ export default function Home() {
   }
 
   useEffect(() => {
-    localStorage.setItem("flashportal-playlist", JSON.stringify(playlistIds));
-  }, [playlistIds]);
+    if (typeof window === "undefined") return;
+    localStorage.setItem(getPlaylistKey(user?.email), JSON.stringify(playlistIds));
+  }, [playlistIds, user?.email]);
 
   useEffect(() => {
     function syncPlaylistFromStorage() {
       try {
-        setPlaylistIds(JSON.parse(localStorage.getItem("flashportal-playlist") || "[]"));
+        setPlaylistIds(JSON.parse(localStorage.getItem(getPlaylistKey(user?.email)) || "[]"));
       } catch {}
     }
     window.addEventListener("flashportal-playlist-changed", syncPlaylistFromStorage);
     return () => window.removeEventListener("flashportal-playlist-changed", syncPlaylistFromStorage);
-  }, []);
+  }, [user?.email]);
 
   useEffect(() => {
     localStorage.setItem("flashportal-reviews", JSON.stringify(reviews));
@@ -1043,6 +1160,7 @@ export default function Home() {
       const master = ctx.createGain();
       if (musicVolume <= 0) return;
       master.gain.value = 0.028 * Math.max(0, Math.min(1, musicVolume));
+      window.__flashPortalMusicGain = master;
       master.connect(ctx.destination);
 
       const notes = [110, 146.83, 164.81, 196, 220, 196, 164.81, 146.83];
@@ -1076,6 +1194,7 @@ export default function Home() {
         stopped = true;
         clearTimeout(window.__flashPortalMusicTimer);
         master.disconnect();
+        window.__flashPortalMusicGain = null;
       };
 
       playStep();
@@ -1144,8 +1263,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V52 Online</strong>
-          <p>Final release tweaks: hearts playlist, unfriend, persistent hide/delete, and free-upload lock.</p>
+          <strong>V53 Online</strong>
+          <p>Release polish: compact cards, working volume sliders, personal playlists, fixed friends, and persistent owner deletes.</p>
         </div>
       </aside>
 
@@ -1177,15 +1296,26 @@ export default function Home() {
                 }}
               >
                 <Bell size={18} />
+                {(notifications.length + friendRequests.length) > 0 && <span className="notification-badge">{notifications.length + friendRequests.length}</span>}
               </button>
 
               {notificationsOpen && (
                 <div className="notification-panel">
                   <strong>Notifications</strong>
-                  {notifications.length === 0 ? (
+                  {(notifications.length + friendRequests.length) === 0 ? (
                     <p>No new alerts yet.</p>
                   ) : (
                     <div className="notification-list">
+                      {friendRequests.map((request) => (
+                        <article className="notification-item" key={`friend-${request?.id || request}`}>
+                          <div>
+                            <b>New friend request</b>
+                            <p>{request?.from || request} wants to add you.</p>
+                          </div>
+                          <button type="button" onClick={() => acceptFriend(request)}>Accept</button>
+                          <button type="button" onClick={() => declineFriend(request)}>Decline</button>
+                        </article>
+                      ))}
                       {notifications.map((note) => (
                         <article className="notification-item" key={note.id}>
                           <div>
@@ -1486,8 +1616,8 @@ export default function Home() {
                 <h3>Received Requests</h3>
                 {friendRequests.length ? (
                   friendRequests.map((request) => (
-                    <div className="friend-row" key={request}>
-                      <span>{request}</span>
+                    <div className="friend-row" key={request?.id || request}>
+                      <span>{request?.from || request}</span>
                       <button type="button" onClick={() => acceptFriend(request)}>Accept</button>
                       <button type="button" onClick={() => declineFriend(request)}>Decline</button>
                     </div>
@@ -1500,7 +1630,7 @@ export default function Home() {
               <article>
                 <h3>Sent Requests</h3>
                 {sentFriendRequests.length ? (
-                  sentFriendRequests.map((request) => <div className="friend-row" key={request}><span>{request}</span><small>Pending</small></div>)
+                  sentFriendRequests.map((request) => <div className="friend-row" key={request?.id || request}><span>{request?.target || request}</span><small>{request?.status || "Pending"}</small></div>)
                 ) : (
                   <p>No sent requests yet.</p>
                 )}
@@ -1536,6 +1666,21 @@ export default function Home() {
                 </button>
               </article>
 
+              <article className="settings-card audio-settings-card">
+                <Volume2 size={28} />
+                <h3>Audio</h3>
+                <p>Control click sounds and background music. 0% is fully muted.</p>
+                <label className="volume-control">
+                  UI Click Volume: {Math.round(uiVolume * 100)}%
+                  <input type="range" min="0" max="1" step="0.01" value={uiVolume} onChange={(event) => setUiVolume(Number(event.target.value))} />
+                </label>
+                <label className="volume-control">
+                  Music Volume: {Math.round(musicVolume * 100)}%
+                  <input type="range" min="0" max="1" step="0.01" value={musicVolume} onChange={(event) => setMusicVolume(Number(event.target.value))} />
+                </label>
+                <button type="button" onClick={toggleBackgroundMusic}>{musicEnabled ? "Stop Music" : "Play Music"}</button>
+              </article>
+
               <article className="settings-card">
                 <User size={28} />
                 <h3>Account</h3>
@@ -1562,7 +1707,7 @@ export default function Home() {
               <article className="admin-card wide">
                 <Megaphone size={32} />
                 <h3>Global Announcement</h3>
-                <p>Send a real platform announcement. It appears in every user notification menu after V52 SQL is run.</p>
+                <p>Send a real platform announcement. It appears in every user notification menu after V53 SQL is run.</p>
                 <textarea value={announcementDraft} onChange={(event) => setAnnouncementDraft(event.target.value)} placeholder="Example: FlashPortal V38 is live with owner tools and game management." />
                 <button type="button" onClick={() => { playUISound("success"); sendAnnouncementNow(); }}>
                   Send Announcement
@@ -1574,7 +1719,7 @@ export default function Home() {
                 <h3>Game Management</h3>
                 <p>Edit text, hide/private games, or remove games from the live list.</p>
                 <div className="admin-game-list">
-                  {managedGames.map((game) => (
+                  {managedGames.filter((game) => !gameVisibility[game.id]?.deleted).map((game) => (
                     <div className="admin-game-row" key={game.id}>
                       <img src={game.thumbnail} alt="" />
                       <div>
@@ -1597,6 +1742,9 @@ export default function Home() {
                       <button className="danger" type="button" onClick={() => {
                         if (window.confirm(`Delete ${game.title} from the live game list? This now persists after refresh.`)) {
                           persistGameVisibility(game.id, { hidden: true, deleted: true });
+                          if (game.submissionId) {
+                            supabase.from("game_submissions").update({ status: "deleted", updated_at: new Date().toISOString() }).eq("id", game.submissionId).then(() => {});
+                          }
                           setManagedGames((current) => current.filter((item) => item.id !== game.id));
                         }
                       }}>
@@ -1615,7 +1763,7 @@ export default function Home() {
                   {submissions.length === 0 ? (
                     <>
                       <strong>No pending submissions</strong>
-                      <small>If someone submitted a game and this is empty, run the V52 SQL so owner/admin read policies are active.</small>
+                      <small>If someone submitted a game and this is empty, run the V53 SQL so owner/admin read policies are active.</small>
                       <button type="button" onClick={loadSubmissionQueue}>Load Queue</button>
                     </>
                   ) : (
@@ -1706,7 +1854,7 @@ export default function Home() {
                   }}>
                     Prepare Admin Invite
                   </button>
-                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V52 SQL.</small>
+                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V53 SQL.</small>
                 </article>
               )}
             </div>
@@ -1841,7 +1989,7 @@ function SaveGameButton({ gameId }) {
 
   useEffect(() => {
     try {
-      const ids = JSON.parse(localStorage.getItem("flashportal-playlist") || "[]");
+      const ids = JSON.parse(localStorage.getItem(getPlaylistKey()) || "[]");
       setSaved(ids.includes(gameId));
     } catch {}
   }, [gameId]);
@@ -1849,10 +1997,10 @@ function SaveGameButton({ gameId }) {
   function toggleSaved() {
     let ids = [];
     try {
-      ids = JSON.parse(localStorage.getItem("flashportal-playlist") || "[]");
+      ids = JSON.parse(localStorage.getItem(getPlaylistKey()) || "[]");
     } catch {}
     const next = ids.includes(gameId) ? ids.filter((id) => id !== gameId) : [...ids, gameId];
-    localStorage.setItem("flashportal-playlist", JSON.stringify(next));
+    localStorage.setItem(getPlaylistKey(), JSON.stringify(next));
     setSaved(next.includes(gameId));
     window.dispatchEvent(new Event("flashportal-playlist-changed"));
   }
