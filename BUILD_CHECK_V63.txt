@@ -1,0 +1,6 @@
+
+> build
+> next build
+
+
+sh: 1: next: Permission denied

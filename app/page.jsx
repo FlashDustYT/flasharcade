@@ -84,6 +84,18 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V63",
+    title: "Actual homepage wiring fix",
+    date: "Current",
+    changes: [
+      "Settings button now opens /profile instead of the old settings tab",
+      "Creator Hub and Creators buttons now open /creator-hub",
+      "Old local creator follow button can no longer work while logged out",
+      "Following from old creator cards now requires a real account",
+      "Account Settings dropdown now reaches the real profile editor"
+    ],
+  },
+  {
     version: "V62",
     title: "Routing wired to real profile pages",
     date: "Current",
@@ -1191,6 +1203,12 @@ export default function Home() {
   }, [publicGames, followedCreators, creatorFollowerCounts]);
 
   async function toggleCreatorFollow(profile) {
+    if (!user?.email) {
+      setToast("Log in first to follow creators");
+      setTimeout(() => setToast(""), 2200);
+      return;
+    }
+
     const isFollowing = followedCreators.includes(profile.slug);
     setFollowedCreators((current) => isFollowing
       ? current.filter((slug) => slug !== profile.slug)
@@ -1201,9 +1219,8 @@ export default function Home() {
       [profile.slug]: Math.max(0, Number(current[profile.slug] || 0) + (isFollowing ? -1 : 1)),
     }));
 
-    if (user?.email) {
-      try {
-        if (isFollowing) {
+    try {
+      if (isFollowing) {
           await supabase
             .from("creator_follows")
             .delete()
@@ -1216,9 +1233,8 @@ export default function Home() {
             follower_id: user.id || null,
             follower_email: user.email.toLowerCase(),
           }, { onConflict: "creator_slug,follower_email" });
-        }
-      } catch {}
-    }
+      }
+    } catch {}
 
     setToast(isFollowing ? `Unfollowed ${profile.name}` : `Following ${profile.name}`);
     setTimeout(() => setToast(""), 1800);
@@ -1334,7 +1350,7 @@ export default function Home() {
     { id: "achievements", label: "Achievements", icon: Trophy },
     { id: "publish", label: "Publish", icon: Upload, highlight: true },
     { id: "creatorHub", label: "Creator Hub", icon: Sparkles },
-    { id: "settings", label: "Settings", icon: Settings },
+    { id: "settings", label: "Profile", icon: Settings },
     ...(userIsAdmin ? [{ id: "admin", label: userIsOwner ? "Owner" : "Admin", icon: Shield }] : []),
   ];
 
@@ -1450,6 +1466,21 @@ export default function Home() {
 
   function handleTabChange(tabId) {
     playUISound("tab");
+
+    const realRoutes = {
+      settings: "/profile",
+      creatorHub: "/creator-hub",
+      creators: "/creator-hub",
+      about: "/about",
+      account: "/profile",
+      profile: "/profile",
+    };
+
+    if (realRoutes[tabId] && typeof window !== "undefined") {
+      window.location.href = realRoutes[tabId];
+      return;
+    }
+
     setActiveTab(tabId);
   }
 
@@ -1508,7 +1539,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V62 Online</strong>
+          <strong>V63 Online</strong>
           <p>Custom scrollbar, cleaner carousels, tighter cards, smoother HUD, and mobile polish.</p>
         </div>
       </aside>
@@ -1624,6 +1655,9 @@ export default function Home() {
                   </button>
                   <button type="button" onClick={() => handleTabChange("updates")}>
                     <Newspaper size={16} /> Updates
+                  </button>
+                  <button type="button" onClick={() => handleTabChange("profile")}>
+                    <User size={16} /> Profile Editor
                   </button>
                   <button type="button" onClick={() => handleTabChange("settings")}>
                     <Settings size={16} /> Account Settings
