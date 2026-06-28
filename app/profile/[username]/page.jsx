@@ -1,6 +1,202 @@
 "use client";
-import {useEffect,useMemo,useState} from "react";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {ArrowLeft,EyeOff,Gamepad2,Heart,MessageCircle,UserRound} from "lucide-react";
-import {supabase} from "../../../lib/supabaseClient";
-export default function PublicProfile({params}){const uName=params.username;const [user,setUser]=useState(null),[p,setP]=useState(null),[posts,setPosts]=useState([]),[games,setGames]=useState([]),[following,setFollowing]=useState(false),[status,setStatus]=useState("");async function load(){const {data:s}=await supabase.auth.getSession();const u=s?.session?.user||null;setUser(u);const {data:prof}=await supabase.from("user_profiles").select("*").or(`username.eq.${uName},id.eq.${uName}`).maybeSingle();if(!prof){setStatus("Profile not found.");return}setP(prof);let has=false;if(u){const {data:f}=await supabase.from("profile_follows").select("id").eq("follower_id",u.id).eq("following_id",prof.id).maybeSingle();has=!!f;setFollowing(has)}let can=!prof.is_private||u?.id===prof.id||has;if(can){const {data:po}=await supabase.from("social_posts").select("*").eq("user_id",prof.id).order("created_at",{ascending:false}).limit(50);setPosts(po||[]);const {data:g}=await supabase.from("game_submissions").select("*").eq("creator_id",prof.id).eq("status","approved").order("created_at",{ascending:false});setGames(g||[])}}useEffect(()=>{load()},[uName]);async function toggle(){if(!user){setStatus("Log in to follow this creator.");return}if(user.id===p.id)return;const {data,error}=await supabase.rpc(following?"unfollow_profile":"follow_profile",{target_profile_id:p.id});if(error){setStatus(`Follow failed: ${error.message}. Run V60 SQL.`);return}setFollowing(!following);setP({...p,followers:Number(data?.followers??p.followers??0)})}const can=useMemo(()=>p&&(!p.is_private||user?.id===p.id||following),[p,user,following]);if(!p)return <main className="social-home-page"><Link className="back-link" href="/creator-hub"><ArrowLeft/> Back</Link><section className="profile-hero-card signed-out"><h1>{status||"Loading..."}</h1></section></main>;return <main className="social-home-page"><Link className="back-link" href="/creator-hub"><ArrowLeft/> Back to Creator Hub</Link><section className="profile-hero-card"><div className="profile-banner" style={{backgroundImage:p.banner_url?`linear-gradient(90deg,rgba(0,0,0,.55),rgba(0,0,0,.05)),url(${p.banner_url})`:undefined}}/><div className="profile-main-row"><div className="profile-avatar">{p.avatar_url?<img src={p.avatar_url} alt=""/>:<UserRound/>}</div><div><h1>{p.display_name||"FlashPortal Creator"}</h1><p>@{p.username||"creator"} {p.is_private?"• Private":"• Public"}</p><span>{can?p.bio||"No bio yet.":"This profile is private."}</span></div>{user?.id!==p.id&&<button className="profile-edit-button" onClick={toggle}><Heart/> {following?"Following":"Follow"}</button>}</div><div className="profile-stats-row"><Link href={`/profile/${p.username||p.id}/followers`}><strong>{Number(p.followers||0)}</strong> Followers</Link><span><strong>{Number(p.following||0)}</strong> Following</span><span><strong>{games.length}</strong> Games</span><span><strong>{posts.length}</strong> Posts</span></div></section>{!can?<section className="private-profile-card"><EyeOff/><h2>Private profile</h2><p>Follow this creator to view more.</p></section>:<section className="public-profile-layout"><article className="hub-feed-panel"><h2><MessageCircle/> Posts</h2>{posts.length?posts.map(x=><article className="social-post-card" key={x.id}>{x.body&&<p>{x.body}</p>}{x.image_url&&<img className="post-image" src={x.image_url} alt=""/>}</article>):<p>No posts yet.</p>}</article><article className="hub-feed-panel"><h2><Gamepad2/> Games</h2>{games.length?games.map(g=><article className="creator-game-row" key={g.id}><strong>{g.title||g.game_title||"Untitled Game"}</strong><span>{g.category||"Game"}</span></article>):<p>No approved games yet.</p>}</article></section>}{status&&<p className="hub-status">{status}</p>}</main>}
+import { ArrowLeft, EyeOff, Gamepad2, Heart, MessageCircle, UserRound } from "lucide-react";
+import { supabase } from "../../../lib/supabaseClient";
+
+export default function PublicProfilePage({ params }) {
+  const lookup = params.username;
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [games, setGames] = useState([]);
+  const [following, setFollowing] = useState(false);
+  const [status, setStatus] = useState("");
+
+  async function loadProfile() {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const currentUser = sessionData?.session?.user || null;
+    setUser(currentUser);
+
+    const { data: profileData, error } = await supabase
+      .from("user_profiles")
+      .select("*")
+      .or(`username.eq.${lookup},id.eq.${lookup}`)
+      .maybeSingle();
+
+    if (error || !profileData) {
+      setStatus("Profile not found. If this is your profile, open /profile and hit Save Profile first.");
+      return;
+    }
+
+    setProfile(profileData);
+
+    let isFollowing = false;
+
+    if (currentUser) {
+      const { data: followData } = await supabase
+        .from("profile_follows")
+        .select("id")
+        .eq("follower_id", currentUser.id)
+        .eq("following_id", profileData.id)
+        .maybeSingle();
+
+      isFollowing = Boolean(followData);
+      setFollowing(isFollowing);
+    }
+
+    const canView = !profileData.is_private || currentUser?.id === profileData.id || isFollowing;
+
+    if (canView) {
+      const { data: postData } = await supabase
+        .from("social_posts")
+        .select("*")
+        .eq("user_id", profileData.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      setPosts(postData || []);
+
+      const { data: gameData } = await supabase
+        .from("game_submissions")
+        .select("*")
+        .eq("creator_id", profileData.id)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+
+      setGames(gameData || []);
+    } else {
+      setPosts([]);
+      setGames([]);
+    }
+  }
+
+  useEffect(() => {
+    loadProfile();
+  }, [lookup]);
+
+  async function login() {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/profile/${lookup}` },
+    });
+  }
+
+  async function toggleFollow() {
+    if (!user) {
+      setStatus("Log in to follow this creator.");
+      return;
+    }
+
+    if (!profile || user.id === profile.id) return;
+
+    const { data, error } = await supabase.rpc(following ? "unfollow_profile" : "follow_profile", {
+      target_profile_id: profile.id,
+    });
+
+    if (error) {
+      setStatus(`Follow failed: ${error.message}. Run V61 SQL.`);
+      return;
+    }
+
+    setFollowing(!following);
+    setProfile((current) => ({ ...current, followers: Number(data?.followers ?? current.followers ?? 0) }));
+  }
+
+  const canViewPrivate = useMemo(() => {
+    if (!profile) return false;
+    if (!profile.is_private) return true;
+    if (user?.id === profile.id) return true;
+    return following;
+  }, [profile, user, following]);
+
+  if (!profile) {
+    return (
+      <main className="social-home-page">
+        <Link className="back-link" href="/creator-hub"><ArrowLeft size={18} /> Back to Creator Hub</Link>
+        <section className="profile-hero-card signed-out"><h1>{status || "Loading profile..."}</h1></section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="social-home-page">
+      <Link className="back-link" href="/creator-hub"><ArrowLeft size={18} /> Back to Creator Hub</Link>
+
+      <section className="profile-hero-card">
+        <div
+          className="profile-banner"
+          style={{
+            backgroundImage: profile.banner_url
+              ? `linear-gradient(90deg, rgba(0,0,0,.55), rgba(0,0,0,.05)), url(${profile.banner_url})`
+              : undefined,
+          }}
+        />
+
+        <div className="profile-main-row">
+          <div className="profile-avatar">
+            {profile.avatar_url ? <img src={profile.avatar_url} alt="" /> : <UserRound size={48} />}
+          </div>
+          <div>
+            <h1>{profile.display_name || "FlashPortal Creator"}</h1>
+            <p>@{profile.username || "creator"} {profile.is_private ? "• Private" : "• Public"}</p>
+            <span>{canViewPrivate ? profile.bio || "No bio yet." : "This profile is private."}</span>
+          </div>
+
+          {user?.id !== profile.id && (
+            user ? (
+              <button className="profile-edit-button" type="button" onClick={toggleFollow}>
+                <Heart size={16} /> {following ? "Following" : "Follow"}
+              </button>
+            ) : (
+              <button className="profile-edit-button" type="button" onClick={login}>
+                Log in to Follow
+              </button>
+            )
+          )}
+        </div>
+
+        <div className="profile-stats-row">
+          <Link href={`/profile/${profile.username || profile.id}/followers`}><strong>{Number(profile.followers || 0)}</strong> Followers</Link>
+          <span><strong>{Number(profile.following || 0)}</strong> Following</span>
+          <span><strong>{games.length}</strong> Games</span>
+          <span><strong>{posts.length}</strong> Posts</span>
+        </div>
+      </section>
+
+      {!canViewPrivate ? (
+        <section className="private-profile-card">
+          <EyeOff size={32} />
+          <h2>Private profile</h2>
+          <p>Follow this creator to view their posts, games, and full profile details.</p>
+        </section>
+      ) : (
+        <section className="public-profile-layout">
+          <article className="hub-feed-panel">
+            <h2><MessageCircle size={18} /> Posts</h2>
+            {posts.length ? posts.map((post) => (
+              <article className="social-post-card" key={post.id}>
+                {post.body && <p>{post.body}</p>}
+                {post.image_url && <img className="post-image" src={post.image_url} alt="Post attachment" />}
+                <span>{new Date(post.created_at).toLocaleDateString()}</span>
+              </article>
+            )) : <p>No posts yet.</p>}
+          </article>
+
+          <article className="hub-feed-panel">
+            <h2><Gamepad2 size={18} /> Games</h2>
+            {games.length ? games.map((game) => (
+              <article className="creator-game-row" key={game.id}>
+                <strong>{game.title || game.game_title || "Untitled Game"}</strong>
+                <span>{game.category || "Game"}</span>
+              </article>
+            )) : <p>No approved games yet.</p>}
+          </article>
+        </section>
+      )}
+
+      {status && <p className="hub-status">{status}</p>}
+    </main>
+  );
+}

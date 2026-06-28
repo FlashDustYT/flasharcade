@@ -77,6 +77,19 @@ function avatarInitials(name) {
 }
 
 const PLATFORM_UPDATES = [
+  {
+    version: "V61",
+    title: "Real profile/follow backend fix",
+    date: "Current",
+    changes: [
+      "Profile editor is now always visible at /profile",
+      "Username, avatar, banner, bio, and privacy save to Supabase",
+      "Follow requires login and stores in profile_follows",
+      "Follower count now reloads from the database instead of fake local state",
+      "Creator Hub is now only the community feed; roadmap moved to /about",
+      "Follower count opens a real followers list page"
+    ],
+  },
   {version:"V60",title:"Profile save, followers, and Creator Hub rework",date:"Current",changes:["Username/avatar/banner/bio/privacy save from /profile","Follow requires login and persists after refresh","Followers count opens follower list","Creator Hub is now a community feed","Roadmap moved to /about"]},
   {
     version: "V59",
@@ -1466,7 +1479,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V60 Online</strong>
+          <strong>V61 Online</strong>
           <p>Custom scrollbar, cleaner carousels, tighter cards, smoother HUD, and mobile polish.</p>
         </div>
       </aside>

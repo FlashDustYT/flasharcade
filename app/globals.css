@@ -3391,3 +3391,94 @@ input[type="range"] {
 .creator-mini-stats a{color:var(--accent,#ff7a00);border:1px solid rgba(255,122,0,.24);border-radius:999px;padding:6px 9px;font-weight:900;text-decoration:none;font-size:.82rem}
 .followers-page-panel{max-width:900px;margin:28px auto}
 @media(max-width:950px){.creator-hub-feed-layout{grid-template-columns:1fr}}
+
+
+/* V61 profile/follow actual fixes */
+.creator-feed-hero {
+  max-width: 1180px;
+  margin: 22px auto;
+  border: 1px solid rgba(255,122,0,.28);
+  background: rgba(255,122,0,.06);
+  border-radius: 28px;
+  padding: clamp(24px, 5vw, 48px);
+}
+
+.creator-feed-hero span {
+  color: var(--accent, #ff7a00);
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 1000;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.creator-feed-hero h1 {
+  font-size: clamp(3rem, 8vw, 7rem);
+  line-height: .9;
+  margin: 14px 0;
+}
+
+.creator-hub-feed-layout {
+  max-width: 1180px;
+  margin: 22px auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 18px;
+  align-items: start;
+}
+
+.always-open-profile-editor {
+  max-width: 1180px;
+}
+
+.editor-help {
+  color: var(--muted, #cfcfcf);
+  font-weight: 800;
+}
+
+.profile-stats-row a {
+  color: var(--text, #fff);
+  text-decoration: none;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,122,0,.24);
+  border-radius: 16px;
+  background: rgba(0,0,0,.22);
+  font-weight: 900;
+}
+
+.creator-mini-stats a {
+  color: var(--accent, #ff7a00);
+  border: 1px solid rgba(255,122,0,.24);
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-weight: 900;
+  text-decoration: none;
+  font-size: .82rem;
+}
+
+.followers-page-panel {
+  max-width: 900px;
+  margin: 28px auto;
+}
+
+.roadmap-grid {
+  max-width: 1180px;
+  margin: 22px auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+/* force old roadmap cards out of creator hub route visual confusion */
+.creator-hub-page .roadmap-grid,
+.creator-hub-page .community-roadmap,
+.creator-hub-page [data-roadmap] {
+  display: none !important;
+}
+
+@media (max-width: 950px) {
+  .creator-hub-feed-layout {
+    grid-template-columns: 1fr;
+  }
+}
