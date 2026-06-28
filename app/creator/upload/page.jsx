@@ -16,7 +16,7 @@ export default function CreatorUploadPage() {
   const [zip, setZip] = useState(null);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
-  const [freeSlotUsed, setFreeSlotUsed] = useState(false);
+  const [freeUploadCount, setFreeUploadCount] = useState(0);
   const [checkingSlot, setCheckingSlot] = useState(true);
   const [paidUploadSlots, setPaidUploadSlots] = useState(0);
 
@@ -36,10 +36,9 @@ export default function CreatorUploadPage() {
         .from("game_submissions")
         .select("id, status")
         .or(`creator_id.eq.${currentUser.id},creator_email.eq.${currentUser.email}`)
-        .in("status", ["pending", "approved"])
-        .limit(1);
+        .in("status", ["pending", "approved"]);
 
-      setFreeSlotUsed(Array.isArray(submissions) && submissions.length > 0);
+      setFreeUploadCount(Array.isArray(submissions) ? submissions.length : 0);
       setCheckingSlot(false);
     }
 
@@ -57,8 +56,9 @@ export default function CreatorUploadPage() {
     event.preventDefault();
 
     if (!user) return setStatus("Please log in first. If you are already logged in, refresh this page after login.");
-    const usingPaidSlot = freeSlotUsed && paidUploadSlots > 0;
-    if (freeSlotUsed && !usingPaidSlot) return setStatus("Your first free upload has already been used or is pending review. Use the paid Extra Upload option before submitting another game.");
+    const freeUploadsUsed = freeUploadCount >= 3;
+    const usingPaidSlot = freeUploadsUsed && paidUploadSlots > 0;
+    if (freeUploadsUsed && !usingPaidSlot) return setStatus("Your 3 free uploads have already been used or are pending review. Use the paid Extra Upload option before submitting another game.");
     if (!form.title.trim() || !form.description.trim() || !zip) {
       return setStatus("Game title, description, and ZIP are required. The title and thumbnail do not need to match the ZIP filename. The title and thumbnail do not need to match the ZIP filename.");
     }
@@ -112,8 +112,8 @@ export default function CreatorUploadPage() {
         setPaidUploadSlots(nextSlots);
         localStorage.setItem("flashportal-paid-upload-slots", String(nextSlots));
       }
-      setFreeSlotUsed(true);
-      setStatus(usingPaidSlot ? "Submitted successfully using your paid upload slot. Your game is pending review." : "Submitted successfully. Your game is pending review. Your free upload slot is now locked.");
+      setFreeUploadCount((current) => current + 1);
+      setStatus(usingPaidSlot ? "Submitted successfully using your paid upload slot. Your game is pending review." : `Submitted successfully. Your game is pending review. Free uploads used: ${Math.min(3, freeUploadCount + 1)}/3.`);
       setForm({ title: "", category: "", description: "", website_url: "" });
       setZip(null);
       setThumbnail(null);
@@ -132,7 +132,7 @@ export default function CreatorUploadPage() {
       <section className="checkout-hero">
         <span><Upload size={16} /> Creator Portal</span>
         <h1>Publish Your Game</h1>
-        <p>Use any game title and any thumbnail. They do not need to match your ZIP filename.</p>
+        <p>You can submit up to 3 games for free. Use any game title and any thumbnail; they do not need to match your ZIP filename.</p>
       </section>
 
       {!user ? (
@@ -144,18 +144,19 @@ export default function CreatorUploadPage() {
             <button type="button" onClick={signIn}>Login with Google</button>
           </div>
         </section>
-      ) : freeSlotUsed && paidUploadSlots <= 0 ? (
+      ) : freeUploadCount >= 3 && paidUploadSlots <= 0 ? (
         <section className="checkout-note">
           <AlertTriangle size={24} />
           <div>
-            <h3>Free upload already used</h3>
-            <p>Your first free game is already pending or approved. Use the paid Extra Upload option to submit another game.</p>
+            <h3>Free uploads used</h3>
+            <p>Your 3 free game uploads are already pending or approved. Use the paid Extra Upload option to submit another game.</p>
             <Link className="primary-link-button" href="/creator-checkout">View Paid Options</Link>
           </div>
         </section>
       ) : (
         <form className="upload-form" onSubmit={submit}>
-          {freeSlotUsed && paidUploadSlots > 0 && <p className="upload-status">Paid extra upload slot available: {paidUploadSlots}</p>}
+          {freeUploadCount < 3 && <p className="upload-status">Free uploads used: {freeUploadCount}/3</p>}
+          {freeUploadCount >= 3 && paidUploadSlots > 0 && <p className="upload-status">Paid extra upload slot available: {paidUploadSlots}</p>}
           <label>Game title<input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="My Awesome Game" /></label>
           <label>Category<input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Arcade, Word, Strategy..." /></label>
           <label className="wide">Description<textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Tell players what your game is about." /></label>

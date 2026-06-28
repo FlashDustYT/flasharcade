@@ -9,13 +9,13 @@ const EXTRA_UPLOAD_FALLBACK_URL = "https://buy.stripe.com/00weVfeaz81Kaz190ic3m0
 
 const plans = [
   {
-    title: "First Game Free",
+    title: "3 Free Game Uploads",
     price: "$0",
     eyebrow: "Starter",
-    description: "Submit your first browser game for manual FlashPortal review.",
+    description: "Submit up to 3 browser games for manual FlashPortal review.",
     longDescription:
-      "Best for testing the platform. You can upload one game ZIP, add a custom title, description, category, and thumbnail, then wait for owner approval before it appears publicly.",
-    cta: "Upload First Game",
+      "Best for testing the platform. You can upload up to 3 game ZIPs, add custom titles, descriptions, categories, and thumbnails, then wait for owner approval before they appear publicly.",
+    cta: "Upload Free Games",
     href: "/creator/upload",
     env: null,
     icon: Upload,
@@ -27,7 +27,7 @@ const plans = [
     eyebrow: "More games",
     description: "Submit another browser game to FlashPortal for review.",
     longDescription:
-      "Use this when you already used your free first upload and want to submit another game. Payment covers the extra submission slot; every game still goes through review before publishing.",
+      "Use this when you already used your 3 free uploads and want to submit another game. Payment covers the extra submission slot; every game still goes through review before publishing.",
     cta: "Pay $1.99",
     href: process.env.NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL || EXTRA_UPLOAD_FALLBACK_URL,
     env: "NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL",
@@ -67,9 +67,10 @@ function isValidStripePaymentUrl(url) {
 }
 
 export default function CreatorCheckout() {
-  const [openInfo, setOpenInfo] = useState("First Game Free");
+  const [openInfo, setOpenInfo] = useState("3 Free Game Uploads");
   const [user, setUser] = useState(null);
   const [freeUploadLocked, setFreeUploadLocked] = useState(false);
+  const [freeUploadCount, setFreeUploadCount] = useState(0);
   const [freeUploadStatus, setFreeUploadStatus] = useState("Checking free upload status...");
 
   useEffect(() => {
@@ -79,7 +80,7 @@ export default function CreatorCheckout() {
       setUser(currentUser);
 
       if (!currentUser) {
-        setFreeUploadStatus("Log in to use your first free game submission.");
+        setFreeUploadStatus("Log in to use your 3 free game submissions.");
         setFreeUploadLocked(false);
         return;
       }
@@ -87,7 +88,7 @@ export default function CreatorCheckout() {
       const { data, error } = await supabase
         .from("game_submissions")
         .select("id,status")
-        .eq("creator_id", currentUser.id)
+        .or(`creator_id.eq.${currentUser.id},creator_email.eq.${currentUser.email}`)
         .in("status", ["pending", "approved"]);
 
       if (error) {
@@ -96,12 +97,14 @@ export default function CreatorCheckout() {
         return;
       }
 
-      const used = Boolean(data?.length);
+      const count = Array.isArray(data) ? data.length : 0;
+      const used = count >= 3;
+      setFreeUploadCount(count);
       setFreeUploadLocked(used);
       setFreeUploadStatus(
         used
-          ? "Your free first-game slot is already used or pending. Extra uploads use the $1.99 option."
-          : "Your first game submission is still free."
+          ? "Your 3 free upload slots are used or pending. Extra uploads use the $1.99 option."
+          : `Free uploads used: ${count}/3. You still have ${3 - count} free upload${3 - count === 1 ? "" : "s"}.`
       );
     }
 
@@ -139,7 +142,7 @@ export default function CreatorCheckout() {
         <span><CreditCard size={16} /> Creator Pricing</span>
         <h1>Publish on FlashPortal</h1>
         <p>
-          Start free, then only pay when you want extra uploads or featured placement.
+          Start with 3 free uploads, then only pay when you want extra uploads or featured placement.
           Every game is reviewed before it appears publicly.
         </p>
       </section>

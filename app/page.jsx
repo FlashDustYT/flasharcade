@@ -78,15 +78,15 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
-    version: "V56",
-    title: "Creator profiles foundation",
+    version: "V57",
+    title: "Creator profiles accuracy and free-upload update",
     date: "Current",
     changes: [
-      "Added a Creators tab with profile cards",
-      "Every creator now has avatar initials, banner, bio, uploaded games, followers, total plays, and average rating",
-      "Added follow/unfollow creator buttons with per-account saved follows",
-      "Creator profile cards show their uploaded games for quick discovery",
-      "Included optional Supabase SQL for creator follow persistence",
+      "Creator profiles now use real uploaded/live games",
+      "Follower counts start at 0 and grow from actual follows instead of fake sample numbers",
+      "Uploaded approved games appear under their creator email/profile",
+      "Free creator uploads increased from 1 game to 3 games",
+      "Creator cards have clearer accurate stats for games, plays, and average rating",
     ],
   },
   {
@@ -443,7 +443,7 @@ function submissionToGame(submission) {
     tagline: submission.category || "Creator Game",
     description: submission.description || "Creator-submitted FlashPortal game.",
     genre: submission.category || "Creator",
-    creator: submission.creator_email || "FlashPortal Creator",
+    creator: submission.creator_email || submission.creator_name || "FlashPortal Creator",
     official: false,
     playable: true,
     featured: false,
@@ -520,6 +520,7 @@ export default function Home() {
   const [adminRole, setAdminRole] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [paymentDebugOpen, setPaymentDebugOpen] = useState(false);
+  const [creatorFollowerCounts, setCreatorFollowerCounts] = useState({});
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -1009,6 +1010,27 @@ export default function Home() {
   }, [user?.email]);
 
   useEffect(() => {
+    async function loadCreatorFollowerCounts() {
+      try {
+        const { data, error } = await supabase
+          .from("creator_follows")
+          .select("creator_slug");
+
+        if (!error && Array.isArray(data)) {
+          const counts = {};
+          data.forEach((row) => {
+            if (!row.creator_slug) return;
+            counts[row.creator_slug] = (counts[row.creator_slug] || 0) + 1;
+          });
+          setCreatorFollowerCounts(counts);
+        }
+      } catch {}
+    }
+
+    loadCreatorFollowerCounts();
+  }, [followedCreators]);
+
+  useEffect(() => {
     function syncPlaylistFromStorage() {
       try {
         setPlaylistIds(JSON.parse(localStorage.getItem(getPlaylistKey(user?.email)) || "[]"));
@@ -1078,7 +1100,7 @@ export default function Home() {
         totalPlays: 0,
         ratingTotal: 0,
         ratingCount: 0,
-        baseFollowers: creatorName === "FlashDust" ? 128 : 0,
+        baseFollowers: 0,
         official: creatorName === "FlashDust",
       };
 
@@ -1095,12 +1117,12 @@ export default function Home() {
     return Array.from(grouped.values())
       .map((creator) => ({
         ...creator,
-        followers: creator.baseFollowers + (followedCreators.includes(creator.slug) ? 1 : 0),
+        followers: Number(creatorFollowerCounts[creator.slug] || 0),
         averageRating: creator.ratingCount ? (creator.ratingTotal / creator.ratingCount).toFixed(1) : "New",
         games: sortNewest(creator.games),
       }))
       .sort((a, b) => b.totalPlays - a.totalPlays || b.games.length - a.games.length);
-  }, [publicGames, followedCreators]);
+  }, [publicGames, followedCreators, creatorFollowerCounts]);
 
   async function toggleCreatorFollow(profile) {
     const isFollowing = followedCreators.includes(profile.slug);
@@ -1108,6 +1130,10 @@ export default function Home() {
       ? current.filter((slug) => slug !== profile.slug)
       : [...current, profile.slug]
     );
+    setCreatorFollowerCounts((current) => ({
+      ...current,
+      [profile.slug]: Math.max(0, Number(current[profile.slug] || 0) + (isFollowing ? -1 : 1)),
+    }));
 
     if (user?.email) {
       try {
@@ -1673,10 +1699,10 @@ export default function Home() {
             <div className="creator-studio-grid">
               <article className="creator-studio-hero">
                 <span className="eyebrow"><Upload size={16} /> Creator Uploads</span>
-                <h3>Your first game submission is free.</h3>
+                <h3>Your first 3 game submissions are free.</h3>
                 <p>
-                  Upload a ZIP, add a thumbnail, write a short description, and send it into review.
-                  Paid options are for extra submissions and featured placement only.
+                  Upload up to 3 games for free, add thumbnails and descriptions, and send them into review.
+                  Paid options are for extra submissions after that and featured placement only.
                 </p>
                 <div className="creator-studio-actions">
                   <a className="primary-link-button" href="/creator/upload">Upload Game</a>
@@ -1686,15 +1712,15 @@ export default function Home() {
 
               <article className="creator-plan-card free">
                 <strong>$0</strong>
-                <h3>First Game Free</h3>
-                <p>Submit your first FlashPortal browser game without checkout.</p>
+                <h3>3 Free Game Uploads</h3>
+                <p>Submit up to 3 FlashPortal browser games without checkout.</p>
                 <span>Best for new creators</span>
               </article>
 
               <article className="creator-plan-card">
                 <strong>$1.99</strong>
                 <h3>Extra Upload</h3>
-                <p>Submit another browser game for review after your first free upload.</p>
+                <p>Submit another browser game for review after your 3 free uploads are used.</p>
                 <span>For active creators</span>
               </article>
 
