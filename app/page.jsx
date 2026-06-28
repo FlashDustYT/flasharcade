@@ -61,6 +61,18 @@ function getPlaylistKey(email) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V55",
+    title: "Release UI polish",
+    date: "Current",
+    changes: [
+      "Custom black/orange scrollbars replace the default gray browser bar",
+      "Game rows now have cleaner spacing, edge fades, and smoother scrolling",
+      "Save and Review buttons are smaller and better aligned",
+      "Continue Playing is less intrusive and disappears faster",
+      "HUD, notification badge, cards, and mobile layout received final polish",
+    ],
+  },
+  {
     version: "V54",
     title: "Official release polish",
     date: "Current",
@@ -999,7 +1011,7 @@ export default function Home() {
   useEffect(() => {
     if (!recentlyPlayed.length) return;
     setContinueDockOpen(true);
-    const continueDockTimer = setTimeout(() => setContinueDockOpen(false), 8000);
+    const continueDockTimer = setTimeout(() => setContinueDockOpen(false), 7000);
     return () => clearTimeout(continueDockTimer);
   }, [recentlyPlayed.length]);
 
@@ -1277,8 +1289,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V54 Online</strong>
-          <p>Payment link fix, shorter continue popup, creator/social polish, and cleaner release UI.</p>
+          <strong>V55 Online</strong>
+          <p>Custom scrollbar, cleaner carousels, tighter cards, smoother HUD, and mobile polish.</p>
         </div>
       </aside>
 
