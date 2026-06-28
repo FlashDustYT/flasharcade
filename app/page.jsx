@@ -42,6 +42,12 @@ import {
 import { supabase } from "../lib/supabaseClient";
 import { loadCloudSave, saveCloudSave } from "../lib/cloudSaves";
 
+function goToRealRoute(path) {
+  if (typeof window !== "undefined") {
+    window.location.href = path;
+  }
+}
+
 const OWNER_EMAIL = "isaac.akinola122@gmail.com";
 
 function isOwnerUser(user) {
@@ -77,6 +83,18 @@ function avatarInitials(name) {
 }
 
 const PLATFORM_UPDATES = [
+  {
+    version: "V62",
+    title: "Routing wired to real profile pages",
+    date: "Current",
+    changes: [
+      "Account Settings opens the real /profile editor",
+      "Creator Hub opens the real community feed page",
+      "Roadmap/About content moved to /about",
+      "Old fake in-page profile flow is bypassed",
+      "Follow/profile pages use the Supabase-backed routes"
+    ],
+  },
   {
     version: "V61",
     title: "Real profile/follow backend fix",
@@ -500,6 +518,17 @@ function sortNewest(games) {
     const bt = new Date(b.created_at || b.createdAt || 0).getTime() || 0;
     return bt - at;
   });
+}
+
+
+function RealRouteNotice({ title, path }) {
+  return (
+    <section className="real-route-notice">
+      <h1>{title}</h1>
+      <p>This section now lives on its own real page.</p>
+      <button type="button" onClick={() => goToRealRoute(path)}>Open {title}</button>
+    </section>
+  );
 }
 
 export default function Home() {
@@ -1479,7 +1508,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V61 Online</strong>
+          <strong>V62 Online</strong>
           <p>Custom scrollbar, cleaner carousels, tighter cards, smoother HUD, and mobile polish.</p>
         </div>
       </aside>
