@@ -633,3 +633,7 @@ This version removes the broken visible audio sliders and uses one backend SQL s
 `supabase/v49_RUN_THIS_ONCE.sql`
 
 Run that once in Supabase SQL Editor. Do not run older SQL files.
+
+
+# FlashPortal V50 Reviews/Ratings Fix
+Run `supabase/v50_reviews_ratings.sql` if reviews do not save publicly.

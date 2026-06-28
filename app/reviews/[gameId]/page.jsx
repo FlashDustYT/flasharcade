@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, MessageSquare, Star } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 
-const gameNames = {
+const GAME_NAMES = {
   "how-many-rings": "How Many Rings?",
   "legacy-league": "Legacy League",
   "guess-the-word": "Guess the Word!",
@@ -13,62 +13,86 @@ const gameNames = {
   "guess-the-celebrity": "Guess the Celeb",
 };
 
+function getLocalReviews(gameId) {
+  try {
+    const allReviews = JSON.parse(localStorage.getItem("flashportal-reviews-v50") || "{}");
+    return Array.isArray(allReviews[gameId]) ? allReviews[gameId] : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalReview(gameId, review) {
+  const allReviews = JSON.parse(localStorage.getItem("flashportal-reviews-v50") || "{}");
+  const next = [review, ...(Array.isArray(allReviews[gameId]) ? allReviews[gameId] : [])];
+  allReviews[gameId] = next;
+  localStorage.setItem("flashportal-reviews-v50", JSON.stringify(allReviews));
+  return next;
+}
+
 export default function ReviewsPage({ params }) {
   const gameId = params.gameId;
-  const gameTitle = gameNames[gameId] || gameId.replaceAll("-", " ");
+  const gameTitle = GAME_NAMES[gameId] || gameId.replaceAll("-", " ");
   const [user, setUser] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
-  const [reviewText, setReviewText] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [status, setStatus] = useState("");
-
-  function loadLocalReviews() {
-    try {
-      const all = JSON.parse(localStorage.getItem("flashportal-public-reviews") || "{}");
-      return all[gameId] || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function saveLocalReview(payload) {
-    const all = JSON.parse(localStorage.getItem("flashportal-public-reviews") || "{}");
-    const fallbackReview = { ...payload, id: Date.now(), created_at: new Date().toISOString() };
-    all[gameId] = [fallbackReview, ...(all[gameId] || [])];
-    localStorage.setItem("flashportal-public-reviews", JSON.stringify(all));
-    setReviews(all[gameId]);
-  }
+  const [reviewText, setReviewText] = useState("");
+  const [status, setStatus] = useState("Loading reviews...");
 
   async function loadReviews() {
     const { data, error } = await supabase
       .from("game_reviews")
-      .select("*")
+      .select("id, game_id, user_email, display_name, rating, review, created_at")
       .eq("game_id", gameId)
       .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      setReviews(data);
+    if (!error && Array.isArray(data)) {
+      const local = getLocalReviews(gameId);
+      const combined = [...data, ...local.filter((item) => !data.some((dbItem) => dbItem.id === item.id))];
+      setReviews(combined);
       setStatus("");
       return;
     }
 
-    setReviews(loadLocalReviews());
-    setStatus("Local fallback active. Run supabase/v48_run_this_once.sql for public reviews.");
+    setReviews(getLocalReviews(gameId));
+    setStatus("Reviews are using local fallback. Run the V50 SQL to save reviews publicly.");
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setUser(data?.session?.user || null));
+    supabase.auth.getSession().then(({ data }) => {
+      const currentUser = data?.session?.user || null;
+      setUser(currentUser);
+      if (currentUser?.email) setDisplayName(currentUser.email.split("@")[0]);
+    });
+
     loadReviews();
   }, [gameId]);
 
+  const averageRating = useMemo(() => {
+    const validRatings = reviews
+      .map((item) => Number(item.rating))
+      .filter((value) => Number.isFinite(value) && value >= 1 && value <= 5);
+
+    if (!validRatings.length) return "New";
+    return (validRatings.reduce((sum, value) => sum + value, 0) / validRatings.length).toFixed(1);
+  }, [reviews]);
+
   async function submitReview(event) {
     event.preventDefault();
-    const cleanText = reviewText.trim();
 
-    if (!cleanText) {
-      setStatus("Write your review first.");
+    const cleanReview = reviewText.trim();
+    const cleanName = displayName.trim() || user?.email?.split("@")[0] || "Anonymous Player";
+    const numericRating = Number(rating);
+
+    if (!numericRating || numericRating < 1 || numericRating > 5) {
+      setStatus("Pick a star rating first.");
+      return;
+    }
+
+    if (!cleanReview) {
+      setStatus("Write a review first.");
       return;
     }
 
@@ -76,37 +100,50 @@ export default function ReviewsPage({ params }) {
       game_id: gameId,
       user_id: user?.id || null,
       user_email: user?.email || "",
-      display_name: displayName.trim() || user?.email || "Anonymous Player",
-      rating: Number(rating),
-      review: cleanText,
+      display_name: cleanName,
+      rating: numericRating,
+      review: cleanReview,
     };
 
-    const { error } = await supabase.from("game_reviews").insert(payload);
+    const { data, error } = await supabase
+      .from("game_reviews")
+      .insert(payload)
+      .select("id, game_id, user_email, display_name, rating, review, created_at")
+      .single();
 
-    if (error) {
-      saveLocalReview(payload);
-      setStatus("Saved locally. Run V48 SQL to save public database reviews.");
-    } else {
+    if (!error && data) {
+      setReviews((current) => [data, ...current]);
       setStatus("Review posted.");
-      await loadReviews();
+    } else {
+      const fallbackReview = {
+        ...payload,
+        id: `local-${Date.now()}`,
+        created_at: new Date().toISOString(),
+      };
+      const nextLocalReviews = saveLocalReview(gameId, fallbackReview);
+      setReviews(nextLocalReviews);
+      setStatus("Review saved locally. Run V50 SQL so reviews save publicly in Supabase.");
     }
 
     setReviewText("");
+    setRating(5);
+    setHoverRating(0);
   }
-
-  const averageRating = useMemo(() => {
-    if (!reviews.length) return "New";
-    return (reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length).toFixed(1);
-  }, [reviews]);
 
   return (
     <main className="reviews-page">
-      <Link href="/" className="back-link"><ArrowLeft size={18} /> Back to FlashPortal</Link>
+      <Link className="back-link" href="/">
+        <ArrowLeft size={18} /> Back to FlashPortal
+      </Link>
 
       <section className="reviews-hero">
         <span><MessageSquare size={16} /> Reviews & Ratings</span>
         <h1>{gameTitle}</h1>
-        <p>{reviews.length ? `${reviews.length} review${reviews.length === 1 ? "" : "s"} • ${averageRating} average rating` : "No reviews yet. Be the first one."}</p>
+        <p>
+          {reviews.length
+            ? `${reviews.length} review${reviews.length === 1 ? "" : "s"} • ${averageRating}/5 average`
+            : "No reviews yet. Be the first one."}
+        </p>
       </section>
 
       <form className="review-form" onSubmit={submitReview}>
@@ -114,18 +151,23 @@ export default function ReviewsPage({ params }) {
 
         <label>
           Display name
-          <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder={user?.email || "Anonymous Player"} />
+          <input
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            placeholder="Anonymous Player"
+          />
         </label>
 
-        <div className="star-rating-picker" aria-label="Choose rating">
+        <div className="star-rating-picker">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
-              type="button"
               key={star}
+              type="button"
               className={star <= (hoverRating || rating) ? "active" : ""}
               onMouseEnter={() => setHoverRating(star)}
               onMouseLeave={() => setHoverRating(0)}
               onClick={() => setRating(star)}
+              aria-label={`${star} star rating`}
             >
               <Star size={30} fill="currentColor" />
             </button>
@@ -135,23 +177,38 @@ export default function ReviewsPage({ params }) {
 
         <label>
           Review
-          <textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} placeholder="Tell players what you thought..." />
+          <textarea
+            value={reviewText}
+            onChange={(event) => setReviewText(event.target.value)}
+            placeholder="What did you think of the game?"
+          />
         </label>
 
-        <button type="submit"><Star size={16} /> Post Review</button>
+        <button type="submit">
+          <Star size={16} /> Post Review
+        </button>
+
         {status && <p className="form-status">{status}</p>}
       </form>
 
       <section className="review-list">
         <h2>Public Reviews</h2>
-        {reviews.length ? reviews.map((review) => (
-          <article className="public-review-card" key={review.id || `${review.created_at}-${review.review}`}>
-            <strong>{review.rating}★</strong>
-            <p>{review.review}</p>
-            <span>{review.display_name || review.user_email || "Anonymous Player"} • {review.created_at ? new Date(review.created_at).toLocaleDateString() : "Just now"}</span>
+
+        {reviews.length ? (
+          reviews.map((item) => (
+            <article className="public-review-card" key={item.id || `${item.created_at}-${item.review}`}>
+              <strong>{item.rating}★</strong>
+              <p>{item.review}</p>
+              <span>
+                {item.display_name || item.user_email || "Anonymous Player"} •{" "}
+                {item.created_at ? new Date(item.created_at).toLocaleDateString() : "Just now"}
+              </span>
+            </article>
+          ))
+        ) : (
+          <article className="public-review-card">
+            <p>No reviews yet.</p>
           </article>
-        )) : (
-          <article className="public-review-card"><p>No reviews yet.</p></article>
         )}
       </section>
     </main>

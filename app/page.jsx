@@ -50,13 +50,25 @@ function isOwnerUser(user) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V50",
+    title: "Reviews and ratings fix",
+    date: "Current",
+    changes: [
+      "Added visible Review / Rate buttons on game cards",
+      "Added a real reviews page for each game",
+      "Users can pick 1-5 stars and write a public review",
+      "Reviews save to Supabase after SQL, with local fallback before SQL",
+      "Audio sliders are hidden so they stop causing confusion",
+    ],
+  },
+  {
     version: "V49",
     title: "SQL cleanup and audio simplification",
     date: "Current",
     changes: [
       "One SQL file is now the only backend setup step",
       "Broken audio sliders are removed from the visible UI",
-      "Submission queue message now points to V49 SQL",
+      "Submission queue message now points to V50 SQL",
       "Notifications, reviews, friends, announcements, and queue all use the same backend setup",
       "New Releases should sort newest to oldest after deploy",
     ],
@@ -72,7 +84,7 @@ const PLATFORM_UPDATES = [
       "New Releases sort newest to oldest",
       "FlashPortal Originals only shows owner-posted games",
       "Audio sliders now truly control volume instead of just toggles",
-      "Owner queue message now points to V49 SQL",
+      "Owner queue message now points to V50 SQL",
     ],
   },
   {
@@ -94,7 +106,7 @@ const PLATFORM_UPDATES = [
     date: "Current",
     changes: [
       "Friend requests now separate sent requests from received requests",
-      "Owner submission queue now reads the real Supabase table after V49 SQL",
+      "Owner submission queue now reads the real Supabase table after V50 SQL",
       "Announcements can be sent to the notification bell instead of only saved as drafts",
       "Notifications can be deleted after reading",
       "Review links are visible on game cards and open public review pages",
@@ -604,7 +616,7 @@ export default function Home() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      setToast("Run V49 SQL once, then reload");
+      setToast("Run V50 SQL once, then reload");
       setTimeout(() => setToast(""), 2500);
       return;
     }
@@ -645,7 +657,7 @@ export default function Home() {
         : [...current, target]
     );
 
-    // Supabase-backed request, only target account can accept after V49 SQL.
+    // Supabase-backed request, only target account can accept after V50 SQL.
     supabase.from("friend_requests").insert({
       sender_id: user?.id || null,
       sender_email: user?.email || "",
@@ -974,8 +986,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V49 Online</strong>
-          <p>One required SQL file, no broken audio sliders, cleaner backend messages, and clearer queue/review/notification setup.</p>
+          <strong>V50 Online</strong>
+          <p>Focused reviews and ratings fix.</p>
         </div>
       </aside>
 
@@ -1409,7 +1421,7 @@ export default function Home() {
               <article className="admin-card wide">
                 <Megaphone size={32} />
                 <h3>Global Announcement</h3>
-                <p>Send a real platform announcement. It appears in every user notification menu after V49 SQL is run.</p>
+                <p>Send a real platform announcement. It appears in every user notification menu after V50 SQL is run.</p>
                 <textarea value={announcementDraft} onChange={(event) => setAnnouncementDraft(event.target.value)} placeholder="Example: FlashPortal V38 is live with owner tools and game management." />
                 <button type="button" onClick={() => { playUISound("success"); setToast("Announcement sent"); }}>
                   Send Announcement
@@ -1460,7 +1472,7 @@ export default function Home() {
                   {submissions.length === 0 ? (
                     <>
                       <strong>No pending submissions</strong>
-                      <small>If someone submitted a game and this is empty, run the V49 SQL so owner/admin read policies are active.</small>
+                      <small>If someone submitted a game and this is empty, run the V50 SQL so owner/admin read policies are active.</small>
                       <button type="button" onClick={loadSubmissionQueue}>Load Queue</button>
                     </>
                   ) : (
@@ -1536,7 +1548,7 @@ export default function Home() {
                   }}>
                     Prepare Admin Invite
                   </button>
-                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V49 SQL.</small>
+                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V50 SQL.</small>
                 </article>
               )}
             </div>
@@ -1622,7 +1634,8 @@ function FeaturedCard({ game, onPlay }) {
       <div className="featured-body">
         <span>{game.status}</span>
         <h2>{game.title}</h2>
-        <p>{game.description}</p>
+        <p>{game.description}
+              <a className="review-action-button" href={`/reviews/${game.id}`}>⭐ Review / Rate</a></p>
         <div className="card-tags">
           <em>{game.genre}</em>
           {game.official && <em className="official">Presented by FlashDust</em>}
