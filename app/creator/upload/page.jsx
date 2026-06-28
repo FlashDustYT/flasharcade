@@ -31,7 +31,7 @@ export default function CreatorUploadPage() {
   async function submit(event) {
     event.preventDefault();
 
-    if (!user) return setStatus("Please log in first.");
+    if (!user) return setStatus("Please log in first. If you are already logged in, refresh this page after login.");
     if (!form.title.trim() || !form.description.trim() || !zip) {
       return setStatus("Game title, description, and ZIP are required. The title and thumbnail do not need to match the ZIP filename. The title and thumbnail do not need to match the ZIP filename.");
     }
@@ -72,7 +72,12 @@ export default function CreatorUploadPage() {
         status: "pending",
       });
 
-      if (insert.error) throw insert.error;
+      if (insert.error) {
+        if (insert.error.message?.toLowerCase().includes("permission denied")) {
+          throw new Error("Permission denied for game_submissions. Run supabase/v44_upload_permissions.sql in Supabase, then refresh and try again.");
+        }
+        throw insert.error;
+      }
 
       setStatus("Submitted successfully. Your game is pending review.");
       setForm({ title: "", category: "", description: "", website_url: "" });

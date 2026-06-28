@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, CreditCard, Info, Rocket, Star, Upload, Zap } from "lucide-react";
+import { ArrowLeft, CheckCircle2, CreditCard, Info, Rocket, Star, Upload, Zap, Lock } from "lucide-react";
+import { supabase } from "../../lib/supabaseClient";
 
 const plans = [
   {
@@ -65,6 +66,45 @@ function isValidStripePaymentUrl(url) {
 
 export default function CreatorCheckout() {
   const [openInfo, setOpenInfo] = useState("First Game Free");
+  const [user, setUser] = useState(null);
+  const [freeUploadLocked, setFreeUploadLocked] = useState(false);
+  const [freeUploadStatus, setFreeUploadStatus] = useState("Checking free upload status...");
+
+  useEffect(() => {
+    async function checkFreeUpload() {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUser = sessionData?.session?.user || null;
+      setUser(currentUser);
+
+      if (!currentUser) {
+        setFreeUploadStatus("Log in to use your first free game submission.");
+        setFreeUploadLocked(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("game_submissions")
+        .select("id,status")
+        .eq("creator_id", currentUser.id)
+        .in("status", ["pending", "approved"]);
+
+      if (error) {
+        setFreeUploadStatus("Free upload status could not be checked yet. Run the V44 Supabase SQL if needed.");
+        setFreeUploadLocked(false);
+        return;
+      }
+
+      const used = Boolean(data?.length);
+      setFreeUploadLocked(used);
+      setFreeUploadStatus(
+        used
+          ? "Your free first-game slot is already used or pending. Extra uploads use the $1.99 option."
+          : "Your first game submission is still free."
+      );
+    }
+
+    checkFreeUpload();
+  }, []);
 
   function openPayment(plan) {
     const cleanUrl = typeof plan.href === "string" ? plan.href.trim() : "";

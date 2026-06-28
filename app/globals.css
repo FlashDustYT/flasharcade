@@ -1679,3 +1679,19 @@ a {
   color: var(--text);
   margin: 12px 0 6px;
 }
+
+
+/* V44 free upload lock */
+.disabled-action,
+.disabled-action:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  filter: grayscale(.25);
+}
+
+.free-upload-status {
+  color: var(--muted);
+  font-size: .85rem;
+  line-height: 1.45;
+  margin-top: 8px;
+}

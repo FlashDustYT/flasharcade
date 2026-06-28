@@ -47,6 +47,18 @@ function isOwnerUser(user) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V44",
+    title: "Upload permissions and free-slot lock",
+    date: "Current",
+    changes: [
+      "Fixed Supabase permissions for creator game submissions",
+      "Added clearer upload error messages when backend policies are missing",
+      "First free game option now locks after a creator has a pending or approved submission",
+      "Payment page now explains whether your free upload slot is still available",
+      "Kept V43 pricing polish, reviews, playlists, and audio settings",
+    ],
+  },
+  {
     version: "V43",
     title: "Creator polish, reviews, and playlists",
     date: "Current",
@@ -746,8 +758,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V43 Online</strong>
-          <p>Better pricing page, reviews and ratings return, local playlists, and upload flow checks.</p>
+          <strong>V44 Online</strong>
+          <p>Upload permission fix, clearer creator upload errors, and first free game lock.</p>
         </div>
       </aside>
 

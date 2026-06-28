@@ -558,3 +558,19 @@ supabase/v43_social_upload_backend.sql
 
 Commit summary:
 Polish pricing add reviews and playlists
+
+
+# FlashPortal V44 Upload Permissions + Free Lock
+
+Fixes:
+- Adds a dedicated Supabase SQL patch for `permission denied for table game_submissions`.
+- Rebuilds clean RLS policies for creator submissions.
+- Creates storage buckets/policies for game ZIPs and thumbnails.
+- Free first-game option locks after a creator has a pending or approved submission.
+- Rejected submissions do not lock the free option.
+
+Required:
+Run `supabase/v44_upload_permissions.sql` in Supabase SQL Editor.
+
+Commit summary:
+Fix upload permissions and lock free slot
