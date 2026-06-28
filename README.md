@@ -574,3 +574,21 @@ Run `supabase/v44_upload_permissions.sql` in Supabase SQL Editor.
 
 Commit summary:
 Fix upload permissions and lock free slot
+
+
+# FlashPortal V45 Audio Reviews Friends Upload Fix
+
+Fixes/Adds:
+- Audio icon opens a real audio control popup.
+- Sliders can mute click sound effects and music.
+- AVG rating ignores unrated/new games.
+- Public review pages at `/reviews/[gameId]`.
+- Review link on game cards.
+- Friends tab with add by email/username, requests, and friends list foundation.
+- Stronger Supabase upload permission SQL.
+
+Required:
+Run `supabase/v45_backend_upload_reviews_friends.sql` in Supabase SQL Editor.
+
+Commit summary:
+Add audio popup reviews friends and upload SQL

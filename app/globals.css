@@ -1695,3 +1695,190 @@ a {
   line-height: 1.45;
   margin-top: 8px;
 }
+
+
+/* V45 audio popover, reviews, friends */
+.audio-control-popover {
+  position: fixed;
+  right: 28px;
+  top: 92px;
+  width: min(360px, calc(100vw - 32px));
+  z-index: 80;
+  border: 1px solid rgba(255,122,0,.35);
+  background: rgba(8, 8, 8, .96);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 20px 70px rgba(0,0,0,.55);
+}
+
+.audio-control-popover h3 {
+  margin: 0 0 8px;
+}
+
+.audio-control-popover p {
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+.audio-control-popover label {
+  display: grid;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 900;
+  margin: 14px 0;
+}
+
+.audio-control-popover input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.audio-popover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.audio-popover-actions button,
+.friend-add-row button,
+.friend-row button,
+.review-form button {
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), #ffb13b);
+  color: #080808;
+  font-weight: 1000;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.review-link-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+  border: 1px solid rgba(255,122,0,.35);
+  background: rgba(255,122,0,.08);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 950;
+  margin-bottom: 10px;
+}
+
+.reviews-page {
+  min-height: 100vh;
+  padding: 34px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.reviews-hero,
+.review-form,
+.review-list,
+.friend-add-card,
+.friend-grid article {
+  border: 1px solid rgba(255,122,0,.28);
+  background: rgba(255,122,0,.06);
+  border-radius: 28px;
+  padding: 28px;
+  margin: 20px 0;
+}
+
+.reviews-hero span {
+  color: var(--accent);
+  text-transform: uppercase;
+  font-weight: 1000;
+  letter-spacing: .08em;
+}
+
+.reviews-hero h1 {
+  font-size: clamp(2.6rem, 8vw, 6.4rem);
+  margin: 14px 0;
+}
+
+.review-form {
+  display: grid;
+  gap: 16px;
+  max-width: 900px;
+}
+
+.review-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.review-form input,
+.review-form select,
+.review-form textarea,
+.friend-add-row input {
+  border: 1px solid rgba(255,122,0,.35);
+  background: rgba(0,0,0,.35);
+  color: var(--text);
+  border-radius: 18px;
+  padding: 14px;
+  font-weight: 850;
+}
+
+.review-form textarea {
+  min-height: 140px;
+}
+
+.public-review-card {
+  border: 1px solid rgba(255,122,0,.22);
+  border-radius: 22px;
+  padding: 18px;
+  margin-top: 12px;
+  background: rgba(0,0,0,.25);
+}
+
+.public-review-card strong {
+  color: var(--accent);
+  font-size: 1.2rem;
+}
+
+.public-review-card span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.friends-section {
+  display: grid;
+  gap: 18px;
+}
+
+.friend-add-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.friend-add-row input {
+  flex: 1;
+  min-width: 240px;
+}
+
+.friend-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.friend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid rgba(255,122,0,.18);
+  border-radius: 18px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+@media (max-width: 800px) {
+  .friend-grid {
+    grid-template-columns: 1fr;
+  }
+}

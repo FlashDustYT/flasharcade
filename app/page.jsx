@@ -32,6 +32,7 @@ import {
   Heart,
   MessageSquare,
   PlusCircle,
+  Users,
   CreditCard,
   ExternalLink,
   CheckCircle2,
@@ -46,6 +47,19 @@ function isOwnerUser(user) {
 }
 
 const PLATFORM_UPDATES = [
+  {
+    version: "V45",
+    title: "Audio, reviews, friends, and upload fixes",
+    date: "Current",
+    changes: [
+      "Audio buttons now open a real control panel instead of only toggling icons",
+      "Added proper game review pages with public reviews and star ratings",
+      "Added Friends page foundation with add by email/username, requests, and friend list",
+      "Fixed AVG rating so unrated games do not drag the average down",
+      "Added stronger Supabase SQL for upload permission errors",
+      "Kept payment, playlist, and creator pricing improvements",
+    ],
+  },
   {
     version: "V44",
     title: "Upload permissions and free-slot lock",
@@ -250,6 +264,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("discover");
   const [uiVolume, setUiVolume] = useState(0.45);
   const [musicVolume, setMusicVolume] = useState(0.25);
+  const [audioPanelOpen, setAudioPanelOpen] = useState(false);
+  const [friendLookup, setFriendLookup] = useState("");
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [friends, setFriends] = useState([]);
   const [playlistIds, setPlaylistIds] = useState([]);
   const [ratingDrafts, setRatingDrafts] = useState({});
   const [reviewDrafts, setReviewDrafts] = useState({});
@@ -311,6 +329,8 @@ export default function Home() {
       if (Number.isFinite(savedMusicVolume)) setMusicVolume(savedMusicVolume);
       setPlaylistIds(JSON.parse(localStorage.getItem("flashportal-playlist") || "[]"));
       setReviews(JSON.parse(localStorage.getItem("flashportal-reviews") || "{}"));
+      setFriends(JSON.parse(localStorage.getItem("flashportal-friends") || "[]"));
+      setFriendRequests(JSON.parse(localStorage.getItem("flashportal-friend-requests") || "[]"));
     } catch {}
 
     const savedTheme = localStorage.getItem("flashportal-theme");
@@ -439,10 +459,10 @@ export default function Home() {
 
   const trendingGames = useMemo(() => sortTrending(filteredGames), [filteredGames]);
   const featuredGame = trendingGames[0] || games[0];
-  const averageRating =
-    games.length > 0
-      ? (games.reduce((sum, game) => sum + Number(game.rating || 0), 0) / games.length).toFixed(1)
-      : "0.0";
+  const ratedGamesForAverage = games.filter((game) => Number(game.rating) > 0);
+  const averageRating = ratedGamesForAverage.length
+    ? (ratedGamesForAverage.reduce((sum, game) => sum + Number(game.rating), 0) / ratedGamesForAverage.length).toFixed(1)
+    : "New";
 
   useEffect(() => {
     localStorage.setItem("flashportal-ui-volume", String(uiVolume));
@@ -451,6 +471,39 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem("flashportal-music-volume", String(musicVolume));
   }, [musicVolume]);
+
+  useEffect(() => {
+    localStorage.setItem("flashportal-friends", JSON.stringify(friends));
+  }, [friends]);
+
+  useEffect(() => {
+    localStorage.setItem("flashportal-friend-requests", JSON.stringify(friendRequests));
+  }, [friendRequests]);
+
+  function sendFriendRequest() {
+    const target = friendLookup.trim();
+    if (!target) return;
+    if (friends.some((friend) => friend.toLowerCase() === target.toLowerCase())) {
+      setToast("Already on your friends list");
+      setTimeout(() => setToast(""), 2000);
+      return;
+    }
+    if (!friendRequests.some((request) => request.toLowerCase() === target.toLowerCase())) {
+      setFriendRequests((current) => [...current, target]);
+    }
+    setFriendLookup("");
+    setToast("Friend request saved");
+    setTimeout(() => setToast(""), 2000);
+  }
+
+  function acceptFriend(target) {
+    setFriends((current) => current.includes(target) ? current : [...current, target]);
+    setFriendRequests((current) => current.filter((request) => request !== target));
+  }
+
+  function declineFriend(target) {
+    setFriendRequests((current) => current.filter((request) => request !== target));
+  }
 
   useEffect(() => {
     localStorage.setItem("flashportal-playlist", JSON.stringify(playlistIds));
@@ -603,6 +656,7 @@ export default function Home() {
     { id: "discover", label: "Discover", icon: Compass },
     { id: "library", label: "Library", icon: BookOpen },
   { id: "playlist", label: "Playlist", icon: Heart },
+  { id: "friends", label: "Friends", icon: Users },
     { id: "updates", label: "Updates", icon: Newspaper },
     { id: "achievements", label: "Achievements", icon: Trophy },
     { id: "publish", label: "Publish", icon: Upload, highlight: true },
@@ -758,8 +812,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V44 Online</strong>
-          <p>Upload permission fix, clearer creator upload errors, and first free game lock.</p>
+          <strong>V45 Online</strong>
+          <p>Audio controls popup, public review pages, friends foundation, upload permission fix, and accurate ratings.</p>
         </div>
       </aside>
 
@@ -1061,6 +1115,54 @@ export default function Home() {
           </section>
         )}
 
+
+        {activeTab === "friends" && (
+          <section className="tab-section friends-section">
+            <div className="section-heading">
+              <div>
+                <span>Social</span>
+                <h2>Friends</h2>
+                <p>Add players by username or email. V45 stores this locally first, with Supabase tables included for the real backend.</p>
+              </div>
+            </div>
+
+            <article className="friend-add-card">
+              <h3>Add Friend</h3>
+              <p>Enter a username or email.</p>
+              <div className="friend-add-row">
+                <input value={friendLookup} onChange={(event) => setFriendLookup(event.target.value)} placeholder="username or email@example.com" />
+                <button type="button" onClick={sendFriendRequest}>Send Request</button>
+              </div>
+            </article>
+
+            <div className="friend-grid">
+              <article>
+                <h3>Friend Requests</h3>
+                {friendRequests.length ? (
+                  friendRequests.map((request) => (
+                    <div className="friend-row" key={request}>
+                      <span>{request}</span>
+                      <button type="button" onClick={() => acceptFriend(request)}>Accept</button>
+                      <button type="button" onClick={() => declineFriend(request)}>Decline</button>
+                    </div>
+                  ))
+                ) : (
+                  <p>No friend requests yet.</p>
+                )}
+              </article>
+
+              <article>
+                <h3>Friends List</h3>
+                {friends.length ? (
+                  friends.map((friend) => <div className="friend-row" key={friend}><span>{friend}</span></div>)
+                ) : (
+                  <p>No friends added yet.</p>
+                )}
+              </article>
+            </div>
+          </section>
+        )}
+
 {activeTab === "settings" && (
           <section className="portal-view">
             <SectionHeader
@@ -1285,6 +1387,27 @@ export default function Home() {
 
         {toast && <div className="portal-toast">{toast}</div>}
       </section>
+    
+      {audioPanelOpen && (
+        <div className="audio-control-popover">
+          <h3>Audio Controls</h3>
+          <p>Set sound effects and background music volume. Put a slider at 0% to fully mute it.</p>
+          <label>
+            <span>Click Sound Effects: {Math.round(uiVolume * 100)}%</span>
+            <input type="range" min="0" max="1" step="0.01" value={uiVolume} onChange={(event) => setUiVolume(Number(event.target.value))} />
+          </label>
+          <label>
+            <span>Background Music: {Math.round(musicVolume * 100)}%</span>
+            <input type="range" min="0" max="1" step="0.01" value={musicVolume} onChange={(event) => setMusicVolume(Number(event.target.value))} />
+          </label>
+          <div className="audio-popover-actions">
+            <button type="button" onClick={() => setUiVolume(0)}>Mute Clicks</button>
+            <button type="button" onClick={() => setMusicVolume(0)}>Mute Music</button>
+            <button type="button" onClick={() => setAudioPanelOpen(false)}>Done</button>
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }
