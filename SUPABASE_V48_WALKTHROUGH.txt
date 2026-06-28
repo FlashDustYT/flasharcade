@@ -1,0 +1,28 @@
+WHAT TO RUN IN SUPABASE
+
+1. Go to Supabase > SQL Editor.
+2. Click + New Query.
+3. Open this file from the zip:
+   supabase/v48_run_this_once.sql
+4. Copy all of it.
+5. Paste into the new SQL query.
+6. Click Run.
+7. Wait until it says Success.
+8. Wait 30 seconds.
+9. Refresh FlashPortal.
+
+Important:
+- Do not run old v44_upload_permissions.
+- Do not run old V46/V47 SQL after this.
+- V48 is the one cleanup SQL file.
+
+After success, test in this order:
+1. Log into second account.
+2. Upload a game.
+3. Log into Owner account.
+4. Owner/Admin Tools > Load Queue.
+5. The submission should show.
+6. Click a game card's Review / Rate button.
+7. Post a star rating and written review.
+8. Send an announcement from Owner account.
+9. Open notification bell from second account.

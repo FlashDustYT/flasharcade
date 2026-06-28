@@ -2056,3 +2056,30 @@ a {
   color: var(--accent);
   font-weight: 1000;
 }
+
+
+/* V48 forced review buttons */
+.review-action-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin: 10px 0 12px;
+  padding: 12px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 122, 0, .45);
+  background: rgba(255, 122, 0, .12);
+  color: var(--text, #fff);
+  text-decoration: none;
+  font-weight: 1000;
+}
+
+.review-action-button:hover {
+  background: rgba(255, 122, 0, .22);
+  transform: translateY(-1px);
+}
+
+input[type="range"] {
+  accent-color: var(--accent, #ff7a00);
+}

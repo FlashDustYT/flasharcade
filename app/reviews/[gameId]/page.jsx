@@ -25,8 +25,12 @@ export default function ReviewsPage({ params }) {
   const [status, setStatus] = useState("");
 
   function loadLocalReviews() {
-    const all = JSON.parse(localStorage.getItem("flashportal-public-reviews") || "{}");
-    return all[gameId] || [];
+    try {
+      const all = JSON.parse(localStorage.getItem("flashportal-public-reviews") || "{}");
+      return all[gameId] || [];
+    } catch {
+      return [];
+    }
   }
 
   function saveLocalReview(payload) {
@@ -38,7 +42,6 @@ export default function ReviewsPage({ params }) {
   }
 
   async function loadReviews() {
-    setStatus("");
     const { data, error } = await supabase
       .from("game_reviews")
       .select("*")
@@ -47,11 +50,12 @@ export default function ReviewsPage({ params }) {
 
     if (!error && data) {
       setReviews(data);
+      setStatus("");
       return;
     }
 
     setReviews(loadLocalReviews());
-    setStatus("Local review mode. Run V47 SQL for public database reviews.");
+    setStatus("Local fallback active. Run supabase/v48_run_this_once.sql for public reviews.");
   }
 
   useEffect(() => {
@@ -64,7 +68,7 @@ export default function ReviewsPage({ params }) {
     const cleanText = reviewText.trim();
 
     if (!cleanText) {
-      setStatus("Write a review first.");
+      setStatus("Write your review first.");
       return;
     }
 
@@ -81,7 +85,7 @@ export default function ReviewsPage({ params }) {
 
     if (error) {
       saveLocalReview(payload);
-      setStatus("Review saved locally. Run V47 SQL to make it public in Supabase.");
+      setStatus("Saved locally. Run V48 SQL to save public database reviews.");
     } else {
       setStatus("Review posted.");
       await loadReviews();
@@ -122,7 +126,6 @@ export default function ReviewsPage({ params }) {
               onMouseEnter={() => setHoverRating(star)}
               onMouseLeave={() => setHoverRating(0)}
               onClick={() => setRating(star)}
-              aria-label={`${star} star rating`}
             >
               <Star size={30} fill="currentColor" />
             </button>
