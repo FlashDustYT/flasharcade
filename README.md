@@ -637,3 +637,17 @@ Run that once in Supabase SQL Editor. Do not run older SQL files.
 
 # FlashPortal V50 Reviews/Ratings Fix
 Run `supabase/v50_reviews_ratings.sql` if reviews do not save publicly.
+
+
+# FlashPortal V58 Social Profiles + Creator Hub
+
+Adds:
+- `/profile` personal homepage.
+- Display name, username, bio, avatar URL, and banner URL.
+- Social posts with optional image URLs.
+- `/creator-hub` creator/player feed.
+- Creator discovery/search.
+- Creator Hub becomes more like an Instagram-style community feed.
+
+SQL:
+Run `supabase/v58_social_profiles.sql` in Supabase SQL Editor.

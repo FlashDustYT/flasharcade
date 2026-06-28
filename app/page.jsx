@@ -78,6 +78,18 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V58",
+    title: "Social profiles and Creator Hub",
+    date: "Current",
+    changes: [
+      "Added My Homepage profile page",
+      "Users can change display name, username, bio, avatar, and banner",
+      "Added creator/player feed posts with optional image URLs",
+      "Added Creator Hub page for discovering creators and posts",
+      "Email no longer has to be the public-facing name",
+    ],
+  },
+  {
     version: "V57",
     title: "Creator profiles accuracy and free-upload update",
     date: "Current",
@@ -1442,7 +1454,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V55 Online</strong>
+          <strong>V58 Online</strong>
           <p>Custom scrollbar, cleaner carousels, tighter cards, smoother HUD, and mobile polish.</p>
         </div>
       </aside>
