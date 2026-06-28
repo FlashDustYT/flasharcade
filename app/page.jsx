@@ -84,6 +84,18 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V64",
+    title: "Creator social/profile release pass",
+    date: "Current",
+    changes: [
+      "Creators now opens a creator directory, while Creator Hub stays the community feed",
+      "Profile editor and posts support file image uploads instead of URL-only",
+      "Users can delete or private/unprivate their own posts",
+      "Public profile lookup is more forgiving for usernames and email names",
+      "Online dots show recent creator activity"
+    ],
+  },
+  {
     version: "V63",
     title: "Actual homepage wiring fix",
     date: "Current",
@@ -1470,7 +1482,7 @@ export default function Home() {
     const realRoutes = {
       settings: "/profile",
       creatorHub: "/creator-hub",
-      creators: "/creator-hub",
+      creators: "/creators",
       about: "/about",
       account: "/profile",
       profile: "/profile",
@@ -1539,8 +1551,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V63 Online</strong>
-          <p>Custom scrollbar, cleaner carousels, tighter cards, smoother HUD, and mobile polish.</p>
+          <strong>V64 Online</strong>
+          <p>Creators page split from Creator Hub, file uploads for images, post controls, profile fallback, and online status.</p>
         </div>
       </aside>
 

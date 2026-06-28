@@ -5,6 +5,9 @@ import Link from "next/link";
 import { ArrowLeft, EyeOff, Gamepad2, Heart, MessageCircle, UserRound } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 
+function safeLookup(value) { return String(value || "").toLowerCase().replace(/^@+/, "").replace(/[^a-z0-9_.@-]/g, ""); }
+function isOnline(profile) { return profile?.last_seen_at && Date.now() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 5; }
+
 export default function PublicProfilePage({ params }) {
   const lookup = params.username;
   const [user, setUser] = useState(null);
@@ -19,14 +22,30 @@ export default function PublicProfilePage({ params }) {
     const currentUser = sessionData?.session?.user || null;
     setUser(currentUser);
 
-    const { data: profileData, error } = await supabase
+    const cleanedLookup = safeLookup(lookup);
+    let profileData = null;
+    let error = null;
+
+    const first = await supabase
       .from("user_profiles")
       .select("*")
-      .or(`username.eq.${lookup},id.eq.${lookup}`)
+      .or(`username.eq.${cleanedLookup},id.eq.${cleanedLookup},email.ilike.${cleanedLookup}@%`)
       .maybeSingle();
 
+    profileData = first.data;
+    error = first.error;
+
+    if (!profileData) {
+      const { data: allProfiles } = await supabase.from("user_profiles").select("*").limit(300);
+      profileData = (allProfiles || []).find((item) =>
+        safeLookup(item.username) === cleanedLookup ||
+        safeLookup(item.email?.split("@")[0]) === cleanedLookup ||
+        safeLookup(item.display_name) === cleanedLookup
+      );
+    }
+
     if (error || !profileData) {
-      setStatus("Profile not found. If this is your profile, open /profile and hit Save Profile first.");
+      setStatus("Profile not found. Tell that account to open /profile and hit Save Profile first.");
       return;
     }
 
@@ -49,14 +68,16 @@ export default function PublicProfilePage({ params }) {
     const canView = !profileData.is_private || currentUser?.id === profileData.id || isFollowing;
 
     if (canView) {
-      const { data: postData } = await supabase
+      let postQuery = supabase
         .from("social_posts")
         .select("*")
         .eq("user_id", profileData.id)
+        .neq("is_deleted", true)
         .order("created_at", { ascending: false })
         .limit(50);
 
-      setPosts(postData || []);
+      const { data: postData } = await postQuery;
+      setPosts((postData || []).filter((post) => !post.is_private || currentUser?.id === profileData.id || isFollowing));
 
       const { data: gameData } = await supabase
         .from("game_submissions")
@@ -140,7 +161,7 @@ export default function PublicProfilePage({ params }) {
           </div>
           <div>
             <h1>{profile.display_name || "FlashPortal Creator"}</h1>
-            <p>@{profile.username || "creator"} {profile.is_private ? "• Private" : "• Public"}</p>
+            <p>@{profile.username || "creator"} {profile.is_private ? "• Private" : "• Public"} <span className={`profile-online-label ${isOnline(profile) ? "online" : ""}`}>{isOnline(profile) ? "• Online" : "• Offline"}</span></p>
             <span>{canViewPrivate ? profile.bio || "No bio yet." : "This profile is private."}</span>
           </div>
 

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Heart, MessageCircle, Search, UserRound, Users } from "lucide-react";
+
+function isOnline(profile) { return profile?.last_seen_at && Date.now() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 5; }
 import { supabase } from "../../lib/supabaseClient";
 
 export default function CreatorHubPage() {
@@ -22,6 +24,7 @@ export default function CreatorHubPage() {
       .from("user_profiles")
       .select("*")
       .order("updated_at", { ascending: false })
+      .neq("is_deleted", true)
       .limit(100);
 
     const { data: postData } = await supabase
@@ -114,7 +117,7 @@ export default function CreatorHubPage() {
       <section className="creator-feed-hero">
         <span><Users size={16} /> Creator Hub</span>
         <h1>Community Feed</h1>
-        <p>Creator/player posts, images, updates, and people to follow. The roadmap stuff is now on the About page.</p>
+        <p>Latest creator/player posts, images, updates, and comments. Use Creators to browse and follow people.</p>
         <label className="hub-search">
           <Search size={18} />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search creators..." />
@@ -130,7 +133,7 @@ export default function CreatorHubPage() {
               <article className="social-post-card" key={post.id}>
                 <div className="post-author-row">
                   <div className="mini-avatar">
-                    {post.user_profiles?.avatar_url ? <img src={post.user_profiles.avatar_url} alt="" /> : <UserRound size={20} />}
+                    {post.user_profiles?.avatar_url ? <img src={post.user_profiles.avatar_url} alt="" /> : <UserRound size={20} />}<span className={`online-dot ${isOnline(post.user_profiles) ? "online" : ""}`} />
                   </div>
                   <div>
                     <strong>{post.user_profiles?.display_name || "FlashPortal Player"}</strong>
@@ -148,13 +151,13 @@ export default function CreatorHubPage() {
           ) : (
             <article className="social-post-card empty">
               <h3>No posts yet</h3>
-              <p>Go to your profile page and post an update.</p>
+              <p>Go to your profile page and post an update.</p><Link href="/profile">Open Profile</Link>
             </article>
           )}
         </section>
 
         <aside className="creator-list-panel">
-          <h2>Creators</h2>
+          <h2>Creators</h2><p className="editor-help">Quick creator list. Full directory is on the Creators page.</p><Link className="profile-edit-button mini" href="/creators">Open Creators</Link>
           {filteredProfiles.length ? filteredProfiles.map((profile) => {
             const isFollowing = followingIds.includes(profile.id);
             const isSelf = user?.id === profile.id;
