@@ -1541,3 +1541,141 @@ a {
   width: 100%;
   accent-color: var(--accent);
 }
+
+
+/* V43 creator pricing polish */
+.upgraded-checkout-page {
+  padding-bottom: 80px;
+}
+
+.upgraded-checkout-hero {
+  position: relative;
+  overflow: hidden;
+  max-width: 1100px;
+}
+
+.upgraded-checkout-hero::after {
+  content: "";
+  position: absolute;
+  right: -140px;
+  top: -140px;
+  width: 360px;
+  height: 360px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255,122,0,.35), transparent 62%);
+}
+
+.upgraded-pricing-grid {
+  align-items: stretch;
+}
+
+.upgraded-pricing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 440px;
+}
+
+.pricing-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plan-eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  padding: 7px 11px;
+  border: 1px solid rgba(255,122,0,.45);
+  border-radius: 999px;
+  color: var(--accent);
+  background: rgba(255,122,0,.1);
+  font-size: .75rem;
+  font-weight: 1000;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.info-toggle {
+  border: 1px solid rgba(255,122,0,.35);
+  background: rgba(255,122,0,.08);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 950;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.plan-info-panel {
+  border: 1px solid rgba(255,122,0,.25);
+  background: rgba(255,122,0,.08);
+  border-radius: 18px;
+  padding: 14px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.upgraded-pricing-card li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.pricing-action {
+  margin-top: auto;
+}
+
+.upgraded-checkout-note {
+  max-width: 1100px;
+}
+
+/* V43 reviews and playlists */
+.game-social-actions {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.game-social-actions button,
+.game-social-actions select,
+.game-social-actions input {
+  border: 1px solid rgba(255,122,0,.28);
+  background: rgba(255,122,0,.08);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 11px;
+  font-weight: 900;
+}
+
+.game-social-actions button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.game-social-actions label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: .8rem;
+  font-weight: 900;
+}
+
+.playlist-empty-card {
+  border: 1px solid rgba(255,122,0,.28);
+  background: rgba(255,122,0,.08);
+  border-radius: 26px;
+  padding: 34px;
+  color: var(--muted);
+}
+
+.playlist-empty-card h3 {
+  color: var(--text);
+  margin: 12px 0 6px;
+}

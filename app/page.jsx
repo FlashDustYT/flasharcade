@@ -29,6 +29,9 @@ import {
   Megaphone,
   Music2,
   Settings,
+  Heart,
+  MessageSquare,
+  PlusCircle,
   CreditCard,
   ExternalLink,
   CheckCircle2,
@@ -43,6 +46,19 @@ function isOwnerUser(user) {
 }
 
 const PLATFORM_UPDATES = [
+  {
+    version: "V43",
+    title: "Creator polish, reviews, and playlists",
+    date: "Current",
+    changes: [
+      "Upgraded the payment/pricing screen with cleaner cards and expandable info",
+      "Restored visible review and rating actions on game cards",
+      "Added a playlist/favorites system so players can save games to their profile",
+      "Added a Playlist tab for quick access to saved games",
+      "Improved Settings with audio controls from V42",
+      "Included Supabase upload validation notes so creator uploads are easier to test",
+    ],
+  },
   {
     version: "V42",
     title: "Payment, publishing, and audio controls",
@@ -222,6 +238,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("discover");
   const [uiVolume, setUiVolume] = useState(0.45);
   const [musicVolume, setMusicVolume] = useState(0.25);
+  const [playlistIds, setPlaylistIds] = useState([]);
+  const [ratingDrafts, setRatingDrafts] = useState({});
+  const [reviewDrafts, setReviewDrafts] = useState({});
+  const [reviews, setReviews] = useState({});
   const [query, setQuery] = useState("");
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -277,6 +297,8 @@ export default function Home() {
       const savedMusicVolume = Number(localStorage.getItem("flashportal-music-volume"));
       if (Number.isFinite(savedUiVolume)) setUiVolume(savedUiVolume);
       if (Number.isFinite(savedMusicVolume)) setMusicVolume(savedMusicVolume);
+      setPlaylistIds(JSON.parse(localStorage.getItem("flashportal-playlist") || "[]"));
+      setReviews(JSON.parse(localStorage.getItem("flashportal-reviews") || "{}"));
     } catch {}
 
     const savedTheme = localStorage.getItem("flashportal-theme");
@@ -418,6 +440,53 @@ export default function Home() {
     localStorage.setItem("flashportal-music-volume", String(musicVolume));
   }, [musicVolume]);
 
+  useEffect(() => {
+    localStorage.setItem("flashportal-playlist", JSON.stringify(playlistIds));
+  }, [playlistIds]);
+
+  useEffect(() => {
+    localStorage.setItem("flashportal-reviews", JSON.stringify(reviews));
+  }, [reviews]);
+
+  function togglePlaylist(gameId) {
+    setPlaylistIds((current) =>
+      current.includes(gameId)
+        ? current.filter((id) => id !== gameId)
+        : [...current, gameId]
+    );
+  }
+
+  function submitReview(game) {
+    const ratingValue = Number(ratingDrafts[game.id] || 0);
+    const text = String(reviewDrafts[game.id] || "").trim();
+
+    if (!ratingValue && !text) {
+      setToast("Add a rating or review first");
+      setTimeout(() => setToast(""), 2000);
+      return;
+    }
+
+    setReviews((current) => ({
+      ...current,
+      [game.id]: [
+        ...(current[game.id] || []),
+        {
+          rating: ratingValue || null,
+          text,
+          author: user?.email || "Guest",
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    }));
+
+    setRatingDrafts((current) => ({ ...current, [game.id]: "" }));
+    setReviewDrafts((current) => ({ ...current, [game.id]: "" }));
+    setToast("Review saved");
+    setTimeout(() => setToast(""), 2000);
+  }
+
+  const playlistGames = games.filter((game) => playlistIds.includes(game.id));
+
   const totalPlays = games.reduce((sum, game) => sum + parsePlayCount(game.plays), 0);
 
   useEffect(() => {
@@ -521,6 +590,7 @@ export default function Home() {
   const navItems = [
     { id: "discover", label: "Discover", icon: Compass },
     { id: "library", label: "Library", icon: BookOpen },
+  { id: "playlist", label: "Playlist", icon: Heart },
     { id: "updates", label: "Updates", icon: Newspaper },
     { id: "achievements", label: "Achievements", icon: Trophy },
     { id: "publish", label: "Publish", icon: Upload, highlight: true },
@@ -676,8 +746,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V42 Online</strong>
-          <p>Updated Guess the Celeb, fixed duplicate game cards, safer payments, publish checks, and audio volume settings.</p>
+          <strong>V43 Online</strong>
+          <p>Better pricing page, reviews and ratings return, local playlists, and upload flow checks.</p>
         </div>
       </aside>
 
@@ -952,7 +1022,34 @@ export default function Home() {
 
 
 
-        {activeTab === "settings" && (
+        
+        {activeTab === "playlist" && (
+          <section className="tab-section playlist-section">
+            <div className="section-heading">
+              <div>
+                <span>Saved Games</span>
+                <h2>Your Playlist</h2>
+                <p>Games you save appear here so your profile has a quick personal library.</p>
+              </div>
+            </div>
+
+            {playlistGames.length ? (
+              <div className="game-grid">
+                {playlistGames.map((game) => (
+                  <GameCard key={game.id} game={game} />
+                ))}
+              </div>
+            ) : (
+              <article className="playlist-empty-card">
+                <Heart size={32} />
+                <h3>No games saved yet</h3>
+                <p>Click “Add to Playlist” on any game card and it will show up here.</p>
+              </article>
+            )}
+          </section>
+        )}
+
+{activeTab === "settings" && (
           <section className="portal-view">
             <SectionHeader
               label="Settings"

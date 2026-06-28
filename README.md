@@ -541,3 +541,20 @@ It must start with `https://buy.stripe.com/` or `https://pay.stripe.com/`.
 
 Commit summary:
 Fix payments duplicate celeb publish and audio settings
+
+
+# FlashPortal V43 Pricing Reviews Playlists
+
+Adds:
+- Much cleaner payment/pricing screen.
+- Expandable info panels for each pricing option.
+- Rating/review controls back on game cards.
+- Local Playlist tab where users can save games.
+- Backend SQL starter for future database-backed reviews/playlists.
+- Upload test checklist.
+
+Run if needed:
+supabase/v43_social_upload_backend.sql
+
+Commit summary:
+Polish pricing add reviews and playlists

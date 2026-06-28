@@ -1,40 +1,61 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CreditCard } from "lucide-react";
+import { ArrowLeft, CheckCircle2, CreditCard, Info, Rocket, Star, Upload, Zap } from "lucide-react";
 
 const plans = [
   {
     title: "First Game Free",
     price: "$0",
-    description: "Your first FlashPortal game submission is free. No Stripe checkout needed.",
+    eyebrow: "Starter",
+    description: "Submit your first browser game for manual FlashPortal review.",
+    longDescription:
+      "Best for testing the platform. You can upload one game ZIP, add a custom title, description, category, and thumbnail, then wait for owner approval before it appears publicly.",
     cta: "Upload First Game",
     href: "/creator/upload",
     env: null,
+    icon: Upload,
+    perks: ["Manual review", "Custom thumbnail", "Creator profile support", "Public listing after approval"],
   },
   {
     title: "Extra Game Upload",
     price: "$1.99",
+    eyebrow: "More games",
     description: "Submit another browser game to FlashPortal for review.",
+    longDescription:
+      "Use this when you already used your free first upload and want to submit another game. Payment covers the extra submission slot; every game still goes through review before publishing.",
     cta: "Pay $1.99",
     href: process.env.NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL,
     env: "NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL",
+    icon: Zap,
+    perks: ["Additional submission", "Manual review", "Thumbnail support", "Creator listing"],
   },
   {
     title: "Featured 7 Days",
     price: "$4.99",
+    eyebrow: "Boost",
     description: "Request featured placement for one approved game for 7 days.",
+    longDescription:
+      "Great for launches or small promo pushes. This is for approved games only and puts one selected game in a more visible featured area for one week.",
     cta: "Pay $4.99",
     href: process.env.NEXT_PUBLIC_STRIPE_FEATURED_7_URL,
     env: "NEXT_PUBLIC_STRIPE_FEATURED_7_URL",
+    icon: Star,
+    perks: ["7-day feature request", "Homepage visibility", "Approved games only", "Promo support"],
   },
   {
     title: "Featured 30 Days",
     price: "$9.99",
+    eyebrow: "Maximum visibility",
     description: "Request longer featured placement for one approved game.",
+    longDescription:
+      "Best for creators who want a longer promo window. This keeps one approved game in featured placement for 30 days, subject to final owner approval.",
     cta: "Pay $9.99",
     href: process.env.NEXT_PUBLIC_STRIPE_FEATURED_30_URL,
     env: "NEXT_PUBLIC_STRIPE_FEATURED_30_URL",
+    icon: Rocket,
+    perks: ["30-day feature request", "Longer visibility", "Approved games only", "Best promo value"],
   },
 ];
 
@@ -43,11 +64,13 @@ function isValidStripePaymentUrl(url) {
 }
 
 export default function CreatorCheckout() {
+  const [openInfo, setOpenInfo] = useState("First Game Free");
+
   function openPayment(plan) {
     const cleanUrl = typeof plan.href === "string" ? plan.href.trim() : "";
 
     if (!isValidStripePaymentUrl(cleanUrl)) {
-      alert(`${plan.title} is not connected yet. In Vercel, edit ${plan.env} and paste the real customer-facing Stripe Payment Link. It must start with https://buy.stripe.com/ or https://pay.stripe.com/. Then save and redeploy.`);
+      alert(`${plan.title} is not connected yet. In Vercel, edit ${plan.env} and paste the real Stripe Payment Link that starts with https://buy.stripe.com/ or https://pay.stripe.com/. Then redeploy.`);
       return;
     }
 
@@ -55,48 +78,75 @@ export default function CreatorCheckout() {
   }
 
   return (
-    <main className="checkout-page">
+    <main className="checkout-page upgraded-checkout-page">
       <Link className="back-link" href="/">
         <ArrowLeft size={18} /> Back to FlashPortal
       </Link>
 
-      <section className="checkout-hero">
+      <section className="checkout-hero upgraded-checkout-hero">
         <span><CreditCard size={16} /> Creator Pricing</span>
         <h1>Publish on FlashPortal</h1>
         <p>
           Start free, then only pay when you want extra uploads or featured placement.
+          Every game is reviewed before it appears publicly.
         </p>
       </section>
 
-      <section className="pricing-grid">
-        {plans.map((plan) => (
-          <article className="pricing-card" key={plan.title}>
-            <strong>{plan.price}</strong>
-            <h2>{plan.title}</h2>
-            <p>{plan.description}</p>
-            <ul>
-              <li>Manual review before publishing</li>
-              <li>Creator profile support</li>
-              <li>Game thumbnail support</li>
-            </ul>
+      <section className="pricing-grid upgraded-pricing-grid">
+        {plans.map((plan) => {
+          const Icon = plan.icon;
+          const expanded = openInfo === plan.title;
 
-            {plan.href === "/creator/upload" ? (
-              <Link href={plan.href}>{plan.cta}</Link>
-            ) : (
-              <button type="button" onClick={() => openPayment(plan)}>
-                {plan.cta}
+          return (
+            <article className={`pricing-card upgraded-pricing-card ${expanded ? "is-expanded" : ""}`} key={plan.title}>
+              <div className="pricing-card-top">
+                <span className="plan-eyebrow">{plan.eyebrow}</span>
+                <Icon size={24} />
+              </div>
+
+              <strong>{plan.price}</strong>
+              <h2>{plan.title}</h2>
+              <p>{plan.description}</p>
+
+              <button
+                type="button"
+                className="info-toggle"
+                onMouseEnter={() => setOpenInfo(plan.title)}
+                onClick={() => setOpenInfo(expanded ? "" : plan.title)}
+              >
+                <Info size={16} /> {expanded ? "Hide details" : "More info"}
               </button>
-            )}
-          </article>
-        ))}
+
+              {expanded && (
+                <div className="plan-info-panel">
+                  <p>{plan.longDescription}</p>
+                </div>
+              )}
+
+              <ul>
+                {plan.perks.map((perk) => (
+                  <li key={perk}><CheckCircle2 size={15} /> {perk}</li>
+                ))}
+              </ul>
+
+              {plan.href === "/creator/upload" ? (
+                <Link className="pricing-action" href={plan.href}>{plan.cta}</Link>
+              ) : (
+                <button className="pricing-action" type="button" onClick={() => openPayment(plan)}>
+                  {plan.cta}
+                </button>
+              )}
+            </article>
+          );
+        })}
       </section>
 
-      <section className="checkout-note">
+      <section className="checkout-note upgraded-checkout-note">
         <CreditCard size={24} />
         <div>
-          <h3>Payment setup check</h3>
+          <h3>How it works</h3>
           <p>
-            Payment buttons only work after each Vercel environment variable contains the real Stripe customer URL, not placeholder text.
+            Payments unlock the request/submission path. Games and featured placements still go through manual review so FlashPortal stays clean and creator-friendly.
           </p>
         </div>
       </section>
