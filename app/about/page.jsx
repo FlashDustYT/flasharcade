@@ -1,0 +1,1 @@
+import Link from "next/link";export default function About(){return <main className="social-home-page"><Link className="back-link" href="/">← Back</Link><section className="creator-hub-hero"><span>About FlashPortal</span><h1>Community Roadmap</h1><p>Profiles, creator follows, badges, daily challenges, and better discovery.</p></section></main>}

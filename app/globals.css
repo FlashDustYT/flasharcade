@@ -3381,3 +3381,13 @@ input[type="range"] {
     grid-template-columns: 1fr;
   }
 }
+
+/* V60 profile/follow fixes */
+.creator-feed-hero{max-width:1180px;margin:22px auto;border:1px solid rgba(255,122,0,.28);background:rgba(255,122,0,.06);border-radius:28px;padding:clamp(24px,5vw,48px)}
+.creator-feed-hero span{color:var(--accent,#ff7a00);display:inline-flex;gap:8px;align-items:center;font-weight:1000;text-transform:uppercase;letter-spacing:.08em}
+.creator-feed-hero h1{font-size:clamp(3rem,8vw,7rem);line-height:.9;margin:14px 0}
+.creator-hub-feed-layout{max-width:1180px;margin:22px auto;display:grid;grid-template-columns:1fr 360px;gap:18px}
+.profile-stats-row a{color:var(--text,#fff);text-decoration:none;padding:12px 14px;border:1px solid rgba(255,122,0,.24);border-radius:16px;background:rgba(0,0,0,.22);font-weight:900}
+.creator-mini-stats a{color:var(--accent,#ff7a00);border:1px solid rgba(255,122,0,.24);border-radius:999px;padding:6px 9px;font-weight:900;text-decoration:none;font-size:.82rem}
+.followers-page-panel{max-width:900px;margin:28px auto}
+@media(max-width:950px){.creator-hub-feed-layout{grid-template-columns:1fr}}

@@ -664,3 +664,7 @@ Adds/fixes:
 
 SQL:
 Run `supabase/v59_follow_privacy_profiles.sql`.
+
+# V60
+Run `supabase/v60_profile_follow_fix.sql`.
+Fixes profile save, persistent follows, follower list, and creator hub feed.

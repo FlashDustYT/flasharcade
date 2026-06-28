@@ -77,6 +77,7 @@ function avatarInitials(name) {
 }
 
 const PLATFORM_UPDATES = [
+  {version:"V60",title:"Profile save, followers, and Creator Hub rework",date:"Current",changes:["Username/avatar/banner/bio/privacy save from /profile","Follow requires login and persists after refresh","Followers count opens follower list","Creator Hub is now a community feed","Roadmap moved to /about"]},
   {
     version: "V59",
     title: "Persistent follows and profile privacy",
@@ -1465,7 +1466,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V59 Online</strong>
+          <strong>V60 Online</strong>
           <p>Custom scrollbar, cleaner carousels, tighter cards, smoother HUD, and mobile polish.</p>
         </div>
       </aside>
