@@ -78,6 +78,17 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V59",
+    title: "Persistent follows and profile privacy",
+    date: "Current",
+    changes: [
+      "Follow counts now save after refresh",
+      "Added public/private profile toggle",
+      "Added public profile pages",
+      "Creator Hub shows followers, games, posts, and privacy status",
+    ],
+  },
+  {
     version: "V58",
     title: "Social profiles and Creator Hub",
     date: "Current",
@@ -1454,7 +1465,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V58 Online</strong>
+          <strong>V59 Online</strong>
           <p>Custom scrollbar, cleaner carousels, tighter cards, smoother HUD, and mobile polish.</p>
         </div>
       </aside>

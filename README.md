@@ -651,3 +651,16 @@ Adds:
 
 SQL:
 Run `supabase/v58_social_profiles.sql` in Supabase SQL Editor.
+
+
+# FlashPortal V59 Follow + Profile Privacy
+
+Adds/fixes:
+- Follow/unfollow now persists in Supabase.
+- Follower count stays after refresh.
+- Public/private profile toggle.
+- Public profile pages: `/profile/[username]`.
+- Creator Hub shows follower count, games, posts, and privacy status.
+
+SQL:
+Run `supabase/v59_follow_privacy_profiles.sql`.

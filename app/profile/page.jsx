@@ -35,6 +35,7 @@ function fallbackProfile(user) {
     bio: "Playing games on FlashPortal.",
     avatar_url: user?.user_metadata?.avatar_url || "",
     banner_url: "",
+    is_private: false,
   };
 }
 
@@ -124,6 +125,7 @@ export default function ProfileHomePage() {
       bio: draftProfile.bio?.trim() || "",
       avatar_url: draftProfile.avatar_url?.trim() || "",
       banner_url: draftProfile.banner_url?.trim() || "",
+      is_private: Boolean(draftProfile.is_private),
       updated_at: new Date().toISOString(),
     };
 
@@ -289,6 +291,14 @@ export default function ProfileHomePage() {
           <label>
             Banner image URL
             <input value={draftProfile.banner_url || ""} onChange={(event) => setDraftProfile({ ...draftProfile, banner_url: event.target.value })} placeholder="https://..." />
+          </label>
+          <label className="privacy-toggle-row">
+            <input
+              type="checkbox"
+              checked={Boolean(draftProfile.is_private)}
+              onChange={(event) => setDraftProfile({ ...draftProfile, is_private: event.target.checked })}
+            />
+            Private profile — only followers/friends can view posts and full profile details.
           </label>
           <button type="button" onClick={saveProfile}><Save size={16} /> Save Profile</button>
         </section>
