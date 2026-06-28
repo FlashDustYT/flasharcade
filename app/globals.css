@@ -1882,3 +1882,117 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* V46 cleanup */
+.v46-checkout-page .checkout-hero {
+  margin: 24px auto;
+}
+
+.v46-pricing-grid,
+.pricing-grid.v46-pricing-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 20px;
+  max-width: 1280px;
+  margin: 28px auto;
+}
+
+.v46-pricing-card,
+.pricing-card.v46-pricing-card {
+  min-height: 420px;
+  border-radius: 28px;
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(255,122,0,.10), rgba(0,0,0,.28));
+  border: 1px solid rgba(255,122,0,.30);
+}
+
+.v46-pricing-card strong {
+  color: var(--accent);
+  font-size: 2.2rem;
+}
+
+.notification-list {
+  display: grid;
+  gap: 10px;
+}
+
+.notification-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(255,122,0,.22);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255,122,0,.06);
+}
+
+.notification-row p {
+  margin: 6px 0 0;
+}
+
+.notification-row button {
+  border: 0;
+  background: rgba(255,100,100,.16);
+  color: #ff7676;
+  border-radius: 10px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.v46-friend-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.friend-row small {
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.submission-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(255,122,0,.22);
+  border-radius: 18px;
+  padding: 12px;
+  margin-top: 10px;
+  background: rgba(255,122,0,.05);
+}
+
+.submission-row p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.submission-row button {
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), #ffb13b);
+  color: #080808;
+  font-weight: 1000;
+  padding: 10px 14px;
+}
+
+.form-status {
+  color: var(--accent);
+  font-weight: 900;
+}
+
+@media (max-width: 1100px) {
+  .v46-pricing-grid,
+  .pricing-grid.v46-pricing-grid,
+  .v46-friend-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .v46-pricing-grid,
+  .pricing-grid.v46-pricing-grid,
+  .v46-friend-grid {
+    grid-template-columns: 1fr;
+  }
+}

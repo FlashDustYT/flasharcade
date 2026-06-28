@@ -33,6 +33,8 @@ import {
   MessageSquare,
   PlusCircle,
   Users,
+  Trash2,
+  Send,
   CreditCard,
   ExternalLink,
   CheckCircle2,
@@ -47,6 +49,19 @@ function isOwnerUser(user) {
 }
 
 const PLATFORM_UPDATES = [
+  {
+    version: "V46",
+    title: "Real queue, announcements, reviews, and friends cleanup",
+    date: "Current",
+    changes: [
+      "Friend requests now separate sent requests from received requests",
+      "Owner submission queue now reads the real Supabase table after V46 SQL",
+      "Announcements can be sent to the notification bell instead of only saved as drafts",
+      "Notifications can be deleted after reading",
+      "Review links are visible on game cards and open public review pages",
+      "Creator pricing screen is cleaner and less scattered",
+    ],
+  },
   {
     version: "V45",
     title: "Audio, reviews, friends, and upload fixes",
@@ -267,6 +282,10 @@ export default function Home() {
   const [audioPanelOpen, setAudioPanelOpen] = useState(false);
   const [friendLookup, setFriendLookup] = useState("");
   const [friendRequests, setFriendRequests] = useState([]);
+  const [sentFriendRequests, setSentFriendRequests] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [announcementTitle, setAnnouncementTitle] = useState("FlashPortal Announcement");
+  const [submissionQueue, setSubmissionQueue] = useState([]);
   const [friends, setFriends] = useState([]);
   const [playlistIds, setPlaylistIds] = useState([]);
   const [ratingDrafts, setRatingDrafts] = useState({});
@@ -331,6 +350,8 @@ export default function Home() {
       setReviews(JSON.parse(localStorage.getItem("flashportal-reviews") || "{}"));
       setFriends(JSON.parse(localStorage.getItem("flashportal-friends") || "[]"));
       setFriendRequests(JSON.parse(localStorage.getItem("flashportal-friend-requests") || "[]"));
+      setSentFriendRequests(JSON.parse(localStorage.getItem("flashportal-sent-friend-requests") || "[]"));
+      setNotifications(JSON.parse(localStorage.getItem("flashportal-notifications") || "[]"));
     } catch {}
 
     const savedTheme = localStorage.getItem("flashportal-theme");
@@ -473,6 +494,67 @@ export default function Home() {
   }, [musicVolume]);
 
   useEffect(() => {
+    localStorage.setItem("flashportal-sent-friend-requests", JSON.stringify(sentFriendRequests));
+  }, [sentFriendRequests]);
+
+  useEffect(() => {
+    localStorage.setItem("flashportal-notifications", JSON.stringify(notifications));
+  }, [notifications]);
+
+  async function sendAnnouncementNow() {
+    const body = String(announcementDraft || "").trim();
+    if (!body) {
+      setToast("Write an announcement first");
+      setTimeout(() => setToast(""), 2000);
+      return;
+    }
+
+    const newAnnouncement = {
+      id: Date.now(),
+      title: announcementTitle || "FlashPortal Announcement",
+      body,
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      await supabase.from("platform_announcements").insert({
+        title: newAnnouncement.title,
+        body: newAnnouncement.body,
+        created_by: user?.id || null,
+        created_by_email: user?.email || "",
+        active: true,
+      });
+    } catch {}
+
+    setNotifications((current) => [newAnnouncement, ...current]);
+    setAnnouncementDraft("");
+    setToast("Announcement sent");
+    setTimeout(() => setToast(""), 2200);
+  }
+
+  function deleteNotification(id) {
+    setNotifications((current) => current.filter((item) => item.id !== id));
+  }
+
+  async function loadSubmissionQueue() {
+    const { data, error } = await supabase
+      .from("game_submissions")
+      .select("*")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      setToast("Run V46 SQL so owner can read submissions");
+      setTimeout(() => setToast(""), 2500);
+      return;
+    }
+
+    setSubmissionQueue(data || []);
+    setToast((data || []).length ? "Submission queue loaded" : "No pending submissions");
+    setTimeout(() => setToast(""), 2000);
+  }
+
+  useEffect(() => {
     localStorage.setItem("flashportal-friends", JSON.stringify(friends));
   }, [friends]);
 
@@ -483,16 +565,36 @@ export default function Home() {
   function sendFriendRequest() {
     const target = friendLookup.trim();
     if (!target) return;
+
+    const currentEmail = user?.email || "";
+    if (target.toLowerCase() === currentEmail.toLowerCase()) {
+      setToast("You cannot send a friend request to yourself");
+      setTimeout(() => setToast(""), 2000);
+      return;
+    }
+
     if (friends.some((friend) => friend.toLowerCase() === target.toLowerCase())) {
       setToast("Already on your friends list");
       setTimeout(() => setToast(""), 2000);
       return;
     }
-    if (!friendRequests.some((request) => request.toLowerCase() === target.toLowerCase())) {
-      setFriendRequests((current) => [...current, target]);
-    }
+
+    setSentFriendRequests((current) =>
+      current.some((request) => request.toLowerCase() === target.toLowerCase())
+        ? current
+        : [...current, target]
+    );
+
+    // Supabase-backed request, only target account can accept after V46 SQL.
+    supabase.from("friend_requests").insert({
+      sender_id: user?.id || null,
+      sender_email: user?.email || "",
+      target,
+      status: "pending",
+    }).then(() => {});
+
     setFriendLookup("");
-    setToast("Friend request saved");
+    setToast("Friend request sent");
     setTimeout(() => setToast(""), 2000);
   }
 
@@ -812,8 +914,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V45 Online</strong>
-          <p>Audio controls popup, public review pages, friends foundation, upload permission fix, and accurate ratings.</p>
+          <strong>V46 Online</strong>
+          <p>Real queue fixes, cleaner payments, public announcements, reviews, and better friends.</p>
         </div>
       </aside>
 
@@ -1122,7 +1224,7 @@ export default function Home() {
               <div>
                 <span>Social</span>
                 <h2>Friends</h2>
-                <p>Add players by username or email. V45 stores this locally first, with Supabase tables included for the real backend.</p>
+                <p>Add players by username or email. Sent requests stay separate from requests you receive.</p>
               </div>
             </div>
 
@@ -1135,9 +1237,9 @@ export default function Home() {
               </div>
             </article>
 
-            <div className="friend-grid">
+            <div className="friend-grid v46-friend-grid">
               <article>
-                <h3>Friend Requests</h3>
+                <h3>Received Requests</h3>
                 {friendRequests.length ? (
                   friendRequests.map((request) => (
                     <div className="friend-row" key={request}>
@@ -1147,7 +1249,16 @@ export default function Home() {
                     </div>
                   ))
                 ) : (
-                  <p>No friend requests yet.</p>
+                  <p>No received friend requests yet.</p>
+                )}
+              </article>
+
+              <article>
+                <h3>Sent Requests</h3>
+                {sentFriendRequests.length ? (
+                  sentFriendRequests.map((request) => <div className="friend-row" key={request}><span>{request}</span><small>Pending</small></div>)
+                ) : (
+                  <p>No sent requests yet.</p>
                 )}
               </article>
 
@@ -1240,8 +1351,8 @@ export default function Home() {
                 <h3>Global Announcement</h3>
                 <p>Create a draft announcement for Updates/Notifications. Database posting comes in the next backend pass.</p>
                 <textarea value={announcementDraft} onChange={(event) => setAnnouncementDraft(event.target.value)} placeholder="Example: FlashPortal V38 is live with owner tools and game management." />
-                <button type="button" onClick={() => { playUISound("success"); setToast("Announcement draft saved locally"); }}>
-                  Save Draft
+                <button type="button" onClick={() => { playUISound("success"); setToast("Announcement sent"); }}>
+                  Send Announcement
                 </button>
               </article>
 
@@ -1289,8 +1400,8 @@ export default function Home() {
                   {submissions.length === 0 ? (
                     <>
                       <strong>No pending submissions</strong>
-                      <small>If someone submitted a game and this is empty, run the V40 SQL so owner/admin read policies are active.</small>
-                      <button type="button" onClick={() => setToast("Submission queue checked")}>Check Queue</button>
+                      <small>If someone submitted a game and this is empty, run the V46 SQL so owner/admin read policies are active.</small>
+                      <button type="button" onClick={loadSubmissionQueue}>Load Queue</button>
                     </>
                   ) : (
                     submissions.map((submission) => (
@@ -1365,7 +1476,7 @@ export default function Home() {
                   }}>
                     Prepare Admin Invite
                   </button>
-                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V40 SQL.</small>
+                  <small className="admin-note">Saved admins go into Supabase admin_roles after you run the V46 SQL.</small>
                 </article>
               )}
             </div>

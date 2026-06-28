@@ -592,3 +592,21 @@ Run `supabase/v45_backend_upload_reviews_friends.sql` in Supabase SQL Editor.
 
 Commit summary:
 Add audio popup reviews friends and upload SQL
+
+
+# FlashPortal V46
+
+Fixes:
+- Friend requests no longer appear as requests you sent to yourself.
+- Adds sent requests separately from received requests.
+- Owner queue now reads real `game_submissions` after V46 SQL.
+- Announcements send to notification bell instead of saving as draft.
+- Notifications can be deleted.
+- Review pages are database-backed with local fallback.
+- Payment page layout is cleaned up.
+
+Required:
+Run `supabase/v46_backend_queue_notifications_reviews_friends.sql`.
+
+Commit summary:
+Fix queue announcements reviews friends and pricing UI

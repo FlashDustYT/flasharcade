@@ -118,7 +118,7 @@ export default function CreatorCheckout() {
   }
 
   return (
-    <main className="checkout-page upgraded-checkout-page">
+    <main className="checkout-page upgraded-checkout-page v46-checkout-page">
       <Link className="back-link" href="/">
         <ArrowLeft size={18} /> Back to FlashPortal
       </Link>
@@ -132,13 +132,13 @@ export default function CreatorCheckout() {
         </p>
       </section>
 
-      <section className="pricing-grid upgraded-pricing-grid">
+      <section className="pricing-grid upgraded-pricing-grid v46-pricing-grid">
         {plans.map((plan) => {
           const Icon = plan.icon;
           const expanded = openInfo === plan.title;
 
           return (
-            <article className={`pricing-card upgraded-pricing-card ${expanded ? "is-expanded" : ""}`} key={plan.title}>
+            <article className={`pricing-card upgraded-pricing-card v46-pricing-card ${expanded ? "is-expanded" : ""}`} key={plan.title}>
               <div className="pricing-card-top">
                 <span className="plan-eyebrow">{plan.eyebrow}</span>
                 <Icon size={24} />

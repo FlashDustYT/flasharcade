@@ -63,6 +63,7 @@ export default function CreatorUploadPage() {
 
       const insert = await supabase.from("game_submissions").insert({
         creator_id: user.id,
+          creator_email: user.email || "",
         title: form.title.trim(),
         category: form.category.trim(),
         description: form.description.trim(),
@@ -74,7 +75,7 @@ export default function CreatorUploadPage() {
 
       if (insert.error) {
         if (insert.error.message?.toLowerCase().includes("permission denied")) {
-          throw new Error("Permission denied for game_submissions. Run supabase/v45_backend_upload_reviews_friends.sql in Supabase, then refresh and try again.");
+          throw new Error("Permission denied for game_submissions. Run supabase/v46_backend_queue_notifications_reviews_friends.sql in Supabase, then refresh and try again.");
         }
         throw insert.error;
       }
