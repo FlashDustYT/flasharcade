@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#4b18b8"/><stop offset="1" stop-color="#15072e"/></linearGradient><filter id="s"><feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000" flood-opacity=".65"/></filter></defs>
+<rect width="900" height="520" fill="#060606"/>
+<rect x="28" y="28" width="844" height="464" rx="38" fill="url(#g)" stroke="#ff7a00" stroke-width="5"/>
+<circle cx="720" cy="150" r="135" fill="#fff" opacity=".08"/><circle cx="160" cy="390" r="185" fill="#000" opacity=".22"/>
+<g fill="#fff" opacity=".13" font-family="Arial Black,Arial" font-size="45"><text x="75" y="110">?</text><text x="775" y="355">★</text><text x="650" y="92">?</text><text x="130" y="455">★</text></g>
+<g filter="url(#s)"><text x="78" y="150" fill="#fff" stroke="#070707" stroke-width="9" paint-order="stroke" font-family="Arial Black,Arial" font-size="90">GUESS</text><text x="78" y="250" fill="#ffcf24" stroke="#070707" stroke-width="9" paint-order="stroke" font-family="Arial Black,Arial" font-size="90">THE CELEB</text></g>
+<text x="86" y="318" fill="#fff3df" font-family="Arial Black,Arial" font-size="34">Name the star from clues.</text>
+<g transform="translate(592 245)" filter="url(#s)"><circle cx="115" cy="90" r="78" fill="#090909" stroke="#fff" stroke-width="8"/><path d="M45 230c15-73 125-73 140 0z" fill="#090909" stroke="#fff" stroke-width="8"/><text x="83" y="123" fill="#ffcf24" font-family="Arial Black,Arial" font-size="92">?</text><path d="M240 40l23 45 50 7-36 35 9 50-46-24-45 24 8-50-36-35 50-7z" fill="#ffcf24" stroke="#080808" stroke-width="7"/></g>
+<rect x="76" y="368" width="290" height="58" rx="29" fill="#080808" opacity=".78" stroke="#ff7a00"/>
+<text x="105" y="407" fill="#ff8a00" font-family="Arial Black,Arial" font-size="26">FLASHPORTAL</text>
+</svg>

@@ -1,0 +1,56 @@
+HOW TO PLAY: GUESS THE WORD
+
+Guess the Word is an emoji puzzle game. You see two emojis, put their meanings together, and guess the word or phrase.
+
+EXAMPLE
+Fire + Dog = Hot Dog
+Star + Fish = Starfish
+Sun + Flower = Sunflower
+
+GOAL
+Score as many points as possible before you run out of lives.
+
+HOW EACH ROUND WORKS
+1. Look at the two emoji clues.
+2. Type the answer and press Guess.
+3. You can also tap one of the quick-answer buttons.
+4. In Normal Mode, all hints and quick answers are open right away.
+5. In Hard Mode, reveal hints to unlock more help.
+6. Correct answers move you to the next round.
+7. Wrong answers or time-outs cost 1 life.
+
+SCORING
+Fast answers score more.
+Long streaks add bonus points.
+Harder rounds add a small difficulty bonus.
+In Hard Mode, revealing hints lowers the points you can earn that round.
+
+LIVES AND SKIPS
+You start with 3 lives.
+You start with 3 skips.
+Skipping reveals the answer, moves to a new puzzle, and resets your streak.
+
+MODES
+Chill Mode gives you more time.
+Blitz Mode gives you less time and more pressure.
+Hard Mode hides hints until you reveal them.
+In Hard Mode, quick-answer buttons unlock after hint 2.
+Daily Mix gives everyone the same seeded run for the day.
+Shuffle Round swaps in a fresh puzzle.
+
+DIFFICULTY
+The game gets harder the longer you survive.
+The timer gets shorter.
+The answer grid adds more choices.
+Later rounds hide the category.
+
+SOUNDS AND MUSIC
+Buttons have click sounds.
+Correct answers play a success sound and confetti.
+Wrong answers play a miss sound.
+Use Sound to mute effects.
+Use Music to toggle background music.
+
+WHY IT STAYS FRESH
+The game uses a curated compound-word answer bank and emoji variation engine with 200,000+ possible emoji clue mixes.
+Answers do not repeat in the same run until the pool cycles.

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0b10" />
+    <title>Guess the Word</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="game-board" aria-label="Guess the Word emoji game">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Two emojis. One word.</p>
+            <h1>Guess the Word</h1>
+          </div>
+          <div class="top-actions" aria-label="Game controls">
+            <button class="icon-button" id="soundToggle" type="button" aria-label="Toggle sound">
+              <span>Sound</span>
+            </button>
+            <button class="icon-button" id="musicToggle" type="button" aria-label="Toggle music">
+              <span>Music</span>
+            </button>
+            <button class="icon-button" id="newGameButton" type="button" aria-label="Start a new game">
+              <span>New</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="play-row">
+          <section class="emoji-stage" aria-label="Emoji clue">
+            <div class="emoji-meta">
+              <span id="categoryPill">Puzzle</span>
+              <span id="roundCounter">Round 1</span>
+            </div>
+            <div class="emoji-equation" aria-live="polite">
+              <div class="emoji-tile" id="emojiOne">🔥</div>
+              <div class="operator plus">+</div>
+              <div class="emoji-tile" id="emojiTwo">🐶</div>
+              <div class="operator equals">=</div>
+              <div class="mystery-word" id="mysteryWord">?</div>
+            </div>
+            <div class="timer-wrap" aria-label="Round timer">
+              <div class="timer-track">
+                <div class="timer-fill" id="timerFill"></div>
+              </div>
+              <span id="timerText">30s</span>
+            </div>
+          </section>
+
+          <section class="hint-card" aria-label="Hints">
+            <h2>Hints</h2>
+            <div class="hint-list" id="hintList" aria-live="polite"></div>
+            <div class="hint-tools">
+              <button id="revealHintButton" type="button">Reveal Hint</button>
+              <span id="clueValueText">Full-value solve</span>
+            </div>
+          </section>
+        </div>
+
+        <section class="answer-zone" aria-label="Answer controls">
+          <form class="guess-form" id="guessForm">
+            <label class="sr-only" for="guessInput">Your guess</label>
+            <input id="guessInput" autocomplete="off" spellcheck="false" placeholder="Type the word or phrase" />
+            <button id="submitButton" type="submit">Guess</button>
+          </form>
+
+          <div class="choice-grid" id="choiceGrid" aria-label="Quick answers"></div>
+
+          <div class="feedback-row">
+            <p id="feedbackText" aria-live="polite">Put the emoji words together.</p>
+            <button id="skipButton" type="button">Skip</button>
+          </div>
+        </section>
+      </section>
+
+      <aside class="side-panel" aria-label="Score and modes">
+        <div class="stat-grid">
+          <div class="stat">
+            <span>Score</span>
+            <strong id="scoreText">0</strong>
+          </div>
+          <div class="stat">
+            <span>Streak</span>
+            <strong id="streakText">0</strong>
+          </div>
+          <div class="stat">
+            <span>Lives</span>
+            <strong id="livesText">3</strong>
+          </div>
+          <div class="stat">
+            <span>Best</span>
+            <strong id="bestText">0</strong>
+          </div>
+        </div>
+
+        <div class="mode-panel">
+          <h2>Modes</h2>
+          <div class="segmented" role="group" aria-label="Game mode">
+            <button class="mode-button active" id="chillMode" type="button">Chill</button>
+            <button class="mode-button" id="blitzMode" type="button">Blitz</button>
+          </div>
+          <button class="wide-button hard-toggle" id="hardModeButton" type="button">Hard Mode Off</button>
+          <button class="wide-button" id="dailyButton" type="button">Daily Mix</button>
+          <button class="wide-button ghost" id="shuffleButton" type="button">Shuffle Round</button>
+        </div>
+
+        <div class="progress-panel">
+          <h2>Word Lab</h2>
+          <div class="meter-label">
+            <span>Accuracy</span>
+            <strong id="accuracyText">0%</strong>
+          </div>
+          <div class="meter">
+            <div id="accuracyFill"></div>
+          </div>
+          <div class="mini-stats">
+            <span id="poolText">200K+ emoji mixes</span>
+            <span id="skipText">3 skips left</span>
+            <span id="difficultyText">Level 1</span>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <canvas id="confettiCanvas" aria-hidden="true"></canvas>
+    <script src="game.js"></script>
+  </body>
+</html>

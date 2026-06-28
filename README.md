@@ -502,3 +502,24 @@ Fixes:
 
 Commit summary:
 Fix unrated game rating build error
+
+
+# FlashPortal V41 Games + Upload + Play Count Fix
+
+Adds:
+- Guess the Celeb real game files and FlashPortal thumbnail
+- Guess the Word real game files and FlashPortal thumbnail
+- Routes: /play/guess-the-celeb and /play/guess-the-word
+
+Fixes:
+- Upload form accepts any title and any thumbnail; filenames do not need to match
+- Upload insert avoids old missing `game_title`/`thumbnail_path` schema issues
+- Adds V41 Supabase SQL for missing columns, schema cache reload, and play counts
+- Play counts use Supabase plus local fallback
+- Payment buttons redirect in the same tab
+
+Required:
+Run `supabase/v41_backend_fixes.sql` in Supabase SQL Editor.
+
+Commit summary:
+Add Guess games thumbnails upload fixes and play counts

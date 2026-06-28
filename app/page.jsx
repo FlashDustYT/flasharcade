@@ -44,6 +44,19 @@ function isOwnerUser(user) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V41",
+    title: "New games and platform fixes",
+    date: "Current",
+    changes: [
+      "Added Guess the Celeb with a custom FlashPortal thumbnail",
+      "Added Guess the Word with a custom FlashPortal thumbnail",
+      "Upload form accepts any title and thumbnail without needing to match the ZIP filename",
+      "Play counts use Supabase when available plus a local fallback",
+      "Payment buttons redirect directly in the same tab",
+      "Added a new Supabase backend patch for missing upload columns and play counts",
+    ],
+  },
+  {
     version: "V40",
     title: "Backend logic and ownership fix",
     date: "Current",
@@ -113,8 +126,8 @@ const BASE_GAMES = [
     path: "/play/legacy-league",
   },
   {
-    id: "guess-the-celebrity",
-    title: "Guess the Celebrity",
+    id: "guess-the-celeb",
+    title: "Guess the Celeb",
     subtitle: "Celebrity Guessing Game",
     description: "Guess the celebrity from clues and test how well you know famous faces.",
     genre: "Strategy",
@@ -124,9 +137,39 @@ const BASE_GAMES = [
     playable: true,
     official: true,
     featured: false,
-    thumbnail: "/games/guess-the-celebrity/thumbnail.svg",
+    thumbnail: "/games/guess-the-celeb/thumbnail.svg",
     fallbackThumbnail: "/games/guess-the-celebrity/index.html",
-    path: "/play/guess-the-celebrity",
+    path: "/play/guess-the-celeb",
+  },
+  {
+    id: "guess-the-celeb",
+    title: "Guess the Celeb",
+    subtitle: "Celebrity Clue Game",
+    description: "Guess the celebrity by reading clues and narrowing down the answer.",
+    genre: "Strategy",
+    status: "New Release",
+    rating: 0,
+    plays: 0,
+    playable: true,
+    official: true,
+    featured: false,
+    thumbnail: "/games/guess-the-celeb/thumbnail.svg",
+    path: "/play/guess-the-celeb",
+  },
+  {
+    id: "guess-the-word",
+    title: "Guess the Word!",
+    subtitle: "Emoji Word Puzzle",
+    description: "Use hints, emojis, and logic to guess the hidden word.",
+    genre: "Word",
+    status: "New Release",
+    rating: 0,
+    plays: 0,
+    playable: true,
+    official: true,
+    featured: false,
+    thumbnail: "/games/guess-the-word/thumbnail.svg",
+    path: "/play/guess-the-word",
   },
 ];
 
@@ -274,6 +317,11 @@ export default function Home() {
   }, [user?.email]);
 
   useEffect(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem("flashportal-play-counts") || "{}");
+      setPlayCounts((current) => ({ ...cached, ...current }));
+    } catch {}
+
     async function loadStats() {
       const { data, error } = await supabase
         .from("game_play_counts")
@@ -385,12 +433,17 @@ export default function Home() {
   }
 
   async function trackPlay(game) {
-    const nextCount = Number(playCounts[game.id] ?? game.plays ?? 0) + 1;
+    const localKey = "flashportal-play-counts";
+    let currentLocal = {};
+    try {
+      currentLocal = JSON.parse(localStorage.getItem(localKey) || "{}");
+    } catch {}
 
-    setPlayCounts((current) => ({
-      ...current,
-      [game.id]: nextCount,
-    }));
+    const nextCount = Number(playCounts[game.id] ?? currentLocal[game.id] ?? game.plays ?? 0) + 1;
+    const nextLocal = { ...currentLocal, [game.id]: nextCount };
+    localStorage.setItem(localKey, JSON.stringify(nextLocal));
+
+    setPlayCounts((current) => ({ ...current, [game.id]: nextCount }));
 
     try {
       const { data, error } = await supabase.rpc("increment_game_play", {
@@ -399,6 +452,7 @@ export default function Home() {
 
       if (!error && typeof data === "number") {
         setPlayCounts((current) => ({ ...current, [game.id]: data }));
+        localStorage.setItem(localKey, JSON.stringify({ ...nextLocal, [game.id]: data }));
       }
     } catch {}
 
@@ -595,8 +649,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V40.4 Online</strong>
-          <p>Rating build fix, new game added, and project root cleanup.</p>
+          <strong>V41 Online</strong>
+          <p>Guess games added, upload fixes, play-count fallback, and payment redirect cleanup.</p>
         </div>
       </aside>
 
