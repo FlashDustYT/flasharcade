@@ -59,7 +59,36 @@ function getPlaylistKey(email) {
   return getScopedKey("flashportal-playlist", email);
 }
 
+function creatorSlug(name) {
+  return String(name || "FlashPortal Creator")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "creator";
+}
+
+function getCreatorFollowKey(email) {
+  return getScopedKey("flashportal-followed-creators", email);
+}
+
+function avatarInitials(name) {
+  const parts = String(name || "FP").trim().split(/\s+/).filter(Boolean);
+  const raw = parts.length > 1 ? `${parts[0][0]}${parts[1][0]}` : String(name || "FP").slice(0, 2);
+  return raw.toUpperCase();
+}
+
 const PLATFORM_UPDATES = [
+  {
+    version: "V56",
+    title: "Creator profiles foundation",
+    date: "Current",
+    changes: [
+      "Added a Creators tab with profile cards",
+      "Every creator now has avatar initials, banner, bio, uploaded games, followers, total plays, and average rating",
+      "Added follow/unfollow creator buttons with per-account saved follows",
+      "Creator profile cards show their uploaded games for quick discovery",
+      "Included optional Supabase SQL for creator follow persistence",
+    ],
+  },
   {
     version: "V55",
     title: "Release UI polish",
@@ -462,6 +491,7 @@ export default function Home() {
   const [submissionQueue, setSubmissionQueue] = useState([]);
   const [friends, setFriends] = useState([]);
   const [playlistIds, setPlaylistIds] = useState([]);
+  const [followedCreators, setFollowedCreators] = useState([]);
   const [ratingDrafts, setRatingDrafts] = useState({});
   const [reviewDrafts, setReviewDrafts] = useState({});
   const [reviews, setReviews] = useState({});
@@ -954,6 +984,31 @@ export default function Home() {
   }, [playlistIds, user?.email]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(getCreatorFollowKey(user?.email), JSON.stringify(followedCreators));
+  }, [followedCreators, user?.email]);
+
+  useEffect(() => {
+    if (!user?.email) return;
+
+    async function loadCreatorFollows() {
+      try {
+        const { data, error } = await supabase
+          .from("creator_follows")
+          .select("creator_slug")
+          .eq("follower_email", user.email.toLowerCase());
+
+        if (!error && Array.isArray(data)) {
+          const remote = data.map((row) => row.creator_slug).filter(Boolean);
+          setFollowedCreators((current) => Array.from(new Set([...current, ...remote])));
+        }
+      } catch {}
+    }
+
+    loadCreatorFollows();
+  }, [user?.email]);
+
+  useEffect(() => {
     function syncPlaylistFromStorage() {
       try {
         setPlaylistIds(JSON.parse(localStorage.getItem(getPlaylistKey(user?.email)) || "[]"));
@@ -1005,6 +1060,77 @@ export default function Home() {
   }
 
   const playlistGames = publicGames.filter((game) => playlistIds.includes(game.id));
+
+  const creatorProfiles = useMemo(() => {
+    const grouped = new Map();
+
+    publicGames.forEach((game) => {
+      const creatorName = game.creator || (game.official ? "FlashDust" : "FlashPortal Creator");
+      const slug = creatorSlug(creatorName);
+      const existing = grouped.get(slug) || {
+        slug,
+        name: creatorName,
+        avatar: avatarInitials(creatorName),
+        bio: creatorName === "FlashDust"
+          ? "Official FlashPortal creator building sports sims, guessing games, and platform originals."
+          : "FlashPortal creator sharing browser games with the community.",
+        games: [],
+        totalPlays: 0,
+        ratingTotal: 0,
+        ratingCount: 0,
+        baseFollowers: creatorName === "FlashDust" ? 128 : 0,
+        official: creatorName === "FlashDust",
+      };
+
+      const rating = Number(game.rating || 0);
+      existing.games.push(game);
+      existing.totalPlays += parsePlayCount(game.plays);
+      if (rating > 0) {
+        existing.ratingTotal += rating;
+        existing.ratingCount += 1;
+      }
+      grouped.set(slug, existing);
+    });
+
+    return Array.from(grouped.values())
+      .map((creator) => ({
+        ...creator,
+        followers: creator.baseFollowers + (followedCreators.includes(creator.slug) ? 1 : 0),
+        averageRating: creator.ratingCount ? (creator.ratingTotal / creator.ratingCount).toFixed(1) : "New",
+        games: sortNewest(creator.games),
+      }))
+      .sort((a, b) => b.totalPlays - a.totalPlays || b.games.length - a.games.length);
+  }, [publicGames, followedCreators]);
+
+  async function toggleCreatorFollow(profile) {
+    const isFollowing = followedCreators.includes(profile.slug);
+    setFollowedCreators((current) => isFollowing
+      ? current.filter((slug) => slug !== profile.slug)
+      : [...current, profile.slug]
+    );
+
+    if (user?.email) {
+      try {
+        if (isFollowing) {
+          await supabase
+            .from("creator_follows")
+            .delete()
+            .eq("creator_slug", profile.slug)
+            .eq("follower_email", user.email.toLowerCase());
+        } else {
+          await supabase.from("creator_follows").upsert({
+            creator_slug: profile.slug,
+            creator_name: profile.name,
+            follower_id: user.id || null,
+            follower_email: user.email.toLowerCase(),
+          }, { onConflict: "creator_slug,follower_email" });
+        }
+      } catch {}
+    }
+
+    setToast(isFollowing ? `Unfollowed ${profile.name}` : `Following ${profile.name}`);
+    setTimeout(() => setToast(""), 1800);
+  }
 
   const totalPlays = publicGames.reduce((sum, game) => sum + parsePlayCount(game.plays), 0);
 
@@ -1110,6 +1236,7 @@ export default function Home() {
     { id: "discover", label: "Discover", icon: Compass },
     { id: "library", label: "Library", icon: BookOpen },
   { id: "playlist", label: "Playlist", icon: Heart },
+  { id: "creators", label: "Creators", icon: User },
   { id: "friends", label: "Friends", icon: Users },
     { id: "updates", label: "Updates", icon: Newspaper },
     { id: "achievements", label: "Achievements", icon: Trophy },
@@ -1614,6 +1741,59 @@ export default function Home() {
                 <p>Click “Add to Playlist” on any game card and it will show up here.</p>
               </article>
             )}
+          </section>
+        )}
+
+
+        {activeTab === "creators" && (
+          <section className="portal-view creator-profiles-section">
+            <SectionHeader
+              label="Creator Update"
+              title="Creator Profiles"
+              text="Each creator now gets a public-style profile with avatar, banner, bio, uploaded games, followers, total plays, and average rating."
+            />
+
+            <div className="creator-profile-grid">
+              {creatorProfiles.map((profile) => {
+                const isFollowing = followedCreators.includes(profile.slug);
+                return (
+                  <article className={`creator-profile-card ${profile.official ? "official" : ""}`} key={profile.slug}>
+                    <div className="creator-banner">
+                      <div className="creator-avatar">{profile.avatar}</div>
+                      {profile.official && <span>FlashPortal Original</span>}
+                    </div>
+
+                    <div className="creator-profile-body">
+                      <div className="creator-profile-title-row">
+                        <div>
+                          <h3>{profile.name}</h3>
+                          <p>{profile.bio}</p>
+                        </div>
+                        <button type="button" onClick={() => toggleCreatorFollow(profile)} className={isFollowing ? "following" : ""}>
+                          {isFollowing ? "Following" : "Follow"}
+                        </button>
+                      </div>
+
+                      <div className="creator-profile-stats">
+                        <span><strong>{profile.games.length}</strong> Games</span>
+                        <span><strong>{formatNumber(profile.followers)}</strong> Followers</span>
+                        <span><strong>{formatNumber(profile.totalPlays)}</strong> Plays</span>
+                        <span><strong>{profile.averageRating}</strong> Avg Rating</span>
+                      </div>
+
+                      <div className="creator-game-strip">
+                        {profile.games.slice(0, 4).map((game) => (
+                          <button key={game.id} type="button" onClick={() => launchGame(game)}>
+                            <img src={game.thumbnail} alt="" />
+                            <span>{game.title}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </section>
         )}
 
