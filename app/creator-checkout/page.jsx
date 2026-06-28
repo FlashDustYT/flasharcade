@@ -1,56 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Check, Sparkles, Upload } from "lucide-react";
+import { ArrowLeft, CreditCard } from "lucide-react";
 
 const plans = [
   {
-    price: "$0",
     title: "First Game Free",
-    text: "Your first FlashPortal game submission is free. No Stripe checkout needed.",
+    price: "$0",
+    description: "Your first FlashPortal game submission is free. No Stripe checkout needed.",
     cta: "Upload First Game",
     href: "/creator/upload",
-    featured: true,
+    env: null,
   },
   {
-    price: "$1.99",
     title: "Extra Game Upload",
-    text: "Submit another browser game for FlashPortal review.",
+    price: "$1.99",
+    description: "Submit another browser game to FlashPortal for review.",
     cta: "Pay $1.99",
+    href: process.env.NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL,
     env: "NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL",
-    href: process.env.NEXT_PUBLIC_STRIPE_EXTRA_UPLOAD_URL || "",
   },
   {
-    price: "$4.99",
     title: "Featured 7 Days",
-    text: "Request featured placement for one approved game for 7 days.",
+    price: "$4.99",
+    description: "Request featured placement for one approved game for 7 days.",
     cta: "Pay $4.99",
+    href: process.env.NEXT_PUBLIC_STRIPE_FEATURED_7_URL,
     env: "NEXT_PUBLIC_STRIPE_FEATURED_7_URL",
-    href: process.env.NEXT_PUBLIC_STRIPE_FEATURED_7_URL || "",
   },
   {
-    price: "$9.99",
     title: "Featured 30 Days",
-    text: "Request longer featured placement for one approved game.",
+    price: "$9.99",
+    description: "Request longer featured placement for one approved game.",
     cta: "Pay $9.99",
+    href: process.env.NEXT_PUBLIC_STRIPE_FEATURED_30_URL,
     env: "NEXT_PUBLIC_STRIPE_FEATURED_30_URL",
-    href: process.env.NEXT_PUBLIC_STRIPE_FEATURED_30_URL || "",
   },
 ];
 
-export default function CreatorCheckout() {
-  function handleMissing(plan) {
-    alert(`Stripe link missing for ${plan.title}. Add ${plan.env} in Vercel Environment Variables, then redeploy.`);
-  }
+function isValidStripePaymentUrl(url) {
+  return typeof url === "string" && /^https:\/\/(buy|pay)\.stripe\.com\//i.test(url.trim());
+}
 
+export default function CreatorCheckout() {
   function openPayment(plan) {
-    if (!plan.href?.startsWith("http")) {
-      handleMissing(plan);
+    const cleanUrl = typeof plan.href === "string" ? plan.href.trim() : "";
+
+    if (!isValidStripePaymentUrl(cleanUrl)) {
+      alert(`${plan.title} is not connected yet. In Vercel, edit ${plan.env} and paste the real customer-facing Stripe Payment Link. It must start with https://buy.stripe.com/ or https://pay.stripe.com/. Then save and redeploy.`);
       return;
     }
 
-    // Same-tab navigation avoids popup blockers and makes Stripe errors clearer.
-    window.location.href = plan.href;
+    window.location.assign(cleanUrl);
   }
 
   return (
@@ -60,33 +61,30 @@ export default function CreatorCheckout() {
       </Link>
 
       <section className="checkout-hero">
-        <span><Sparkles size={16} /> Creator Studio</span>
+        <span><CreditCard size={16} /> Creator Pricing</span>
         <h1>Publish on FlashPortal</h1>
         <p>
           Start free, then only pay when you want extra uploads or featured placement.
-          Paid buttons connect through Stripe Payment Links.
         </p>
       </section>
 
-      <section className="plan-grid">
+      <section className="pricing-grid">
         {plans.map((plan) => (
-          <article className={`plan-card ${plan.featured ? "featured" : ""}`} key={plan.title}>
+          <article className="pricing-card" key={plan.title}>
             <strong>{plan.price}</strong>
             <h2>{plan.title}</h2>
-            <p>{plan.text}</p>
+            <p>{plan.description}</p>
             <ul>
-              <li><Check size={16} /> Manual review before publishing</li>
-              <li><Check size={16} /> Creator profile support</li>
-              <li><Check size={16} /> Game thumbnail support</li>
+              <li>Manual review before publishing</li>
+              <li>Creator profile support</li>
+              <li>Game thumbnail support</li>
             </ul>
 
-            {plan.href?.startsWith("http") ? (
-              <button type="button" onClick={() => openPayment(plan)}>{plan.cta}</button>
-            ) : plan.href ? (
+            {plan.href === "/creator/upload" ? (
               <Link href={plan.href}>{plan.cta}</Link>
             ) : (
-              <button type="button" onClick={() => handleMissing(plan)}>
-                Connect Stripe Link
+              <button type="button" onClick={() => openPayment(plan)}>
+                {plan.cta}
               </button>
             )}
           </article>
@@ -94,12 +92,11 @@ export default function CreatorCheckout() {
       </section>
 
       <section className="checkout-note">
-        <Upload size={24} />
+        <CreditCard size={24} />
         <div>
-          <h3>How uploads work</h3>
+          <h3>Payment setup check</h3>
           <p>
-            Creators submit a ZIP and thumbnail. Games go into a pending review queue before being
-            shown publicly on FlashPortal.
+            Payment buttons only work after each Vercel environment variable contains the real Stripe customer URL, not placeholder text.
           </p>
         </div>
       </section>

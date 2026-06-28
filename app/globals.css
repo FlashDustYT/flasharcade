@@ -1526,3 +1526,18 @@ a {
     grid-column: auto;
   }
 }
+
+
+/* V42 audio settings */
+.volume-control {
+  display: grid;
+  gap: 10px;
+  color: var(--muted);
+  font-weight: 900;
+  margin-top: 14px;
+}
+
+.volume-control input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}

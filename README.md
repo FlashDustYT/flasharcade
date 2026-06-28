@@ -523,3 +523,21 @@ Run `supabase/v41_backend_fixes.sql` in Supabase SQL Editor.
 
 Commit summary:
 Add Guess games thumbnails upload fixes and play counts
+
+
+# FlashPortal V42 Payment Publish Audio Celeb Fix
+
+Fixes:
+- Replaced Guess the Celeb with the new uploaded build.
+- Removed duplicate Guess the Celeb card/route.
+- Payment page now validates Stripe URLs and prevents placeholder text from becoming a broken local FlashPortal URL.
+- Publish upload keeps any title/thumbnail and does not require names to match the ZIP.
+- Added UI click volume and music volume controls to Settings.
+- Added `supabase/v42_backend_check.sql` as a quick schema-cache check.
+
+Important:
+If payments still do not redirect, the Vercel variable value is still not a real Stripe customer link.
+It must start with `https://buy.stripe.com/` or `https://pay.stripe.com/`.
+
+Commit summary:
+Fix payments duplicate celeb publish and audio settings

@@ -44,6 +44,19 @@ function isOwnerUser(user) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V42",
+    title: "Payment, publishing, and audio controls",
+    date: "Current",
+    changes: [
+      "Updated Guess the Celeb with the newest uploaded build",
+      "Removed duplicate Guess the Celeb game cards",
+      "Payment buttons now refuse placeholder text and only open real buy.stripe.com/pay.stripe.com links",
+      "Publish Game keeps any title and thumbnail regardless of ZIP filename",
+      "Added UI click volume and music volume controls in Settings",
+      "Kept Guess the Word and previous official games",
+    ],
+  },
+  {
     version: "V41",
     title: "New games and platform fixes",
     date: "Current",
@@ -126,20 +139,19 @@ const BASE_GAMES = [
     path: "/play/legacy-league",
   },
   {
-    id: "guess-the-celeb",
-    title: "Guess the Celeb",
-    subtitle: "Celebrity Guessing Game",
-    description: "Guess the celebrity from clues and test how well you know famous faces.",
-    genre: "Strategy",
+    id: "guess-the-word",
+    title: "Guess the Word!",
+    subtitle: "Emoji Word Puzzle",
+    description: "Use hints, emojis, and logic to guess the hidden word.",
+    genre: "Word",
     status: "New Release",
     rating: 0,
     plays: 0,
     playable: true,
     official: true,
     featured: false,
-    thumbnail: "/games/guess-the-celeb/thumbnail.svg",
-    fallbackThumbnail: "/games/guess-the-celebrity/index.html",
-    path: "/play/guess-the-celeb",
+    thumbnail: "/games/guess-the-word/thumbnail.svg",
+    path: "/play/guess-the-word",
   },
   {
     id: "guess-the-celeb",
@@ -156,22 +168,20 @@ const BASE_GAMES = [
     thumbnail: "/games/guess-the-celeb/thumbnail.svg",
     path: "/play/guess-the-celeb",
   },
-  {
-    id: "guess-the-word",
-    title: "Guess the Word!",
-    subtitle: "Emoji Word Puzzle",
-    description: "Use hints, emojis, and logic to guess the hidden word.",
-    genre: "Word",
-    status: "New Release",
-    rating: 0,
-    plays: 0,
-    playable: true,
-    official: true,
-    featured: false,
-    thumbnail: "/games/guess-the-word/thumbnail.svg",
-    path: "/play/guess-the-word",
-  },
 ];
+
+function isValidStripePaymentUrl(url) {
+  return typeof url === "string" && /^https:\/\/(buy|pay)\.stripe\.com\//i.test(url.trim());
+}
+
+function openStripePayment(url, label) {
+  const cleanUrl = typeof url === "string" ? url.trim() : "";
+  if (!isValidStripePaymentUrl(cleanUrl)) {
+    alert(`${label} is not connected yet. In Vercel, paste the real customer-facing Stripe URL that starts with https://buy.stripe.com/ into the matching NEXT_PUBLIC_STRIPE_* variable, then redeploy.`);
+    return;
+  }
+  window.location.assign(cleanUrl);
+}
 
 function formatRating(value) {
   const numeric = Number(value);
@@ -210,6 +220,8 @@ function sortTrending(games) {
 export default function Home() {
   const [theme, setTheme] = useState("dark");
   const [activeTab, setActiveTab] = useState("discover");
+  const [uiVolume, setUiVolume] = useState(0.45);
+  const [musicVolume, setMusicVolume] = useState(0.25);
   const [query, setQuery] = useState("");
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -260,6 +272,13 @@ export default function Home() {
   }, [audioEnabled]);
 
   useEffect(() => {
+    try {
+      const savedUiVolume = Number(localStorage.getItem("flashportal-ui-volume"));
+      const savedMusicVolume = Number(localStorage.getItem("flashportal-music-volume"));
+      if (Number.isFinite(savedUiVolume)) setUiVolume(savedUiVolume);
+      if (Number.isFinite(savedMusicVolume)) setMusicVolume(savedMusicVolume);
+    } catch {}
+
     const savedTheme = localStorage.getItem("flashportal-theme");
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
 
@@ -390,6 +409,14 @@ export default function Home() {
     games.length > 0
       ? (games.reduce((sum, game) => sum + Number(game.rating || 0), 0) / games.length).toFixed(1)
       : "0.0";
+
+  useEffect(() => {
+    localStorage.setItem("flashportal-ui-volume", String(uiVolume));
+  }, [uiVolume]);
+
+  useEffect(() => {
+    localStorage.setItem("flashportal-music-volume", String(musicVolume));
+  }, [musicVolume]);
 
   const totalPlays = games.reduce((sum, game) => sum + parsePlayCount(game.plays), 0);
 
@@ -649,8 +676,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V41 Online</strong>
-          <p>Guess games added, upload fixes, play-count fallback, and payment redirect cleanup.</p>
+          <strong>V42 Online</strong>
+          <p>Updated Guess the Celeb, fixed duplicate game cards, safer payments, publish checks, and audio volume settings.</p>
         </div>
       </aside>
 
@@ -972,6 +999,19 @@ export default function Home() {
                 )}
               </article>
             </div>
+          
+            <article className="settings-card">
+              <h3>Audio Controls</h3>
+              <p>Adjust click effects and background music volume.</p>
+              <label className="volume-control">
+                <span>UI Click Volume: {Math.round(uiVolume * 100)}%</span>
+                <input type="range" min="0" max="1" step="0.05" value={uiVolume} onChange={(event) => setUiVolume(Number(event.target.value))} />
+              </label>
+              <label className="volume-control">
+                <span>Music Volume: {Math.round(musicVolume * 100)}%</span>
+                <input type="range" min="0" max="1" step="0.05" value={musicVolume} onChange={(event) => setMusicVolume(Number(event.target.value))} />
+              </label>
+            </article>
           </section>
         )}
 

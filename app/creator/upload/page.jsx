@@ -33,7 +33,7 @@ export default function CreatorUploadPage() {
 
     if (!user) return setStatus("Please log in first.");
     if (!form.title.trim() || !form.description.trim() || !zip) {
-      return setStatus("Game title, description, and ZIP are required. The title and thumbnail do not need to match the ZIP filename.");
+      return setStatus("Game title, description, and ZIP are required. The title and thumbnail do not need to match the ZIP filename. The title and thumbnail do not need to match the ZIP filename.");
     }
 
     setBusy(true);
