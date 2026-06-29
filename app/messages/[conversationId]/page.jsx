@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, Send, UserRound } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 
+const QUICK_EMOJIS = ["😀", "😂", "🔥", "❤️", "👍", "👀", "🎮", "⭐"];
+
 export default function ConversationPage({ params }) {
   const conversationId = params.conversationId;
   const bottomRef = useRef(null);
@@ -62,6 +64,16 @@ export default function ConversationPage({ params }) {
     }
 
     setMessages(messageData || []);
+
+    try {
+      await supabase
+        .from("direct_messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("conversation_id", conversationId)
+        .neq("sender_id", currentUser.id)
+        .is("read_at", null);
+    } catch {}
+
     setStatus("");
   }
 
@@ -78,11 +90,20 @@ export default function ConversationPage({ params }) {
           table: "direct_messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
+        async (payload) => {
           setMessages((current) => {
             if (current.some((item) => item.id === payload.new.id)) return current;
             return [...current, payload.new];
           });
+
+          const { data: sessionData } = await supabase.auth.getSession();
+          const currentUserId = sessionData?.session?.user?.id;
+          if (currentUserId && payload.new.sender_id !== currentUserId) {
+            await supabase
+              .from("direct_messages")
+              .update({ read_at: new Date().toISOString() })
+              .eq("id", payload.new.id);
+          }
         }
       )
       .subscribe();
@@ -153,6 +174,12 @@ export default function ConversationPage({ params }) {
           })}
           <div ref={bottomRef} />
         </section>
+
+        <div className="emoji-row" aria-label="Quick emojis">
+          {QUICK_EMOJIS.map((emoji) => (
+            <button key={emoji} type="button" onClick={() => setDraft((current) => `${current}${emoji}`)}>{emoji}</button>
+          ))}
+        </div>
 
         <form className="chat-compose" onSubmit={sendMessage}>
           <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Type a message..." />

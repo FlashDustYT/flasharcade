@@ -84,15 +84,15 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
-    version: "V69",
-    title: "Message, avatar, and rating polish",
+    version: "V70",
+    title: "Live ratings and message badges",
     date: "Current",
     changes: [
-      "Fixed message sending policy recursion",
-      "Avatar images now stay inside their frames",
-      "Homepage game cards now pull live review averages",
-      "Rating-only submissions update public cards after refresh",
-      "Kept accurate Last Seen status"
+      "Messages now show unread notification badges",
+      "Message inbox gets its own unread badge",
+      "Ratings update from live review averages without manual refresh",
+      "Rating averages combine every user rating fairly",
+      "Added quick emoji buttons inside conversations"
     ],
   },
   {
@@ -544,6 +544,33 @@ function sortTrending(games) {
 }
 
 
+
+function computeRatingAverages(rows) {
+  const grouped = {};
+  (rows || []).forEach((row) => {
+    const gameId = row.game_id;
+    const value = Number(row.rating);
+    if (!gameId || !Number.isFinite(value) || value < 1 || value > 5) return;
+    if (!grouped[gameId]) grouped[gameId] = [];
+    grouped[gameId].push(value);
+  });
+
+  const next = {};
+  Object.entries(grouped).forEach(([gameId, values]) => {
+    next[gameId] = Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1));
+  });
+  return next;
+}
+
+function getCachedRatingAverages() {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem("flashportal-review-rating-averages-v70") || "{}");
+  } catch {
+    return {};
+  }
+}
+
 function slugFromTitle(title, fallback = "uploaded-game") {
   const slug = String(title || fallback)
     .toLowerCase()
@@ -660,6 +687,7 @@ export default function Home() {
   const [paymentDebugOpen, setPaymentDebugOpen] = useState(false);
   const [creatorFollowerCounts, setCreatorFollowerCounts] = useState({});
   const [reviewRatings, setReviewRatings] = useState({});
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -868,39 +896,118 @@ export default function Home() {
 
 
   useEffect(() => {
+    let ignore = false;
+
+    function applyCachedReviewRatings() {
+      const cached = getCachedRatingAverages();
+      if (Object.keys(cached).length) {
+        setReviewRatings((current) => ({ ...current, ...cached }));
+      }
+    }
+
     async function loadReviewRatings() {
+      applyCachedReviewRatings();
+
       const { data, error } = await supabase
         .from("game_reviews")
         .select("game_id, rating");
 
-      if (!error && Array.isArray(data)) {
-        const grouped = {};
-        data.forEach((row) => {
-          const gameId = row.game_id;
-          const value = Number(row.rating);
-          if (!gameId || !Number.isFinite(value) || value < 1 || value > 5) return;
-          if (!grouped[gameId]) grouped[gameId] = [];
-          grouped[gameId].push(value);
-        });
-
-        const next = {};
-        Object.entries(grouped).forEach(([gameId, values]) => {
-          next[gameId] = Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1));
-        });
-
+      if (!ignore && !error && Array.isArray(data)) {
+        const next = computeRatingAverages(data);
         setReviewRatings(next);
+        try {
+          localStorage.setItem("flashportal-review-rating-averages-v70", JSON.stringify(next));
+        } catch {}
       }
     }
 
     loadReviewRatings();
+
+    const channel = supabase
+      .channel("flashportal-game-review-ratings")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "game_reviews" },
+        () => loadReviewRatings()
+      )
+      .subscribe();
 
     function refreshReviewRatings() {
       loadReviewRatings();
     }
 
     window.addEventListener("flashportal-reviews-changed", refreshReviewRatings);
-    return () => window.removeEventListener("flashportal-reviews-changed", refreshReviewRatings);
+    window.addEventListener("storage", refreshReviewRatings);
+    window.addEventListener("focus", refreshReviewRatings);
+    window.addEventListener("pageshow", refreshReviewRatings);
+    return () => {
+      ignore = true;
+      supabase.removeChannel(channel);
+      window.removeEventListener("flashportal-reviews-changed", refreshReviewRatings);
+      window.removeEventListener("storage", refreshReviewRatings);
+      window.removeEventListener("focus", refreshReviewRatings);
+      window.removeEventListener("pageshow", refreshReviewRatings);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setUnreadMessageCount(0);
+      return;
+    }
+
+    let ignore = false;
+
+    async function loadUnreadMessages() {
+      const { data: memberData, error: memberError } = await supabase
+        .from("conversation_members")
+        .select("conversation_id")
+        .eq("user_id", user.id);
+
+      if (ignore || memberError) return;
+
+      const conversationIds = (memberData || []).map((item) => item.conversation_id);
+      if (!conversationIds.length) {
+        setUnreadMessageCount(0);
+        return;
+      }
+
+      const { data: unreadData, error: unreadError } = await supabase
+        .from("direct_messages")
+        .select("id")
+        .in("conversation_id", conversationIds)
+        .neq("sender_id", user.id)
+        .is("read_at", null);
+
+      if (!ignore && !unreadError) {
+        setUnreadMessageCount((unreadData || []).length);
+      }
+    }
+
+    loadUnreadMessages();
+
+    const channel = supabase
+      .channel(`flashportal-home-unread-messages-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "direct_messages" },
+        () => loadUnreadMessages()
+      )
+      .subscribe();
+
+    function refreshUnreadMessages() {
+      loadUnreadMessages();
+    }
+
+    window.addEventListener("focus", refreshUnreadMessages);
+    window.addEventListener("pageshow", refreshUnreadMessages);
+    return () => {
+      ignore = true;
+      supabase.removeChannel(channel);
+      window.removeEventListener("focus", refreshUnreadMessages);
+      window.removeEventListener("pageshow", refreshUnreadMessages);
+    };
+  }, [user?.id]);
 
   const userIsOwner = isOwnerUser(user);
   const userIsAdmin = userIsOwner || Boolean(adminRole?.active);
@@ -1639,7 +1746,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V69 Online</strong>
+          <strong>V70 Online</strong>
           <p>Fixed creator profile 404 caused by old creator_slug lookup; Guess The Word update kept.</p>
         </div>
       </aside>
@@ -1672,16 +1779,25 @@ export default function Home() {
                 }}
               >
                 <Bell size={18} />
-                {(notifications.length + friendRequests.length) > 0 && <span className="notification-badge">{notifications.length + friendRequests.length}</span>}
+                {(notifications.length + friendRequests.length + unreadMessageCount) > 0 && <span className="notification-badge">{notifications.length + friendRequests.length + unreadMessageCount}</span>}
               </button>
 
               {notificationsOpen && (
                 <div className="notification-panel">
                   <strong>Notifications</strong>
-                  {(notifications.length + friendRequests.length) === 0 ? (
+                  {(notifications.length + friendRequests.length + unreadMessageCount) === 0 ? (
                     <p>No new alerts yet.</p>
                   ) : (
                     <div className="notification-list">
+                      {unreadMessageCount > 0 && (
+                        <article className="notification-item message-alert">
+                          <div>
+                            <b>New message{unreadMessageCount === 1 ? "" : "s"}</b>
+                            <p>{unreadMessageCount} unread message{unreadMessageCount === 1 ? "" : "s"} waiting in Messages.</p>
+                          </div>
+                          <button type="button" onClick={() => goToRealRoute("/messages")}>Open</button>
+                        </article>
+                      )}
                       {friendRequests.map((request) => (
                         <article className="notification-item" key={`friend-${request?.id || request}`}>
                           <div>

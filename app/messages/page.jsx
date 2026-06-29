@@ -11,6 +11,7 @@ export default function MessagesInboxPage() {
   const [profiles, setProfiles] = useState([]);
   const [memberships, setMemberships] = useState([]);
   const [latestMessages, setLatestMessages] = useState([]);
+  const [unreadMessages, setUnreadMessages] = useState([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("Loading messages...");
 
@@ -59,6 +60,7 @@ export default function MessagesInboxPage() {
         .limit(80);
 
       setLatestMessages(messageData || []);
+      setUnreadMessages((messageData || []).filter((message) => message.sender_id !== currentUser.id && !message.read_at));
     }
 
     setStatus("");
@@ -66,6 +68,19 @@ export default function MessagesInboxPage() {
 
   useEffect(() => {
     loadInbox();
+
+    const channel = supabase
+      .channel("flashportal-inbox-unread-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages" }, () => loadInbox())
+      .subscribe();
+
+    window.addEventListener("focus", loadInbox);
+    window.addEventListener("pageshow", loadInbox);
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("focus", loadInbox);
+      window.removeEventListener("pageshow", loadInbox);
+    };
   }, []);
 
   async function login() {
@@ -73,6 +88,10 @@ export default function MessagesInboxPage() {
       provider: "google",
       options: { redirectTo: `${window.location.origin}/messages` },
     });
+  }
+
+  function unreadForConversation(conversationId) {
+    return unreadMessages.filter((message) => message.conversation_id === conversationId).length;
   }
 
   async function startConversation(otherUserId) {
@@ -129,7 +148,7 @@ export default function MessagesInboxPage() {
       <section className="messages-hero">
         <span><Inbox size={16} /> FlashPortal Messages</span>
         <h1>Inbox</h1>
-        <p>Start a direct message with creators and players. Conversations update live on the chat page.</p>
+        <p>Start a direct message with creators and players. {unreadMessages.length ? `${unreadMessages.length} unread message${unreadMessages.length === 1 ? "" : "s"}.` : "No unread messages."}</p>
         {status && <p className="hub-status">{status}</p>}
       </section>
 
@@ -174,6 +193,9 @@ export default function MessagesInboxPage() {
                   <strong>Conversation</strong>
                   <span>{latest?.body || "Open chat"}</span>
                 </div>
+                {unreadForConversation(membership.conversation_id) > 0 && (
+                  <span className="message-unread-badge">{unreadForConversation(membership.conversation_id)}</span>
+                )}
               </Link>
             );
           }) : (

@@ -22,6 +22,22 @@ function getLocalReviews(gameId) {
   }
 }
 
+function updateCachedRatingAverages(gameId, rows) {
+  if (typeof window === "undefined") return;
+  try {
+    const current = JSON.parse(localStorage.getItem("flashportal-review-rating-averages-v70") || "{}");
+    const valid = (rows || [])
+      .map((item) => Number(item.rating))
+      .filter((value) => Number.isFinite(value) && value >= 1 && value <= 5);
+
+    if (valid.length) {
+      current[gameId] = Number((valid.reduce((sum, value) => sum + value, 0) / valid.length).toFixed(1));
+      localStorage.setItem("flashportal-review-rating-averages-v70", JSON.stringify(current));
+      window.dispatchEvent(new Event("flashportal-reviews-changed"));
+    }
+  } catch {}
+}
+
 function saveLocalReview(gameId, review) {
   const allReviews = JSON.parse(localStorage.getItem("flashportal-reviews-v50") || "{}");
   const next = [review, ...(Array.isArray(allReviews[gameId]) ? allReviews[gameId] : [])];
@@ -52,11 +68,14 @@ export default function ReviewsPage({ params }) {
       const local = getLocalReviews(gameId);
       const combined = [...data, ...local.filter((item) => !data.some((dbItem) => dbItem.id === item.id))];
       setReviews(combined);
+      updateCachedRatingAverages(gameId, combined);
       setStatus("");
       return;
     }
 
-    setReviews(getLocalReviews(gameId));
+    const localOnly = getLocalReviews(gameId);
+    setReviews(localOnly);
+    updateCachedRatingAverages(gameId, localOnly);
     setStatus("Reviews are using local fallback. Run the V50 SQL to save reviews publicly.");
   }
 
@@ -107,9 +126,12 @@ export default function ReviewsPage({ params }) {
       .single();
 
     if (!error && data) {
-      setReviews((current) => [data, ...current]);
-      setStatus("Rating posted. Homepage cards update after refresh.");
-      if (typeof window !== "undefined") window.dispatchEvent(new Event("flashportal-reviews-changed"));
+      setReviews((current) => {
+        const next = [data, ...current];
+        updateCachedRatingAverages(gameId, next);
+        return next;
+      });
+      setStatus("Rating posted.");
     } else {
       const fallbackReview = {
         ...payload,
@@ -118,8 +140,8 @@ export default function ReviewsPage({ params }) {
       };
       const nextLocalReviews = saveLocalReview(gameId, fallbackReview);
       setReviews(nextLocalReviews);
+      updateCachedRatingAverages(gameId, nextLocalReviews);
       setStatus("Rating saved locally. Run review SQL so ratings save publicly in Supabase.");
-      if (typeof window !== "undefined") window.dispatchEvent(new Event("flashportal-reviews-changed"));
     }
 
     setReviewText("");
