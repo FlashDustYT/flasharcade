@@ -21,14 +21,15 @@ export default function CreatorHubPage() {
   const [openComments, setOpenComments] = useState({});
 
   async function loadHub() {
-    setLoading(true);
+    let hadCache = false;
     setStatus("");
 
     try {
       const cached = JSON.parse(localStorage.getItem("flashportal-creator-hub-cache") || "{}");
-      if (cached.profiles?.length) setProfiles(cached.profiles);
-      if (cached.posts?.length) setPosts(cached.posts);
+      if (cached.profiles?.length) { setProfiles(cached.profiles); hadCache = true; }
+      if (cached.posts?.length) { setPosts(cached.posts); hadCache = true; }
     } catch {}
+    setLoading(!hadCache);
 
     const { data: sessionData } = await supabase.auth.getSession();
     const currentUser = sessionData?.session?.user || null;
@@ -135,12 +136,15 @@ export default function CreatorHubPage() {
     setLikedPostIds((current) => liked ? current.filter((id) => id !== post.id) : [...current, post.id]);
     setPosts((current) => current.map((item) => item.id === post.id ? { ...item, likes: Math.max(0, Number(item.likes || 0) + (liked ? -1 : 1)) } : item));
 
-    if (liked) {
-      const { error } = await supabase.from("social_post_likes").delete().eq("post_id", post.id).eq("user_id", user.id);
-      if (error) setStatus(`Unlike failed: ${error.message}. Run V74 SQL.`);
-    } else {
-      const { error } = await supabase.from("social_post_likes").insert({ post_id: post.id, user_id: user.id });
-      if (error) setStatus(`Like failed: ${error.message}. Run V74 SQL.`);
+    const { data, error } = await supabase.rpc("fp_toggle_social_like", { target_post_id: post.id });
+    if (error) {
+      setStatus(`Like failed: ${error.message}. Run V75 SQL.`);
+      setLikedPostIds((current) => liked ? [...current, post.id] : current.filter((id) => id !== post.id));
+      setPosts((current) => current.map((item) => item.id === post.id ? { ...item, likes: Math.max(0, Number(item.likes || 0) + (liked ? 1 : -1)) } : item));
+      return;
+    }
+    if (typeof data === "number") {
+      setPosts((current) => current.map((item) => item.id === post.id ? { ...item, likes: data } : item));
     }
   }
 
@@ -162,20 +166,18 @@ export default function CreatorHubPage() {
     setCommentDrafts((current) => ({ ...current, [post.id]: "" }));
 
     const { data, error } = await supabase
-      .from("social_comments")
-      .insert({ post_id: post.id, user_id: user.id, body })
-      .select("id,post_id,user_id,body,created_at")
-      .single();
+      .rpc("fp_add_social_comment", { target_post_id: post.id, comment_body: body });
 
     if (error) {
-      setStatus(`Comment failed: ${error.message}. Run V74 SQL.`);
+      setStatus(`Comment failed: ${error.message}. Run V75 SQL.`);
       return;
     }
 
-    if (data) {
+    const saved = Array.isArray(data) ? data[0] : data;
+    if (saved) {
       setCommentsByPost((current) => ({
         ...current,
-        [post.id]: (current[post.id] || []).map((item) => item.id === temp.id ? { ...data, user_profiles: temp.user_profiles } : item),
+        [post.id]: (current[post.id] || []).map((item) => item.id === temp.id ? { ...saved, user_profiles: temp.user_profiles } : item),
       }));
     }
   }

@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { loadCloudSave, saveCloudSave } from "../lib/cloudSaves";
+import { BADGE_DEFINITIONS, DEFAULT_GAME_ACHIEVEMENTS, badgeInfo } from "../lib/badges";
 
 function goToRealRoute(path) {
   if (typeof window !== "undefined") {
@@ -85,15 +86,15 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
-    version: "V74",
-    title: "Feed likes/comments, cleaner notifications, and badge library",
+    version: "V75",
+    title: "Persistent feed + real progress tracking",
     date: "Current",
     changes: [
-      "Community Feed posts now support hearts and comments",
-      "Old test announcements are hidden after V74 SQL",
-      "Notification dismissals are per-user so new people can still see announcements",
-      "Added public badge library/achievement guide",
-      "Cleaner loading/cached creator hub UI"
+      "Likes and comments persist after refresh using V75 backend functions",
+      "Achievements tab now shows earned badges and available badge goals",
+      "Starter badges are awarded to existing profiles",
+      "Creator Hub uses cached content for quicker page changes",
+      "Progress tracking has a real badge library instead of coming-soon text"
     ],
   },
   {
@@ -663,6 +664,8 @@ export default function Home() {
   const [reviews, setReviews] = useState({});
   const [query, setQuery] = useState("");
   const [user, setUser] = useState(null);
+  const [earnedBadges, setEarnedBadges] = useState([]);
+  const [progressLoading, setProgressLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [playCounts, setPlayCounts] = useState({});
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
@@ -1621,6 +1624,32 @@ export default function Home() {
     setUser(null);
   }
 
+
+  useEffect(() => {
+    async function loadEarnedBadges() {
+      if (!user?.id) {
+        setEarnedBadges([]);
+        return;
+      }
+
+      setProgressLoading(true);
+      const { data, error } = await supabase
+        .from("user_badges")
+        .select("badge_code, earned_at")
+        .eq("user_id", user.id)
+        .order("earned_at", { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        setEarnedBadges(data);
+      } else {
+        setEarnedBadges([]);
+      }
+      setProgressLoading(false);
+    }
+
+    loadEarnedBadges();
+  }, [user?.id]);
+
   const navItems = [
     { id: "discover", label: "Discover", icon: Compass },
     { id: "library", label: "Library", icon: BookOpen },
@@ -1822,8 +1851,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V74 Online</strong>
-          <p>Fixed creator profile 404 caused by old creator_slug lookup; Guess The Word update kept.</p>
+          <strong>V75 Online</strong>
+          <p>Persistent feed likes/comments and real progress badges.</p>
         </div>
       </aside>
 
@@ -2068,13 +2097,95 @@ export default function Home() {
           <section className="portal-view">
             <SectionHeader
               label="Achievements"
-              title="Progress tracking is coming"
-              text="Cloud saves are the foundation. Achievements, play history, and profile stats come next."
+              title="Progress tracking"
+              text="Earn badges from playing, reviewing, saving, posting, uploading, and growing as a creator."
             />
-            <div className="empty-panel">
-              <Trophy size={42} />
-              <h3>No achievements unlocked yet</h3>
-              <p>V34 can add real unlockable achievements per game.</p>
+
+            <div className="progress-summary-grid">
+              <article>
+                <strong>{earnedBadges.length}</strong>
+                <span>Earned badges</span>
+              </article>
+              <article>
+                <strong>{BADGE_DEFINITIONS.length}</strong>
+                <span>Total available</span>
+              </article>
+              <article>
+                <strong>{DEFAULT_GAME_ACHIEVEMENTS.length}</strong>
+                <span>Default game goals</span>
+              </article>
+            </div>
+
+            <div className="achievement-section-card">
+              <div className="section-mini-head">
+                <h3><Trophy size={22} /> Your badges</h3>
+                <a href="/badges">View full badge guide</a>
+              </div>
+              {!user ? (
+                <div className="empty-panel compact">
+                  <Trophy size={34} />
+                  <h3>Log in to track badges</h3>
+                  <p>Your badges save to your FlashPortal account.</p>
+                </div>
+              ) : progressLoading ? (
+                <div className="empty-panel compact"><h3>Loading badges...</h3></div>
+              ) : earnedBadges.length ? (
+                <div className="earned-badge-grid">
+                  {earnedBadges.map((earned) => {
+                    const info = badgeInfo(earned.badge_code);
+                    return (
+                      <article className={`earned-badge rarity-${String(info.rarity || "Common").toLowerCase()}`} key={`${earned.badge_code}-${earned.earned_at}`}>
+                        <span>{info.rarity || "Common"}</span>
+                        <h4>{info.label}</h4>
+                        <p>{info.description}</p>
+                        <small>Earned {new Date(earned.earned_at).toLocaleDateString()}</small>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="empty-panel compact">
+                  <Trophy size={34} />
+                  <h3>No badges yet</h3>
+                  <p>Run V75 SQL to award starter badges, then keep playing and posting.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="achievement-section-card">
+              <div className="section-mini-head">
+                <h3><Sparkles size={22} /> Available badges</h3>
+                <a href="/badges">Open detailed guide</a>
+              </div>
+              <div className="available-badge-grid">
+                {BADGE_DEFINITIONS.slice(0, 18).map((badge) => {
+                  const earned = earnedBadges.some((item) => item.badge_code === badge.code);
+                  return (
+                    <article className={`available-badge ${earned ? "earned" : ""}`} key={badge.code}>
+                      <strong>{badge.label}</strong>
+                      <span>{badge.rarity}</span>
+                      <p>{badge.description}</p>
+                      {earned && <small>Unlocked</small>}
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="achievement-section-card">
+              <div className="section-mini-head">
+                <h3><Gamepad2 size={22} /> Game achievement examples</h3>
+                <a href="/creator/upload">Add achievements to a game</a>
+              </div>
+              <div className="available-badge-grid">
+                {DEFAULT_GAME_ACHIEVEMENTS.map((badge) => (
+                  <article className="available-badge" key={badge.code}>
+                    <strong>{badge.label}</strong>
+                    <span>{badge.rarity}</span>
+                    <p>{badge.description}</p>
+                  </article>
+                ))}
+              </div>
             </div>
           </section>
         )}
