@@ -156,9 +156,11 @@ const dom = {
   emojiOne: document.getElementById("emojiOne"),
   emojiTwo: document.getElementById("emojiTwo"),
   mysteryWord: document.getElementById("mysteryWord"),
+  answerReveal: document.getElementById("answerReveal"),
   timerFill: document.getElementById("timerFill"),
   timerText: document.getElementById("timerText"),
   hintList: document.getElementById("hintList"),
+  hintTools: document.querySelector(".hint-tools"),
   revealHintButton: document.getElementById("revealHintButton"),
   clueValueText: document.getElementById("clueValueText"),
   guessForm: document.getElementById("guessForm"),
@@ -324,17 +326,22 @@ function questionKey(puzzle, emojis) {
   return `${puzzle.answer}|${emojis[0]}|${emojis[1]}`;
 }
 
+function bestEmojiPair(puzzle) {
+  return [puzzle.emojis[0][0], puzzle.emojis[1][0]];
+}
+
 function buildQuestion() {
   let available = PUZZLES.filter((puzzle) => !state.usedAnswers.has(puzzle.answer));
   if (available.length === 0) {
     state.usedAnswers.clear();
+    state.usedQuestionKeys.clear();
     available = [...PUZZLES];
     setFeedback("Full word bank completed. The puzzle pool has refreshed.");
   }
 
   for (let attempt = 0; attempt < 90; attempt += 1) {
     const puzzle = choose(available);
-    const emojis = [choose(puzzle.emojis[0]), choose(puzzle.emojis[1])];
+    const emojis = bestEmojiPair(puzzle);
     const key = questionKey(puzzle, emojis);
     if (!state.usedQuestionKeys.has(key)) {
       state.usedAnswers.add(puzzle.answer);
@@ -345,7 +352,7 @@ function buildQuestion() {
 
   state.usedQuestionKeys.clear();
   const puzzle = choose(available);
-  const emojis = [choose(puzzle.emojis[0]), choose(puzzle.emojis[1])];
+  const emojis = bestEmojiPair(puzzle);
   state.usedAnswers.add(puzzle.answer);
   state.usedQuestionKeys.add(questionKey(puzzle, emojis));
   return { puzzle, emojis };
@@ -394,6 +401,8 @@ function renderRound() {
   dom.emojiOne.textContent = state.currentEmojis[0];
   dom.emojiTwo.textContent = state.currentEmojis[1];
   dom.mysteryWord.textContent = "?";
+  dom.answerReveal.textContent = "Solve the combo";
+  dom.answerReveal.classList.remove("solved");
   renderHints();
   renderChoices();
   renderStats();
@@ -419,6 +428,7 @@ function renderHints() {
 function renderHintTools() {
   const hiddenCount = state.hardMode ? state.currentHints.length - state.revealedHints : 0;
   const penalty = state.hardMode ? state.revealedHints * HINT_REVEAL_PENALTY : 0;
+  dom.hintTools.classList.toggle("normal-mode", !state.hardMode);
   dom.revealHintButton.disabled = state.locked || hiddenCount <= 0;
   dom.revealHintButton.textContent = state.hardMode && hiddenCount > 0 ? `Reveal Hint (-${HINT_REVEAL_PENALTY})` : "All Hints Open";
   dom.clueValueText.textContent = state.hardMode && penalty > 0 ? `${penalty} point hint penalty` : state.hardMode ? "Hard hint mode" : "Normal: all hints open";
@@ -479,6 +489,12 @@ function renderStats() {
   dom.blitzMode.classList.toggle("active", state.mode === "blitz");
 }
 
+function showAnswer() {
+  dom.mysteryWord.textContent = "\u2713";
+  dom.answerReveal.textContent = state.current.answer;
+  dom.answerReveal.classList.add("solved");
+}
+
 function submitGuess(rawGuess, sourceButton = null) {
   if (state.locked) return;
   const guess = normalize(rawGuess);
@@ -506,7 +522,7 @@ function submitGuess(rawGuess, sourceButton = null) {
 function handleCorrect() {
   state.locked = true;
   clearInterval(state.timerId);
-  dom.mysteryWord.textContent = state.current.answer;
+  showAnswer();
   const timeBonus = Math.max(0, state.secondsLeft) * (state.mode === "blitz" ? 8 : 4);
   const streakBonus = Math.min(170, state.streak * 20);
   const difficultyBonus = (state.difficulty.level - 1) * 24 + (state.hardMode ? 45 : 0);
@@ -569,7 +585,7 @@ function handleTimeout() {
 
 function revealAnswer(message) {
   state.revealedHints = state.currentHints.length;
-  dom.mysteryWord.textContent = state.current.answer;
+  showAnswer();
   renderHints();
   renderChoices();
   [...dom.choiceGrid.children].forEach((button) => {

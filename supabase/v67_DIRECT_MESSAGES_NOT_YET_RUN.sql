@@ -1,0 +1,3 @@
+-- NOT REQUIRED FOR V66.
+-- This is only a planning placeholder for the next direct messages build.
+-- Do not run yet unless the app code for V67 direct messages has been added.

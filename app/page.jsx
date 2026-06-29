@@ -84,6 +84,17 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V66",
+    title: "Guess The Word update",
+    date: "Current",
+    changes: [
+      "Replaced the live Guess The Word game files with the newest uploaded ZIP",
+      "Kept V65 profile/creator fixes",
+      "Added a clear messaging roadmap so the Message button is not misleading",
+      "No new database changes required for the game update"
+    ],
+  },
+  {
     version: "V65",
     title: "Creator profile hotfix",
     date: "Current",
@@ -1562,8 +1573,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V65 Online</strong>
-          <p>Creator profile lookup hotfix, cleaner image upload button, fixed creator directory view/message buttons.</p>
+          <strong>V66 Online</strong>
+          <p>Guess The Word updated, creator message plan added, and creator profile hotfixes kept.</p>
         </div>
       </aside>
 

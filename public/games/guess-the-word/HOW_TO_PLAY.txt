@@ -52,5 +52,5 @@ Use Sound to mute effects.
 Use Music to toggle background music.
 
 WHY IT STAYS FRESH
-The game uses a curated compound-word answer bank and emoji variation engine with 200,000+ possible emoji clue mixes.
+The game uses a curated compound-word answer bank and emoji variation engine, but active rounds now pick the clearest emoji pair first so clues feel fair.
 Answers do not repeat in the same run until the pool cycles.

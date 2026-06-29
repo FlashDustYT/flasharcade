@@ -126,7 +126,7 @@ export default function CreatorsPage() {
               </div>
               <div className="creator-mini-actions">
                 <Link href={`/profile/${profile.id}`}>View Profile</Link>
-                <button type="button" onClick={() => setStatus("Direct messages are not built yet. For now, add them as a friend or use their public profile.")}><MessageCircle size={15} /> Message</button>
+                <button type="button" onClick={() => setStatus("Messaging needs the next SQL/backend pass. For now, add them as a friend first; then we can add a real inbox.")}><MessageCircle size={15} /> Message Soon</button>
                 {!isSelf && (
                   user ? (
                     <button type="button" onClick={() => toggleFollow(profile)}>{isFollowing ? "Following" : "Follow"}</button>
