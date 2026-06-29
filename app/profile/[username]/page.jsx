@@ -107,7 +107,7 @@ export default function PublicProfilePage({ params }) {
     });
 
     if (error) {
-      setStatus(`Message failed: ${error.message}. Run V68 SQL.`);
+      setStatus(`Message failed: ${error.message}. Run V69 SQL.`);
       return;
     }
 

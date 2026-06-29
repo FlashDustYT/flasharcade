@@ -108,7 +108,8 @@ export default function ReviewsPage({ params }) {
 
     if (!error && data) {
       setReviews((current) => [data, ...current]);
-      setStatus("Review posted.");
+      setStatus("Rating posted. Homepage cards update after refresh.");
+      if (typeof window !== "undefined") window.dispatchEvent(new Event("flashportal-reviews-changed"));
     } else {
       const fallbackReview = {
         ...payload,
@@ -117,7 +118,8 @@ export default function ReviewsPage({ params }) {
       };
       const nextLocalReviews = saveLocalReview(gameId, fallbackReview);
       setReviews(nextLocalReviews);
-      setStatus("Review saved locally. Run V50 SQL so reviews save publicly in Supabase.");
+      setStatus("Rating saved locally. Run review SQL so ratings save publicly in Supabase.");
+      if (typeof window !== "undefined") window.dispatchEvent(new Event("flashportal-reviews-changed"));
     }
 
     setReviewText("");

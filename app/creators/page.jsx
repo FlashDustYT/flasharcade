@@ -97,7 +97,7 @@ export default function CreatorsPage() {
     });
 
     if (error) {
-      setStatus(`Message failed: ${error.message}. Run V68 SQL.`);
+      setStatus(`Message failed: ${error.message}. Run V69 SQL.`);
       return;
     }
 

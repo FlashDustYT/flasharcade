@@ -43,7 +43,7 @@ export default function MessagesInboxPage() {
       .eq("user_id", currentUser.id);
 
     if (memberError) {
-      setStatus(`Messages need V68 SQL: ${memberError.message}`);
+      setStatus(`Messages need V69 SQL: ${memberError.message}`);
       return;
     }
 
@@ -83,7 +83,7 @@ export default function MessagesInboxPage() {
     });
 
     if (error) {
-      setStatus(`Could not start message: ${error.message}. Run V68 SQL.`);
+      setStatus(`Could not start message: ${error.message}. Run V69 SQL.`);
       return;
     }
 

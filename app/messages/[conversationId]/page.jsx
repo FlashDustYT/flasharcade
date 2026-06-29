@@ -35,7 +35,7 @@ export default function ConversationPage({ params }) {
       .eq("conversation_id", conversationId);
 
     if (memberError) {
-      setStatus(`Messages need V68 SQL: ${memberError.message}`);
+      setStatus(`Messages need V69 SQL: ${memberError.message}`);
       return;
     }
 
@@ -110,7 +110,7 @@ export default function ConversationPage({ params }) {
     });
 
     if (error) {
-      setStatus(`Send failed: ${error.message}. Run V68 SQL.`);
+      setStatus(`Send failed: ${error.message}. Run V69 SQL.`);
       setDraft(body);
       return;
     }

@@ -84,16 +84,15 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
-    version: "V68",
-    title: "Messages and last seen",
+    version: "V69",
+    title: "Message, avatar, and rating polish",
     date: "Current",
     changes: [
-      "Added real direct messages with inbox and conversation pages",
-      "Added last seen labels instead of stale online text",
-      "Trending now ranks by plays, then rating, then newest",
-      "Creator board ranks by follower count",
-      "Users can submit a star rating without writing a review",
-      "Avatar image cropping is cleaner across profiles"
+      "Fixed message sending policy recursion",
+      "Avatar images now stay inside their frames",
+      "Homepage game cards now pull live review averages",
+      "Rating-only submissions update public cards after refresh",
+      "Kept accurate Last Seen status"
     ],
   },
   {
@@ -660,6 +659,7 @@ export default function Home() {
   const [submissions, setSubmissions] = useState([]);
   const [paymentDebugOpen, setPaymentDebugOpen] = useState(false);
   const [creatorFollowerCounts, setCreatorFollowerCounts] = useState({});
+  const [reviewRatings, setReviewRatings] = useState({});
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -866,6 +866,42 @@ export default function Home() {
     loadStats();
   }, []);
 
+
+  useEffect(() => {
+    async function loadReviewRatings() {
+      const { data, error } = await supabase
+        .from("game_reviews")
+        .select("game_id, rating");
+
+      if (!error && Array.isArray(data)) {
+        const grouped = {};
+        data.forEach((row) => {
+          const gameId = row.game_id;
+          const value = Number(row.rating);
+          if (!gameId || !Number.isFinite(value) || value < 1 || value > 5) return;
+          if (!grouped[gameId]) grouped[gameId] = [];
+          grouped[gameId].push(value);
+        });
+
+        const next = {};
+        Object.entries(grouped).forEach(([gameId, values]) => {
+          next[gameId] = Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1));
+        });
+
+        setReviewRatings(next);
+      }
+    }
+
+    loadReviewRatings();
+
+    function refreshReviewRatings() {
+      loadReviewRatings();
+    }
+
+    window.addEventListener("flashportal-reviews-changed", refreshReviewRatings);
+    return () => window.removeEventListener("flashportal-reviews-changed", refreshReviewRatings);
+  }, []);
+
   const userIsOwner = isOwnerUser(user);
   const userIsAdmin = userIsOwner || Boolean(adminRole?.active);
   const adminPerms = userIsOwner
@@ -900,8 +936,9 @@ export default function Home() {
           playable: gameVisibility[game.id]?.hidden ? false : game.playable,
           status: gameVisibility[game.id]?.hidden ? "Private" : game.status,
           plays: playCounts[game.id] ?? game.plays,
+          rating: reviewRatings[game.id] ?? game.rating,
         })),
-    [managedGames, playCounts, gameVisibility]
+    [managedGames, playCounts, gameVisibility, reviewRatings]
   );
 
   const publicGames = useMemo(
@@ -1602,7 +1639,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V68 Online</strong>
+          <strong>V69 Online</strong>
           <p>Fixed creator profile 404 caused by old creator_slug lookup; Guess The Word update kept.</p>
         </div>
       </aside>
