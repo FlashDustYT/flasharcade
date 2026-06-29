@@ -23,29 +23,20 @@ export default function PublicProfilePage({ params }) {
     setUser(currentUser);
 
     const cleanedLookup = safeLookup(lookup);
-    let profileData = null;
-    let error = null;
-
-    const first = await supabase
+    const { data: allProfiles, error } = await supabase
       .from("user_profiles")
       .select("*")
-      .or(`username.eq.${cleanedLookup},id.eq.${cleanedLookup},email.ilike.${cleanedLookup}@%`)
-      .maybeSingle();
+      .limit(500);
 
-    profileData = first.data;
-    error = first.error;
-
-    if (!profileData) {
-      const { data: allProfiles } = await supabase.from("user_profiles").select("*").limit(300);
-      profileData = (allProfiles || []).find((item) =>
-        safeLookup(item.username) === cleanedLookup ||
-        safeLookup(item.email?.split("@")[0]) === cleanedLookup ||
-        safeLookup(item.display_name) === cleanedLookup
-      );
-    }
+    const profileData = (allProfiles || []).find((item) =>
+      String(item.id) === String(lookup) ||
+      safeLookup(item.username) === cleanedLookup ||
+      safeLookup(item.email?.split("@")[0]) === cleanedLookup ||
+      safeLookup(item.display_name) === cleanedLookup
+    );
 
     if (error || !profileData) {
-      setStatus("Profile not found. Tell that account to open /profile and hit Save Profile first.");
+      setStatus("Profile not found. That account may need to open /profile and hit Save Profile once.");
       return;
     }
 
@@ -72,12 +63,11 @@ export default function PublicProfilePage({ params }) {
         .from("social_posts")
         .select("*")
         .eq("user_id", profileData.id)
-        .neq("is_deleted", true)
         .order("created_at", { ascending: false })
         .limit(50);
 
       const { data: postData } = await postQuery;
-      setPosts((postData || []).filter((post) => !post.is_private || currentUser?.id === profileData.id || isFollowing));
+      setPosts((postData || []).filter((post) => !post.is_deleted && (!post.is_private || currentUser?.id === profileData.id || isFollowing)));
 
       const { data: gameData } = await supabase
         .from("game_submissions")

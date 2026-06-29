@@ -55,11 +55,10 @@ export default function MyProfilePage() {
       .from("social_posts")
       .select("*")
       .eq("user_id", currentUser.id)
-      .neq("is_deleted", true)
       .order("created_at", { ascending: false })
       .limit(50);
 
-    setPosts(postData || []);
+    setPosts((postData || []).filter((post) => !post.is_deleted));
   }
 
   useEffect(() => {
@@ -247,7 +246,7 @@ export default function MyProfilePage() {
             <h2>Post an update</h2>
             <textarea value={postBody} onChange={(event) => setPostBody(event.target.value)} placeholder="Share an update, image, patch note, stream note..." />
             <input value={postImage} onChange={(event) => setPostImage(event.target.value)} placeholder="Optional image URL or choose file below" />
-            <label className="file-picker-row"><ImagePlus size={16} /> Add image file
+            <label className="file-picker-row compact"><ImagePlus size={14} /> Add image
               <input type="file" accept="image/*" onChange={(event) => handleImageFile("post", event.target.files?.[0])} />
             </label>
             {postImage && <img className="post-image preview" src={postImage} alt="Post preview" />}

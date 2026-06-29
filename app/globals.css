@@ -3661,3 +3661,22 @@ main:not(.creator-hub-page):not(.social-home-page) .community-roadmap {
   color: #45ff7a;
   text-shadow: 0 0 14px rgba(69,255,122,.4);
 }
+
+
+/* V65 hotfix: smaller image upload and safer creator buttons */
+.file-picker-row.compact {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  border-radius: 18px;
+  margin: 6px 0 10px;
+}
+
+.creator-directory-card .creator-mini-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.creator-directory-card .creator-mini-actions {
+  margin-top: 14px;
+}

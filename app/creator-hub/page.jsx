@@ -19,24 +19,21 @@ export default function CreatorHubPage() {
     const { data: sessionData } = await supabase.auth.getSession();
     const currentUser = sessionData?.session?.user || null;
     setUser(currentUser);
-
     const { data: profileData, error: profileError } = await supabase
       .from("user_profiles")
       .select("*")
       .order("updated_at", { ascending: false })
-      .neq("is_deleted", true)
       .limit(100);
-
     const { data: postData } = await supabase
       .from("social_posts")
-      .select("*, user_profiles(display_name, username, avatar_url, is_private)")
+      .select("*, user_profiles(display_name, username, avatar_url, is_private, last_seen_at)")
       .order("created_at", { ascending: false })
       .limit(100);
 
     if (profileError) setStatus(`Creator Hub needs V61 SQL: ${profileError.message}`);
 
     setProfiles(profileData || []);
-    setPosts(postData || []);
+    setPosts((postData || []).filter((post) => !post.is_deleted));
 
     if (currentUser) {
       const { data: followData } = await supabase

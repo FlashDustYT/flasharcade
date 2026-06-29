@@ -84,6 +84,17 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V65",
+    title: "Creator profile hotfix",
+    date: "Current",
+    changes: [
+      "View Profile now uses a safer profile lookup",
+      "Message no longer opens a blank browser tab",
+      "Creator Hub no longer errors on missing user_profiles.is_deleted",
+      "Image upload button is smaller and fits the post composer better"
+    ],
+  },
+  {
     version: "V64",
     title: "Creator social/profile release pass",
     date: "Current",
@@ -1551,8 +1562,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V64 Online</strong>
-          <p>Creators page split from Creator Hub, file uploads for images, post controls, profile fallback, and online status.</p>
+          <strong>V65 Online</strong>
+          <p>Creator profile lookup hotfix, cleaner image upload button, fixed creator directory view/message buttons.</p>
         </div>
       </aside>
 
