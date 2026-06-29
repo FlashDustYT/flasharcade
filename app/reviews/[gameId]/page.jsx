@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, MessageSquare, Star } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
+import { awardBadge } from "../../../lib/badges";
 
 const GAME_NAMES = {
   "how-many-rings": "How Many Rings?",
@@ -89,6 +90,14 @@ export default function ReviewsPage({ params }) {
     loadReviews();
   }, [gameId]);
 
+
+  async function loginWithGoogle() {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/reviews/${gameId}` },
+    });
+  }
+
   const averageRating = useMemo(() => {
     const validRatings = reviews
       .map((item) => Number(item.rating))
@@ -101,6 +110,11 @@ export default function ReviewsPage({ params }) {
   async function submitReview(event) {
     event.preventDefault();
 
+    if (!user) {
+      setStatus("Log in first to rate or review.");
+      return;
+    }
+
     const cleanReview = reviewText.trim();
     const cleanName = displayName.trim() || user?.email?.split("@")[0] || "Anonymous Player";
     const numericRating = Number(rating);
@@ -112,8 +126,8 @@ export default function ReviewsPage({ params }) {
 
     const payload = {
       game_id: gameId,
-      user_id: user?.id || null,
-      user_email: user?.email || "",
+      user_id: user.id,
+      user_email: user.email || "",
       display_name: cleanName,
       rating: numericRating,
       review: cleanReview || "",
@@ -131,6 +145,7 @@ export default function ReviewsPage({ params }) {
         updateCachedRatingAverages(gameId, next);
         return next;
       });
+      await awardBadge(supabase, user.id, "first_rating");
       setStatus("Rating posted.");
     } else {
       const fallbackReview = {
@@ -141,7 +156,7 @@ export default function ReviewsPage({ params }) {
       const nextLocalReviews = saveLocalReview(gameId, fallbackReview);
       setReviews(nextLocalReviews);
       updateCachedRatingAverages(gameId, nextLocalReviews);
-      setStatus("Rating saved locally. Run review SQL so ratings save publicly in Supabase.");
+      setStatus("Rating could not save publicly. Run V72 SQL for review policies, then try again.");
     }
 
     setReviewText("");
@@ -165,7 +180,15 @@ export default function ReviewsPage({ params }) {
         </p>
       </section>
 
-      <form className="review-form" onSubmit={submitReview}>
+      {!user && (
+        <section className="review-login-card">
+          <h2>Log in to rate or review</h2>
+          <p>Ratings and reviews are account-based so one person cannot spam unlimited anonymous ratings.</p>
+          <button type="button" onClick={loginWithGoogle}>Login with Google</button>
+        </section>
+      )}
+
+      <form className={`review-form ${!user ? "locked-review-form" : ""}`} onSubmit={submitReview}>
         <h2>Rate or Review</h2>
 
         <label>
@@ -173,7 +196,8 @@ export default function ReviewsPage({ params }) {
           <input
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
-            placeholder="Anonymous Player"
+            placeholder="Login required"
+            disabled={!user}
           />
         </label>
 
@@ -199,7 +223,8 @@ export default function ReviewsPage({ params }) {
           <textarea
             value={reviewText}
             onChange={(event) => setReviewText(event.target.value)}
-            placeholder="Optional: what did you think of the game?"
+            placeholder={user ? "Optional: what did you think of the game?" : "Log in first to write a review"}
+            disabled={!user}
           />
         </label>
 

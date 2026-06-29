@@ -4041,3 +4041,97 @@ main:not(.creator-hub-page):not(.social-home-page) .community-roadmap {
   font-size: .88rem;
   line-height: 1.35;
 }
+
+
+/* V72 rating login lock + profile badges + post audience */
+.review-login-card {
+  margin: 20px auto;
+  max-width: 980px;
+  padding: 24px;
+  border: 1px solid rgba(255,122,0,.28);
+  border-radius: 24px;
+  background: rgba(14,7,0,.82);
+}
+
+.review-login-card button,
+.locked-review-form button[disabled] {
+  cursor: pointer;
+}
+
+.locked-review-form {
+  opacity: .82;
+}
+
+.locked-review-form input,
+.locked-review-form textarea,
+.locked-review-form button {
+  cursor: not-allowed;
+}
+
+.post-audience-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.post-audience-toggle button {
+  width: auto;
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255,122,0,.28);
+  background: rgba(255,122,0,.08);
+  color: var(--text);
+  font-weight: 900;
+}
+
+.post-audience-toggle button.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--accent-text);
+}
+
+.badge-stack,
+.profile-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.profile-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 9px 12px;
+  border: 1px solid rgba(255,122,0,.28);
+  background: rgba(255,122,0,.10);
+  color: var(--text);
+  font-weight: 900;
+  font-size: .88rem;
+}
+
+.profile-badge small {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.rarity-common {
+  border-color: rgba(255,255,255,.22);
+}
+
+.rarity-uncommon {
+  border-color: rgba(56,255,126,.35);
+  background: rgba(56,255,126,.08);
+}
+
+.rarity-rare {
+  border-color: rgba(80,160,255,.45);
+  background: rgba(80,160,255,.10);
+}
+
+.empty-badges {
+  color: var(--muted);
+  font-weight: 800;
+}

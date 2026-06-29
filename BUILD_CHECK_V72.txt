@@ -1,0 +1,1 @@
+Static patch completed. Vercel should run npm install/build normally after upload.

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, EyeOff, Globe2, ImagePlus, Save, Send, Trash2, UserRound, Video, Github, Lock } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { cleanUsername, ensureUserProfile, profileFromUser } from "../../lib/profileHelpers";
+import { awardBadge, badgeInfo } from "../../lib/badges";
 
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -24,7 +25,9 @@ export default function MyProfilePage() {
   const [postBody, setPostBody] = useState("");
   const [postImage, setPostImage] = useState("");
   const [postVideo, setPostVideo] = useState("");
+  const [postAudience, setPostAudience] = useState("community");
   const [status, setStatus] = useState("");
+  const [badges, setBadges] = useState([]);
 
   async function touchSeen(currentUser) {
     if (!currentUser) return;
@@ -60,6 +63,16 @@ export default function MyProfilePage() {
       .limit(50);
 
     setPosts((postData || []).filter((post) => !post.is_deleted));
+
+    try {
+      await awardBadge(supabase, currentUser.id, "early_player");
+      const { data: badgeData } = await supabase
+        .from("user_badges")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("earned_at", { ascending: false });
+      setBadges(badgeData || []);
+    } catch {}
   }
 
   useEffect(() => {
@@ -180,7 +193,7 @@ export default function MyProfilePage() {
         image_url: postImage.trim(),
         video_url: postVideo.trim(),
         media_type: postVideo.trim() ? "video" : "image",
-        is_private: false,
+        is_private: postAudience === "profile",
         is_deleted: false,
       })
       .select("*")
@@ -195,7 +208,12 @@ export default function MyProfilePage() {
     setPostBody("");
     setPostImage("");
     setPostVideo("");
-    setStatus("Post published to your profile and the Community Feed.");
+    try {
+      await awardBadge(supabase, user.id, "first_post");
+      const { data: badgeData } = await supabase.from("user_badges").select("*").eq("user_id", user.id).order("earned_at", { ascending: false });
+      setBadges(badgeData || []);
+    } catch {}
+    setStatus(postAudience === "community" ? "Post published to your profile and the Community Feed." : "Post published to your profile only.");
   }
 
   async function togglePostPrivacy(post) {
@@ -295,6 +313,14 @@ export default function MyProfilePage() {
           <Link href="/creators">Creators Directory</Link>
           <Link href="/about">About / Roadmap</Link>
 
+          <h3>Your badges</h3>
+          <div className="badge-stack">
+            {badges.length ? badges.map((row) => {
+              const badge = badgeInfo(row.badge_code);
+              return <span className={`profile-badge rarity-${badge.rarity.toLowerCase()}`} key={row.badge_code}>⭐ {badge.label}<small>{badge.rarity}</small></span>;
+            }) : <p className="editor-help">Earn badges by rating, posting, uploading, and growing followers.</p>}
+          </div>
+
           <h3>Security</h3>
           <button type="button" className="profile-edit-button mini" onClick={sendPasswordReset}><Lock size={15} /> Change password</button>
           <button type="button" className="profile-edit-button mini" onClick={loginWithGithub}><Github size={15} /> Connect GitHub</button>
@@ -305,6 +331,10 @@ export default function MyProfilePage() {
           <article className="post-composer">
             <h2>Post an update</h2>
             <textarea value={postBody} onChange={(event) => setPostBody(event.target.value)} placeholder="Share an update, image, patch note, stream note..." />
+            <div className="post-audience-toggle" role="group" aria-label="Post audience">
+              <button type="button" className={postAudience === "community" ? "active" : ""} onClick={() => setPostAudience("community")}>Community Feed + Profile</button>
+              <button type="button" className={postAudience === "profile" ? "active" : ""} onClick={() => setPostAudience("profile")}>Profile Only</button>
+            </div>
             <input value={postImage || postVideo} onChange={(event) => {
               const value = event.target.value;
               if (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(value) || value.startsWith("data:video/")) {

@@ -38,6 +38,7 @@ import {
   CreditCard,
   ExternalLink,
   CheckCircle2,
+  Github,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { loadCloudSave, saveCloudSave } from "../lib/cloudSaves";
@@ -84,15 +85,15 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
-    version: "V71",
-    title: "Community media and emoji picker",
+    version: "V72",
+    title: "Login-required ratings, feed privacy, and badges",
     date: "Current",
     changes: [
-      "Profile posts now publish to the Community Feed",
-      "Posts can include images or videos",
-      "Messages now include a larger emoji picker",
-      "Profile page includes GitHub login/connect and password reset actions",
-      "Prepared the next security pass for 2FA"
+      "Ratings/reviews now require login",
+      "Login menu now shows Google and GitHub options",
+      "Profile posts can be Profile Only or Community Feed + Profile",
+      "Added permanent profile badges from Common to Rare",
+      "Added badge SQL table and starter achievement rewards"
     ],
   },
   {
@@ -1540,6 +1541,18 @@ export default function Home() {
     });
   }
 
+  async function signInGitHub() {
+    setAuthLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) {
+      setToast("Enable GitHub in Supabase Auth providers first.");
+      setAuthLoading(false);
+    }
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
     setUser(null);
@@ -1746,7 +1759,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V71 Online</strong>
+          <strong>V72 Online</strong>
           <p>Fixed creator profile 404 caused by old creator_slug lookup; Guess The Word update kept.</p>
         </div>
       </aside>
@@ -1860,32 +1873,31 @@ export default function Home() {
                 <span>{user ? (userIsOwner ? "FlashDust Owner" : userIsAdmin ? "FlashPortal Admin" : user.email?.split("@")[0]) : (authLoading ? "Checking..." : "Login")}</span>
               </button>
 
-              {user && accountMenuOpen && (
+              {accountMenuOpen && (
                 <div className="account-dropdown">
-                  <div className="account-dropdown-header">
-                    <strong>{userIsOwner ? "FlashDust Owner" : userIsAdmin ? "FlashPortal Admin" : user.email?.split("@")[0]}</strong>
-                    <small>{user.email}</small>
-                  </div>
-                  <button type="button" onClick={() => handleTabChange("library")}>
-                    <BookOpen size={16} /> My Library
-                  </button>
-                  <button type="button" onClick={() => handleTabChange("updates")}>
-                    <Newspaper size={16} /> Updates
-                  </button>
-                  <button type="button" onClick={() => handleTabChange("profile")}>
-                    <User size={16} /> Profile Editor
-                  </button>
-                  <button type="button" onClick={() => handleTabChange("settings")}>
-                    <Settings size={16} /> Account Settings
-                  </button>
-                  {userIsAdmin && (
-                    <button type="button" onClick={() => handleTabChange("admin")}>
-                      <Shield size={16} /> Owner/Admin Tools
-                    </button>
+                  {user ? (
+                    <>
+                      <div className="account-dropdown-header">
+                        <strong>{userIsOwner ? "FlashDust Owner" : userIsAdmin ? "FlashPortal Admin" : user.email?.split("@")[0]}</strong>
+                        <small>{user.email}</small>
+                      </div>
+                      <button type="button" onClick={() => handleTabChange("library")}><BookOpen size={16} /> My Library</button>
+                      <button type="button" onClick={() => handleTabChange("updates")}><Newspaper size={16} /> Updates</button>
+                      <button type="button" onClick={() => handleTabChange("profile")}><User size={16} /> Profile Editor</button>
+                      <button type="button" onClick={() => handleTabChange("settings")}><Settings size={16} /> Account Settings</button>
+                      {userIsAdmin && <button type="button" onClick={() => handleTabChange("admin")}><Shield size={16} /> Owner/Admin Tools</button>}
+                      <button type="button" onClick={confirmSignOut} className="danger"><LogOut size={16} /> Log out</button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="account-dropdown-header">
+                        <strong>Log in to FlashPortal</strong>
+                        <small>Save games, rate, review, post, and message.</small>
+                      </div>
+                      <button type="button" onClick={signIn}><LogIn size={16} /> Continue with Google</button>
+                      <button type="button" onClick={signInGitHub}><Github size={16} /> Continue with GitHub</button>
+                    </>
                   )}
-                  <button type="button" onClick={confirmSignOut} className="danger">
-                    <LogOut size={16} /> Log out
-                  </button>
                 </div>
               )}
             </div>

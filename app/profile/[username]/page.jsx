@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, EyeOff, Gamepad2, Heart, MessageCircle, UserRound } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 import { getLastSeenLabel, isRecentlyOnline } from "../../../lib/presence";
+import { badgeInfo } from "../../../lib/badges";
 
 function safeLookup(value) { return String(value || "").toLowerCase().replace(/^@+/, "").replace(/[^a-z0-9_.@-]/g, ""); }
 
@@ -16,6 +17,7 @@ export default function PublicProfilePage({ params }) {
   const [games, setGames] = useState([]);
   const [following, setFollowing] = useState(false);
   const [status, setStatus] = useState("");
+  const [badges, setBadges] = useState([]);
 
   async function loadProfile() {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -68,6 +70,13 @@ export default function PublicProfilePage({ params }) {
 
       const { data: postData } = await postQuery;
       setPosts((postData || []).filter((post) => !post.is_deleted && (!post.is_private || currentUser?.id === profileData.id || isFollowing)));
+
+      const { data: badgeData } = await supabase
+        .from("user_badges")
+        .select("*")
+        .eq("user_id", profileData.id)
+        .order("earned_at", { ascending: false });
+      setBadges(badgeData || []);
 
       const { data: gameData } = await supabase
         .from("game_submissions")
@@ -199,6 +208,12 @@ export default function PublicProfilePage({ params }) {
           <span><strong>{games.length}</strong> Games</span>
           <span><strong>{posts.length}</strong> Posts</span>
         </div>
+        <div className="profile-badges-row">
+          {badges.length ? badges.map((row) => {
+            const badge = badgeInfo(row.badge_code);
+            return <span className={`profile-badge rarity-${badge.rarity.toLowerCase()}`} title={badge.description} key={row.badge_code}>⭐ {badge.label}<small>{badge.rarity}</small></span>;
+          }) : <span className="empty-badges">No badges earned yet.</span>}
+        </div>
       </section>
 
       {!canViewPrivate ? (
@@ -215,6 +230,7 @@ export default function PublicProfilePage({ params }) {
               <article className="social-post-card" key={post.id}>
                 {post.body && <p>{post.body}</p>}
                 {post.image_url && <img className="post-image" src={post.image_url} alt="Post attachment" />}
+                {post.video_url && <video className="post-video" src={post.video_url} controls playsInline preload="metadata" />}
                 <span>{new Date(post.created_at).toLocaleDateString()}</span>
               </article>
             )) : <p>No posts yet.</p>}
