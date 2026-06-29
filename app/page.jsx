@@ -85,15 +85,15 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
-    version: "V72",
-    title: "Login-required ratings, feed privacy, and badges",
+    version: "V73",
+    title: "Fast loading, account delete, and 50+ badges",
     date: "Current",
     changes: [
-      "Ratings/reviews now require login",
-      "Login menu now shows Google and GitHub options",
-      "Profile posts can be Profile Only or Community Feed + Profile",
-      "Added permanent profile badges from Common to Rare",
-      "Added badge SQL table and starter achievement rewards"
+      "Creator pages show loading instead of false empty states",
+      "Added delete account/profile controls",
+      "Community Feed now reads public posts more reliably",
+      "Expanded badge library to 50+ Common/Rare/Epic/Legendary badges",
+      "Creators can define achievements while uploading games"
     ],
   },
   {
@@ -1140,6 +1140,57 @@ export default function Home() {
     } catch {}
   }
 
+  async function loadOwnerUsers() {
+    if (!userIsOwner) {
+      setToast("Owner only");
+      return;
+    }
+    const { data, error } = await supabase
+      .from("user_profiles")
+      .select("id,email,display_name,username,followers,is_private,is_deleted,last_seen_at,created_at")
+      .order("updated_at", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      setToast(`User list needs V73 SQL: ${error.message}`);
+      return;
+    }
+
+    setOwnerUsers((data || []).filter((profile) => !profile.is_deleted));
+    setToast("Users loaded");
+    setTimeout(() => setToast(""), 1800);
+  }
+
+  async function ownerDeleteProfile(profile) {
+    if (!userIsOwner || !profile?.id) return;
+    if (profile.id === user?.id) {
+      setToast("Use profile page to delete your own account");
+      return;
+    }
+    const confirmed = window.confirm(`Remove ${profile.display_name || profile.email || profile.username || "this user"} from FlashPortal?`);
+    if (!confirmed) return;
+
+    const { error } = await supabase.from("user_profiles").update({
+      is_deleted: true,
+      deleted_at: new Date().toISOString(),
+      display_name: "Deleted account",
+      username: `deleted-${String(profile.id).slice(0, 8)}`,
+      bio: "",
+      avatar_url: "",
+      banner_url: "",
+      is_private: true,
+    }).eq("id", profile.id);
+
+    if (error) {
+      setToast(`Delete failed: ${error.message}. Run V73 SQL.`);
+      return;
+    }
+
+    setOwnerUsers((current) => current.filter((item) => item.id !== profile.id));
+    setToast("Account removed from FlashPortal");
+    setTimeout(() => setToast(""), 1800);
+  }
+
   async function loadSubmissionQueue() {
     const { data, error } = await supabase
       .from("game_submissions")
@@ -1759,7 +1810,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V72 Online</strong>
+          <strong>V73 Online</strong>
           <p>Fixed creator profile 404 caused by old creator_slug lookup; Guess The Word update kept.</p>
         </div>
       </aside>
@@ -2405,6 +2456,39 @@ export default function Home() {
                   <a href="https://dashboard.stripe.com/payment-links" target="_blank" rel="noreferrer">Stripe Dashboard</a>
                 </div>
               </article>
+
+              {userIsOwner && (
+                <article className="admin-card wide">
+                  <User size={32} />
+                  <h3>User Management</h3>
+                  <p>Owner-only. Load users, search profiles, and remove accounts from FlashPortal.</p>
+                  <div className="admin-button-row">
+                    <input value={ownerUserSearch} onChange={(event) => setOwnerUserSearch(event.target.value)} placeholder="Search users..." />
+                    <button type="button" onClick={loadOwnerUsers}>Load Users</button>
+                  </div>
+                  <div className="admin-game-list">
+                    {ownerUsers
+                      .filter((profile) => {
+                        const needle = ownerUserSearch.trim().toLowerCase();
+                        if (!needle) return true;
+                        return [profile.display_name, profile.username, profile.email].filter(Boolean).some((value) => String(value).toLowerCase().includes(needle));
+                      })
+                      .map((profile) => (
+                        <div className="admin-game-row" key={profile.id}>
+                          <div className="mini-avatar">
+                            {profile.avatar_url ? <img src={profile.avatar_url} alt="" /> : <User size={18} />}
+                          </div>
+                          <div>
+                            <strong>{profile.display_name || profile.username || profile.email || "Unnamed user"}</strong>
+                            <small>@{profile.username || "no-username"} · {Number(profile.followers || 0)} followers · {profile.is_private ? "Private" : "Public"}</small>
+                          </div>
+                          <button type="button" className="danger" onClick={() => ownerDeleteProfile(profile)}>Delete Account</button>
+                        </div>
+                      ))}
+                    {!ownerUsers.length && <p className="editor-help">Click Load Users to view accounts.</p>}
+                  </div>
+                </article>
+              )}
 
               {userIsOwner && (
                 <article className="admin-card wide">

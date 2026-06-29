@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Upload, CheckCircle2, AlertTriangle } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
+import { DEFAULT_GAME_ACHIEVEMENTS } from "../../../lib/badges";
 
 function safeFileName(name) {
   return String(name || "file").toLowerCase().replace(/[^a-z0-9.\-_]+/g, "-");
@@ -19,6 +20,7 @@ export default function CreatorUploadPage() {
   const [freeUploadCount, setFreeUploadCount] = useState(0);
   const [checkingSlot, setCheckingSlot] = useState(true);
   const [paidUploadSlots, setPaidUploadSlots] = useState(0);
+  const [achievements, setAchievements] = useState(DEFAULT_GAME_ACHIEVEMENTS.slice(0, 5));
 
   useEffect(() => {
     async function init() {
@@ -50,6 +52,21 @@ export default function CreatorUploadPage() {
       provider: "google",
       options: { redirectTo: `${window.location.origin}/creator/upload` },
     });
+  }
+
+  function updateAchievement(index, field, value) {
+    setAchievements((current) => current.map((item, i) => i === index ? { ...item, [field]: value } : item));
+  }
+
+  function addAchievement() {
+    setAchievements((current) => [
+      ...current,
+      { code: `custom_${Date.now()}`, label: "", title: "", rarity: "Common", description: "", target_type: "custom", target_value: 1 }
+    ]);
+  }
+
+  function removeAchievement(index) {
+    setAchievements((current) => current.filter((_, i) => i !== index));
   }
 
   async function submit(event) {
@@ -98,13 +115,31 @@ export default function CreatorUploadPage() {
         zip_path: zipUpload.data.path,
         thumbnail_path: thumbnailPath,
         status: "pending",
-      });
+      }).select("id, title").single();
 
       if (insert.error) {
         if (insert.error.message?.toLowerCase().includes("permission denied")) {
           throw new Error("Permission denied for game_submissions. Run supabase/v47_reviews_upload_audio_fix.sql in Supabase, then refresh and try again.");
         }
         throw insert.error;
+      }
+
+      const gameIdForAchievements = insert.data?.id || slug;
+      const achievementRows = achievements
+        .filter((item) => String(item.label || item.title || "").trim())
+        .map((item) => ({
+          game_id: String(gameIdForAchievements),
+          creator_id: user.id,
+          title: String(item.label || item.title || "").trim(),
+          description: String(item.description || "").trim(),
+          rarity: item.rarity || "Common",
+          requirement_type: item.target_type || item.requirement_type || "custom",
+          requirement_value: Number(item.target_value || item.requirement_value || 1),
+          is_active: true,
+        }));
+
+      if (achievementRows.length) {
+        await supabase.from("game_achievements").insert(achievementRows);
       }
 
       if (usingPaidSlot) {
@@ -117,6 +152,7 @@ export default function CreatorUploadPage() {
       setForm({ title: "", category: "", description: "", website_url: "" });
       setZip(null);
       setThumbnail(null);
+      setAchievements(DEFAULT_GAME_ACHIEVEMENTS.slice(0, 5));
       event.target.reset();
     } catch (error) {
       setStatus(`Upload failed: ${error.message || String(error)}`);

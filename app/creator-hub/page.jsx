@@ -13,27 +13,43 @@ export default function CreatorHubPage() {
   const [posts, setPosts] = useState([]);
   const [followingIds, setFollowingIds] = useState([]);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState("Loading community feed...");
+  const [loading, setLoading] = useState(true);
 
   async function loadHub() {
+    setLoading(true);
+    setStatus("Loading community feed...");
     const { data: sessionData } = await supabase.auth.getSession();
     const currentUser = sessionData?.session?.user || null;
     setUser(currentUser);
-    const { data: profileData, error: profileError } = await supabase
-      .from("user_profiles")
-      .select("*")
-      .order("updated_at", { ascending: false })
-      .limit(100);
-    const { data: postData } = await supabase
-      .from("social_posts")
-      .select("*, user_profiles(display_name, username, avatar_url, is_private, last_seen_at)")
-      .order("created_at", { ascending: false })
-      .limit(100);
 
-    if (profileError) setStatus(`Creator Hub needs V71 SQL: ${profileError.message}`);
+    const [{ data: profileData, error: profileError }, { data: postData, error: postError }] = await Promise.all([
+      supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("is_deleted", false)
+        .order("followers", { ascending: false })
+        .order("updated_at", { ascending: false })
+        .limit(100),
+      supabase
+        .from("social_posts")
+        .select("*")
+        .eq("is_deleted", false)
+        .eq("is_private", false)
+        .order("created_at", { ascending: false })
+        .limit(100)
+    ]);
 
-    setProfiles(profileData || []);
-    setPosts((postData || []).filter((post) => !post.is_deleted));
+    if (profileError) setStatus(`Creator Hub needs V73 SQL: ${profileError.message}`);
+    else if (postError) setStatus(`Creator Hub posts need V73 SQL: ${postError.message}`);
+    else setStatus("");
+
+    const activeProfiles = (profileData || []).filter((profile) => !profile.is_deleted);
+    const profileMap = new Map(activeProfiles.map((profile) => [profile.id, profile]));
+    const hydratedPosts = (postData || []).map((post) => ({ ...post, user_profiles: profileMap.get(post.user_id) || null }));
+
+    setProfiles(activeProfiles);
+    setPosts(hydratedPosts);
 
     if (currentUser) {
       const { data: followData } = await supabase
@@ -45,6 +61,7 @@ export default function CreatorHubPage() {
     } else {
       setFollowingIds([]);
     }
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -125,7 +142,12 @@ export default function CreatorHubPage() {
       <section className="creator-hub-feed-layout">
         <section className="hub-feed-panel">
           <h2>Latest Posts</h2>
-          {visiblePosts.length ? (
+          {loading ? (
+            <article className="social-post-card empty">
+              <h3>Loading posts...</h3>
+              <p>Getting the newest community posts.</p>
+            </article>
+          ) : visiblePosts.length ? (
             visiblePosts.map((post) => (
               <article className="social-post-card" key={post.id}>
                 <div className="post-author-row">
@@ -156,7 +178,7 @@ export default function CreatorHubPage() {
 
         <aside className="creator-list-panel">
           <h2>Creators</h2><p className="editor-help">Quick creator list. Full directory is on the Creators page.</p><Link className="profile-edit-button mini" href="/creators">Open Creators</Link>
-          {filteredProfiles.length ? filteredProfiles.map((profile) => {
+          {loading ? <p>Loading creators...</p> : filteredProfiles.length ? filteredProfiles.map((profile) => {
             const isFollowing = followingIds.includes(profile.id);
             const isSelf = user?.id === profile.id;
             const canSeePrivate = !profile.is_private || isFollowing || isSelf;
