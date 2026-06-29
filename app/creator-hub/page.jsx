@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Heart, MessageCircle, Search, UserRound, Users } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Search, UserRound, Users, Send } from "lucide-react";
+import { supabase } from "../../lib/supabaseClient";
 
 function isOnline(profile) { return profile?.last_seen_at && Date.now() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 5; }
-import { supabase } from "../../lib/supabaseClient";
 
 export default function CreatorHubPage() {
   const [user, setUser] = useState(null);
@@ -13,12 +13,23 @@ export default function CreatorHubPage() {
   const [posts, setPosts] = useState([]);
   const [followingIds, setFollowingIds] = useState([]);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("Loading community feed...");
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [likedPostIds, setLikedPostIds] = useState([]);
+  const [commentsByPost, setCommentsByPost] = useState({});
+  const [commentDrafts, setCommentDrafts] = useState({});
+  const [openComments, setOpenComments] = useState({});
 
   async function loadHub() {
     setLoading(true);
-    setStatus("Loading community feed...");
+    setStatus("");
+
+    try {
+      const cached = JSON.parse(localStorage.getItem("flashportal-creator-hub-cache") || "{}");
+      if (cached.profiles?.length) setProfiles(cached.profiles);
+      if (cached.posts?.length) setPosts(cached.posts);
+    } catch {}
+
     const { data: sessionData } = await supabase.auth.getSession();
     const currentUser = sessionData?.session?.user || null;
     setUser(currentUser);
@@ -40,8 +51,8 @@ export default function CreatorHubPage() {
         .limit(100)
     ]);
 
-    if (profileError) setStatus(`Creator Hub needs V73 SQL: ${profileError.message}`);
-    else if (postError) setStatus(`Creator Hub posts need V73 SQL: ${postError.message}`);
+    if (profileError) setStatus(`Creator Hub needs V73/V74 SQL: ${profileError.message}`);
+    else if (postError) setStatus(`Creator Hub posts need V74 SQL: ${postError.message}`);
     else setStatus("");
 
     const activeProfiles = (profileData || []).filter((profile) => !profile.is_deleted);
@@ -50,6 +61,35 @@ export default function CreatorHubPage() {
 
     setProfiles(activeProfiles);
     setPosts(hydratedPosts);
+    try { localStorage.setItem("flashportal-creator-hub-cache", JSON.stringify({ profiles: activeProfiles, posts: hydratedPosts })); } catch {}
+
+    const postIds = hydratedPosts.map((post) => post.id).filter(Boolean);
+    if (postIds.length) {
+      const [{ data: likeRows }, { data: commentRows }] = await Promise.all([
+        supabase.from("social_post_likes").select("post_id,user_id").in("post_id", postIds),
+        supabase.from("social_comments").select("id,post_id,user_id,body,created_at").in("post_id", postIds).eq("is_deleted", false).order("created_at", { ascending: true })
+      ]);
+
+      const likeCounts = {};
+      const likedMine = [];
+      (likeRows || []).forEach((row) => {
+        likeCounts[row.post_id] = (likeCounts[row.post_id] || 0) + 1;
+        if (currentUser && row.user_id === currentUser.id) likedMine.push(row.post_id);
+      });
+      setLikedPostIds(likedMine);
+      setPosts((current) => current.map((post) => ({ ...post, likes: likeCounts[post.id] ?? Number(post.likes || 0) })));
+
+      const grouped = {};
+      (commentRows || []).forEach((comment) => {
+        const hydratedComment = { ...comment, user_profiles: profileMap.get(comment.user_id) || null };
+        grouped[comment.post_id] = [...(grouped[comment.post_id] || []), hydratedComment];
+      });
+      setCommentsByPost(grouped);
+      setPosts((current) => current.map((post) => ({ ...post, comments: grouped[post.id]?.length ?? Number(post.comments || 0) })));
+    } else {
+      setLikedPostIds([]);
+      setCommentsByPost({});
+    }
 
     if (currentUser) {
       const { data: followData } = await supabase
@@ -87,6 +127,58 @@ export default function CreatorHubPage() {
       return followingIds.includes(post.user_id);
     });
   }, [posts, user, followingIds]);
+
+
+  async function togglePostLike(post) {
+    if (!user) return setStatus("Log in first to like posts.");
+    const liked = likedPostIds.includes(post.id);
+    setLikedPostIds((current) => liked ? current.filter((id) => id !== post.id) : [...current, post.id]);
+    setPosts((current) => current.map((item) => item.id === post.id ? { ...item, likes: Math.max(0, Number(item.likes || 0) + (liked ? -1 : 1)) } : item));
+
+    if (liked) {
+      const { error } = await supabase.from("social_post_likes").delete().eq("post_id", post.id).eq("user_id", user.id);
+      if (error) setStatus(`Unlike failed: ${error.message}. Run V74 SQL.`);
+    } else {
+      const { error } = await supabase.from("social_post_likes").insert({ post_id: post.id, user_id: user.id });
+      if (error) setStatus(`Like failed: ${error.message}. Run V74 SQL.`);
+    }
+  }
+
+  async function sendComment(post) {
+    if (!user) return setStatus("Log in first to comment.");
+    const body = String(commentDrafts[post.id] || "").trim();
+    if (!body) return;
+    const temp = {
+      id: `temp-${Date.now()}`,
+      post_id: post.id,
+      user_id: user.id,
+      body,
+      created_at: new Date().toISOString(),
+      user_profiles: { display_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "You", username: user.email?.split("@")[0] || "you", avatar_url: user.user_metadata?.avatar_url || "" },
+    };
+
+    setCommentsByPost((current) => ({ ...current, [post.id]: [...(current[post.id] || []), temp] }));
+    setPosts((current) => current.map((item) => item.id === post.id ? { ...item, comments: Number(item.comments || 0) + 1 } : item));
+    setCommentDrafts((current) => ({ ...current, [post.id]: "" }));
+
+    const { data, error } = await supabase
+      .from("social_comments")
+      .insert({ post_id: post.id, user_id: user.id, body })
+      .select("id,post_id,user_id,body,created_at")
+      .single();
+
+    if (error) {
+      setStatus(`Comment failed: ${error.message}. Run V74 SQL.`);
+      return;
+    }
+
+    if (data) {
+      setCommentsByPost((current) => ({
+        ...current,
+        [post.id]: (current[post.id] || []).map((item) => item.id === temp.id ? { ...data, user_profiles: temp.user_profiles } : item),
+      }));
+    }
+  }
 
   async function toggleFollow(profile) {
     if (!user) {
@@ -163,9 +255,23 @@ export default function CreatorHubPage() {
                 {post.image_url && <img className="post-image" src={post.image_url} alt="Post attachment" />}
                 {post.video_url && <video className="post-video" src={post.video_url} controls playsInline preload="metadata" />}
                 <div className="post-actions">
-                  <button type="button"><Heart size={16} /> {Number(post.likes || 0)}</button>
-                  <button type="button"><MessageCircle size={16} /> Comment</button>
+                  <button type="button" onClick={() => togglePostLike(post)} className={likedPostIds.includes(post.id) ? "active" : ""}><Heart size={16} /> {Number(post.likes || 0)}</button>
+                  <button type="button" onClick={() => setOpenComments((current) => ({ ...current, [post.id]: !current[post.id] }))}><MessageCircle size={16} /> {Number(post.comments || commentsByPost[post.id]?.length || 0)} Comment</button>
                 </div>
+                {openComments[post.id] && (
+                  <div className="comment-panel">
+                    {(commentsByPost[post.id] || []).map((comment) => (
+                      <div className="comment-row" key={comment.id}>
+                        <strong>{comment.user_profiles?.display_name || comment.user_profiles?.username || "Player"}</strong>
+                        <span>{comment.body}</span>
+                      </div>
+                    ))}
+                    <div className="comment-compose">
+                      <input value={commentDrafts[post.id] || ""} onChange={(event) => setCommentDrafts((current) => ({ ...current, [post.id]: event.target.value }))} placeholder={user ? "Write a comment..." : "Log in to comment"} />
+                      <button type="button" onClick={() => sendComment(post)}><Send size={15} /> Send</button>
+                    </div>
+                  </div>
+                )}
               </article>
             ))
           ) : (

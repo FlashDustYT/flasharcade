@@ -85,15 +85,15 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
-    version: "V73",
-    title: "Fast loading, account delete, and 50+ badges",
+    version: "V74",
+    title: "Feed likes/comments, cleaner notifications, and badge library",
     date: "Current",
     changes: [
-      "Creator pages show loading instead of false empty states",
-      "Added delete account/profile controls",
-      "Community Feed now reads public posts more reliably",
-      "Expanded badge library to 50+ Common/Rare/Epic/Legendary badges",
-      "Creators can define achievements while uploading games"
+      "Community Feed posts now support hearts and comments",
+      "Old test announcements are hidden after V74 SQL",
+      "Notification dismissals are per-user so new people can still see announcements",
+      "Added public badge library/achievement guide",
+      "Cleaner loading/cached creator hub UI"
     ],
   },
   {
@@ -856,6 +856,17 @@ export default function Home() {
       if (!error && Array.isArray(data)) {
         let dismissed = [];
         try { dismissed = JSON.parse(localStorage.getItem("flashportal-dismissed-notifications") || "[]"); } catch {}
+
+        if (user?.id) {
+          const { data: remoteDismissed } = await supabase
+            .from("notification_dismissals")
+            .select("notification_key")
+            .eq("user_id", user.id);
+          if (Array.isArray(remoteDismissed)) {
+            dismissed = Array.from(new Set([...dismissed, ...remoteDismissed.map((row) => row.notification_key)]));
+          }
+        }
+
         setNotifications(data
           .map((item) => ({
             id: `announcement-${item.id}`,
@@ -865,12 +876,13 @@ export default function Home() {
             type: "announcement",
           }))
           .filter((item) => !dismissed.includes(item.id))
+          .filter((item) => !["test", "testing"].includes(String(item.body || "").trim().toLowerCase()))
         );
       }
     }
 
     loadAnnouncements();
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     try {
@@ -1810,7 +1822,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V73 Online</strong>
+          <strong>V74 Online</strong>
           <p>Fixed creator profile 404 caused by old creator_slug lookup; Guess The Word update kept.</p>
         </div>
       </aside>

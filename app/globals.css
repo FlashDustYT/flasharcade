@@ -4210,3 +4210,176 @@ main:not(.creator-hub-page):not(.social-home-page) .community-roadmap {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* V74 feed + badge polish */
+.hub-quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.hub-quick-links a {
+  border: 1px solid rgba(255, 122, 0, .38);
+  background: rgba(255, 122, 0, .09);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.post-actions button.active {
+  background: rgba(255, 122, 0, .22);
+  color: var(--accent-2);
+  border-color: rgba(255, 122, 0, .62);
+}
+
+.comment-panel {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 122, 0, .22);
+  background: rgba(0, 0, 0, .22);
+  display: grid;
+  gap: 10px;
+}
+
+.comment-row {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.comment-row strong {
+  color: var(--accent-2);
+  font-size: .9rem;
+}
+
+.comment-compose {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.comment-compose input {
+  min-height: 44px;
+  border: 1px solid rgba(255, 122, 0, .28);
+  background: rgba(0, 0, 0, .32);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0 16px;
+  font-weight: 800;
+}
+
+.comment-compose button {
+  min-height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 122, 0, .45);
+  background: var(--accent);
+  color: #090909;
+  font-weight: 950;
+  padding: 0 16px;
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+}
+
+.badges-page .compact-hero {
+  min-height: auto;
+  padding: clamp(28px, 5vw, 58px);
+}
+
+.badge-guide-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  margin-top: 24px;
+}
+
+.badge-guide-panel {
+  border: 1px solid rgba(255, 122, 0, .28);
+  background: linear-gradient(135deg, rgba(255,122,0,.08), rgba(255,255,255,.015));
+  border-radius: 28px;
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+
+.badge-guide-panel h2 {
+  margin: 0 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.badge-guide-list {
+  display: grid;
+  gap: 10px;
+}
+
+.badge-guide-list.two-col {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.badge-guide-item {
+  border: 1px solid rgba(255, 122, 0, .18);
+  background: rgba(0,0,0,.22);
+  border-radius: 18px;
+  padding: 13px;
+}
+
+.badge-guide-item span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--text);
+  font-weight: 950;
+}
+
+.badge-guide-item small {
+  color: var(--accent);
+  margin-left: auto;
+}
+
+.badge-guide-item p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.rarity-common { border-color: rgba(255,255,255,.18); }
+.rarity-uncommon { border-color: rgba(99, 255, 149, .28); }
+.rarity-rare { border-color: rgba(99, 188, 255, .3); }
+.rarity-epic { border-color: rgba(190, 90, 255, .42); }
+.rarity-legendary { border-color: rgba(255, 203, 74, .5); }
+
+.social-post-card, .creator-mini-card, .creator-card {
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.social-post-card:hover, .creator-mini-card:hover, .creator-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 122, 0, .42);
+}
+
+.creator-list-panel {
+  position: sticky;
+  top: 96px;
+  align-self: start;
+}
+
+@media (max-width: 900px) {
+  .creator-list-panel {
+    position: static;
+  }
+
+  .comment-compose {
+    grid-template-columns: 1fr;
+  }
+}
