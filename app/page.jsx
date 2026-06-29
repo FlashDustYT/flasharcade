@@ -84,6 +84,17 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V67",
+    title: "Creator profile 404 fix",
+    date: "Current",
+    changes: [
+      "Removed old creator_slug lookup that caused Supabase 404 errors",
+      "Creator cards now use username/profile ID routing",
+      "Kept V66 Guess The Word update",
+      "No new SQL required"
+    ],
+  },
+  {
     version: "V66",
     title: "Guess The Word update",
     date: "Current",
@@ -1108,11 +1119,11 @@ export default function Home() {
       try {
         const { data, error } = await supabase
           .from("creator_follows")
-          .select("creator_slug")
+          .select("username")
           .eq("follower_email", user.email.toLowerCase());
 
         if (!error && Array.isArray(data)) {
-          const remote = data.map((row) => row.creator_slug).filter(Boolean);
+          const remote = data.map((row) => row.username).filter(Boolean);
           setFollowedCreators((current) => Array.from(new Set([...current, ...remote])));
         }
       } catch {}
@@ -1126,13 +1137,13 @@ export default function Home() {
       try {
         const { data, error } = await supabase
           .from("creator_follows")
-          .select("creator_slug");
+          .select("username");
 
         if (!error && Array.isArray(data)) {
           const counts = {};
           data.forEach((row) => {
-            if (!row.creator_slug) return;
-            counts[row.creator_slug] = (counts[row.creator_slug] || 0) + 1;
+            if (!row.username) return;
+            counts[row.username] = (counts[row.username] || 0) + 1;
           });
           setCreatorFollowerCounts(counts);
         }
@@ -1258,15 +1269,15 @@ export default function Home() {
           await supabase
             .from("creator_follows")
             .delete()
-            .eq("creator_slug", profile.slug)
+            .eq("username", profile.slug)
             .eq("follower_email", user.email.toLowerCase());
         } else {
           await supabase.from("creator_follows").upsert({
-            creator_slug: profile.slug,
+            username: profile.slug,
             creator_name: profile.name,
             follower_id: user.id || null,
             follower_email: user.email.toLowerCase(),
-          }, { onConflict: "creator_slug,follower_email" });
+          }, { onConflict: "username,follower_email" });
       }
     } catch {}
 
@@ -1573,8 +1584,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V66 Online</strong>
-          <p>Guess The Word updated, creator message plan added, and creator profile hotfixes kept.</p>
+          <strong>V67 Online</strong>
+          <p>Fixed creator profile 404 caused by old creator_slug lookup; Guess The Word update kept.</p>
         </div>
       </aside>
 
