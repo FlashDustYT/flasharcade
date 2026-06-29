@@ -3974,3 +3974,70 @@ main:not(.creator-hub-page):not(.social-home-page) .community-roadmap {
 .notification-item.message-alert {
   border-color: rgba(255,178,45,.42);
 }
+
+
+/* V71 media posts + bigger emoji picker */
+.post-video,
+.post-video.preview {
+  display: block;
+  width: 100%;
+  max-height: 520px;
+  object-fit: contain;
+  border-radius: 18px;
+  border: 1px solid rgba(255,122,0,.26);
+  background: #050505;
+  margin-top: 14px;
+}
+
+.emoji-more-button {
+  width: auto !important;
+  padding: 0 12px;
+  gap: 6px;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+
+.emoji-picker-panel {
+  margin: 10px 18px 0;
+  padding: 14px;
+  max-height: 260px;
+  overflow: auto;
+  border-radius: 20px;
+  border: 1px solid rgba(255,122,0,.28);
+  background: rgba(10,5,0,.95);
+  box-shadow: 0 22px 70px rgba(0,0,0,.42);
+}
+
+.emoji-picker-panel section + section {
+  margin-top: 12px;
+}
+
+.emoji-picker-panel strong {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 8px;
+  font-size: .9rem;
+}
+
+.emoji-picker-panel section div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.emoji-picker-panel button {
+  width: 38px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,122,0,.20);
+  background: rgba(255,122,0,.08);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.social-sidebar-card .editor-help {
+  font-size: .88rem;
+  line-height: 1.35;
+}

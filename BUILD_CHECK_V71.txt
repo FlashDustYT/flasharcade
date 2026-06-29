@@ -1,0 +1,1 @@
+Build was not run in sandbox because Next executable was unavailable after ZIP extraction. Vercel will run npm install and build normally.

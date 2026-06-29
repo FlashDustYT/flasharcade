@@ -2,10 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Send, UserRound } from "lucide-react";
+import { ArrowLeft, Send, UserRound, Smile } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 
 const QUICK_EMOJIS = ["😀", "😂", "🔥", "❤️", "👍", "👀", "🎮", "⭐"];
+const EMOJI_SETS = {
+  Smileys: ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😍","😘","😜","🤪","😎","🥳","😭","😤","😡","🤯","😴"],
+  Hands: ["👍","👎","👏","🙌","🙏","🤝","👊","✌️","🤟","🤘","👌","👋","🤙","💪","🫶"],
+  Hearts: ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","💔","💕","💞","💯"],
+  Gaming: ["🎮","🕹️","🏆","⭐","🌟","🔥","⚡","💥","🚀","👾","🤖","🎯","🎲","🧩"],
+  Objects: ["📸","🎬","🎧","🎵","💬","📢","✅","❌","👀","💀","🍿","☕","🍕"]
+};
 
 export default function ConversationPage({ params }) {
   const conversationId = params.conversationId;
@@ -16,6 +23,7 @@ export default function ConversationPage({ params }) {
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [status, setStatus] = useState("Loading conversation...");
+  const [emojiOpen, setEmojiOpen] = useState(false);
 
   async function loadConversation() {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -131,7 +139,7 @@ export default function ConversationPage({ params }) {
     });
 
     if (error) {
-      setStatus(`Send failed: ${error.message}. Run V69 SQL.`);
+      setStatus(`Send failed: ${error.message}. Run V71 SQL.`);
       setDraft(body);
       return;
     }
@@ -179,10 +187,26 @@ export default function ConversationPage({ params }) {
           {QUICK_EMOJIS.map((emoji) => (
             <button key={emoji} type="button" onClick={() => setDraft((current) => `${current}${emoji}`)}>{emoji}</button>
           ))}
+          <button className="emoji-more-button" type="button" onClick={() => setEmojiOpen((open) => !open)}><Smile size={16} /> More</button>
         </div>
 
+        {emojiOpen && (
+          <div className="emoji-picker-panel">
+            {Object.entries(EMOJI_SETS).map(([label, emojis]) => (
+              <section key={label}>
+                <strong>{label}</strong>
+                <div>
+                  {emojis.map((emoji) => (
+                    <button key={`${label}-${emoji}`} type="button" onClick={() => setDraft((current) => `${current}${emoji}`)}>{emoji}</button>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+
         <form className="chat-compose" onSubmit={sendMessage}>
-          <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Type a message..." />
+          <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Type a message..." inputMode="text" />
           <button type="submit"><Send size={16} /> Send</button>
         </form>
       </section>

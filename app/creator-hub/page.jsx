@@ -30,7 +30,7 @@ export default function CreatorHubPage() {
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (profileError) setStatus(`Creator Hub needs V61 SQL: ${profileError.message}`);
+    if (profileError) setStatus(`Creator Hub needs V71 SQL: ${profileError.message}`);
 
     setProfiles(profileData || []);
     setPosts((postData || []).filter((post) => !post.is_deleted));
@@ -139,6 +139,7 @@ export default function CreatorHubPage() {
                 </div>
                 {post.body && <p>{post.body}</p>}
                 {post.image_url && <img className="post-image" src={post.image_url} alt="Post attachment" />}
+                {post.video_url && <video className="post-video" src={post.video_url} controls playsInline preload="metadata" />}
                 <div className="post-actions">
                   <button type="button"><Heart size={16} /> {Number(post.likes || 0)}</button>
                   <button type="button"><MessageCircle size={16} /> Comment</button>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, EyeOff, Globe2, ImagePlus, Save, Send, Trash2, UserRound } from "lucide-react";
+import { ArrowLeft, EyeOff, Globe2, ImagePlus, Save, Send, Trash2, UserRound, Video, Github, Lock } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { cleanUsername, ensureUserProfile, profileFromUser } from "../../lib/profileHelpers";
 
@@ -23,6 +23,7 @@ export default function MyProfilePage() {
   const [posts, setPosts] = useState([]);
   const [postBody, setPostBody] = useState("");
   const [postImage, setPostImage] = useState("");
+  const [postVideo, setPostVideo] = useState("");
   const [status, setStatus] = useState("");
 
   async function touchSeen(currentUser) {
@@ -48,7 +49,7 @@ export default function MyProfilePage() {
       const fallback = profileFromUser(currentUser);
       setProfile(fallback);
       setDraft(fallback);
-      setStatus(`Profile database is not ready: ${error.message}. Run V64 SQL.`);
+      setStatus(`Profile database is not ready: ${error.message}. Run V71 SQL.`);
     }
 
     const { data: postData } = await supabase
@@ -72,14 +73,64 @@ export default function MyProfilePage() {
     });
   }
 
-  async function handleImageFile(kind, file) {
+  async function loginWithGithub() {
+    await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: { redirectTo: `${window.location.origin}/profile` },
+    });
+  }
+
+  async function sendPasswordReset() {
+    if (!user?.email) return;
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${window.location.origin}/profile`,
+    });
+    setStatus(error ? `Password reset failed: ${error.message}` : "Password reset email sent.");
+  }
+
+  async function uploadMediaToStorage(file) {
+    if (!user || !file) return "";
+    const safeName = file.name.replace(/[^a-z0-9._-]/gi, "_");
+    const path = `${user.id}/${Date.now()}-${safeName}`;
+    const { error } = await supabase.storage.from("profile-media").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type || undefined,
+    });
+
+    if (error) throw error;
+
+    const { data } = supabase.storage.from("profile-media").getPublicUrl(path);
+    return data?.publicUrl || "";
+  }
+
+  async function handleMediaFile(kind, file) {
     if (!file) return;
-    setStatus("Loading image...");
+    const isVideo = file.type?.startsWith("video/");
+    setStatus(isVideo ? "Loading video..." : "Loading image...");
+
+    if (kind === "post") {
+      try {
+        const publicUrl = await uploadMediaToStorage(file);
+        if (isVideo) {
+          setPostVideo(publicUrl);
+          setPostImage("");
+        } else {
+          setPostImage(publicUrl);
+          setPostVideo("");
+        }
+        setStatus(isVideo ? "Video uploaded. Post to publish it." : "Image uploaded. Post to publish it.");
+        return;
+      } catch (error) {
+        setStatus(`Media upload failed: ${error.message}. Run V71 SQL and check Storage.`);
+        return;
+      }
+    }
+
     const dataUrl = await fileToDataUrl(file);
     if (kind === "avatar") setDraft((current) => ({ ...current, avatar_url: dataUrl }));
     if (kind === "banner") setDraft((current) => ({ ...current, banner_url: dataUrl }));
-    if (kind === "post") setPostImage(dataUrl);
-    setStatus("Image loaded. Save or post to keep it.");
+    setStatus("Image loaded. Save profile to keep it.");
   }
 
   async function saveProfile() {
@@ -105,7 +156,7 @@ export default function MyProfilePage() {
       .single();
 
     if (error) {
-      setStatus(`Profile save failed: ${error.message}. Run V64 SQL, then refresh.`);
+      setStatus(`Profile save failed: ${error.message}. Run V71 SQL, then refresh.`);
       return;
     }
 
@@ -116,8 +167,8 @@ export default function MyProfilePage() {
 
   async function publishPost() {
     if (!user) return;
-    if (!postBody.trim() && !postImage.trim()) {
-      setStatus("Write something or add an image first.");
+    if (!postBody.trim() && !postImage.trim() && !postVideo.trim()) {
+      setStatus("Write something, add an image, or add a video first.");
       return;
     }
 
@@ -127,6 +178,8 @@ export default function MyProfilePage() {
         user_id: user.id,
         body: postBody.trim(),
         image_url: postImage.trim(),
+        video_url: postVideo.trim(),
+        media_type: postVideo.trim() ? "video" : "image",
         is_private: false,
         is_deleted: false,
       })
@@ -134,28 +187,29 @@ export default function MyProfilePage() {
       .single();
 
     if (error) {
-      setStatus(`Post failed: ${error.message}. Run V64 SQL.`);
+      setStatus(`Post failed: ${error.message}. Run V71 SQL.`);
       return;
     }
 
     setPosts((current) => [data, ...current]);
     setPostBody("");
     setPostImage("");
-    setStatus("Post published.");
+    setPostVideo("");
+    setStatus("Post published to your profile and the Community Feed.");
   }
 
   async function togglePostPrivacy(post) {
     const nextPrivate = !Boolean(post.is_private);
     setPosts((current) => current.map((item) => item.id === post.id ? { ...item, is_private: nextPrivate } : item));
     const { error } = await supabase.from("social_posts").update({ is_private: nextPrivate }).eq("id", post.id).eq("user_id", user.id);
-    if (error) setStatus(`Post privacy failed: ${error.message}. Run V64 SQL.`);
+    if (error) setStatus(`Post privacy failed: ${error.message}. Run V71 SQL.`);
   }
 
   async function deletePost(post) {
     if (!window.confirm("Delete this post?")) return;
     setPosts((current) => current.filter((item) => item.id !== post.id));
     const { error } = await supabase.from("social_posts").update({ is_deleted: true }).eq("id", post.id).eq("user_id", user.id);
-    if (error) setStatus(`Delete failed: ${error.message}. Run V64 SQL.`);
+    if (error) setStatus(`Delete failed: ${error.message}. Run V71 SQL.`);
   }
 
   if (!user) {
@@ -167,6 +221,7 @@ export default function MyProfilePage() {
           <h1>Create your FlashPortal profile</h1>
           <p>Log in first, then you can change username, avatar, banner, bio, posts, and privacy.</p>
           <button type="button" onClick={login}>Login with Google</button>
+          <button type="button" onClick={loginWithGithub}><Github size={16} /> Login with GitHub</button>
         </section>
       </main>
     );
@@ -215,12 +270,12 @@ export default function MyProfilePage() {
 
         <label>Profile picture
           <input value={draft?.avatar_url || ""} onChange={(event) => setDraft({ ...draft, avatar_url: event.target.value })} placeholder="https://... or choose file below" />
-          <input type="file" accept="image/*" onChange={(event) => handleImageFile("avatar", event.target.files?.[0])} />
+          <input type="file" accept="image/*" onChange={(event) => handleMediaFile("avatar", event.target.files?.[0])} />
         </label>
 
         <label>Banner image
           <input value={draft?.banner_url || ""} onChange={(event) => setDraft({ ...draft, banner_url: event.target.value })} placeholder="https://... or choose file below" />
-          <input type="file" accept="image/*" onChange={(event) => handleImageFile("banner", event.target.files?.[0])} />
+          <input type="file" accept="image/*" onChange={(event) => handleMediaFile("banner", event.target.files?.[0])} />
         </label>
 
         <label className="privacy-toggle-row">
@@ -239,17 +294,32 @@ export default function MyProfilePage() {
           <Link href="/creator-hub">Creator Hub Feed</Link>
           <Link href="/creators">Creators Directory</Link>
           <Link href="/about">About / Roadmap</Link>
+
+          <h3>Security</h3>
+          <button type="button" className="profile-edit-button mini" onClick={sendPasswordReset}><Lock size={15} /> Change password</button>
+          <button type="button" className="profile-edit-button mini" onClick={loginWithGithub}><Github size={15} /> Connect GitHub</button>
+          <p className="editor-help">2FA is controlled in Supabase Auth settings; we can add the in-site setup page next.</p>
         </aside>
 
         <section className="social-feed-column">
           <article className="post-composer">
             <h2>Post an update</h2>
             <textarea value={postBody} onChange={(event) => setPostBody(event.target.value)} placeholder="Share an update, image, patch note, stream note..." />
-            <input value={postImage} onChange={(event) => setPostImage(event.target.value)} placeholder="Optional image URL or choose file below" />
-            <label className="file-picker-row compact"><ImagePlus size={14} /> Add image
-              <input type="file" accept="image/*" onChange={(event) => handleImageFile("post", event.target.files?.[0])} />
+            <input value={postImage || postVideo} onChange={(event) => {
+              const value = event.target.value;
+              if (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(value) || value.startsWith("data:video/")) {
+                setPostVideo(value);
+                setPostImage("");
+              } else {
+                setPostImage(value);
+                setPostVideo("");
+              }
+            }} placeholder="Optional image/video URL or choose file below" />
+            <label className="file-picker-row compact"><Video size={14} /> Add media
+              <input type="file" accept="image/*,video/*" onChange={(event) => handleMediaFile("post", event.target.files?.[0])} />
             </label>
             {postImage && <img className="post-image preview" src={postImage} alt="Post preview" />}
+            {postVideo && <video className="post-video preview" src={postVideo} controls playsInline />}
             <button type="button" onClick={publishPost}><Send size={16} /> Post</button>
           </article>
 
@@ -257,6 +327,7 @@ export default function MyProfilePage() {
             <article className={`social-post-card ${post.is_private ? "private-post" : ""}`} key={post.id}>
               {post.body && <p>{post.body}</p>}
               {post.image_url && <img className="post-image" src={post.image_url} alt="Post attachment" />}
+              {post.video_url && <video className="post-video" src={post.video_url} controls playsInline preload="metadata" />}
               <div className="post-footer-row">
                 <span>{new Date(post.created_at).toLocaleDateString()} {post.is_private ? "• Private" : "• Public"}</span>
                 <div className="post-owner-actions">

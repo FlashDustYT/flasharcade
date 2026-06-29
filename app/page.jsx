@@ -84,15 +84,15 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
-    version: "V70",
-    title: "Live ratings and message badges",
+    version: "V71",
+    title: "Community media and emoji picker",
     date: "Current",
     changes: [
-      "Messages now show unread notification badges",
-      "Message inbox gets its own unread badge",
-      "Ratings update from live review averages without manual refresh",
-      "Rating averages combine every user rating fairly",
-      "Added quick emoji buttons inside conversations"
+      "Profile posts now publish to the Community Feed",
+      "Posts can include images or videos",
+      "Messages now include a larger emoji picker",
+      "Profile page includes GitHub login/connect and password reset actions",
+      "Prepared the next security pass for 2FA"
     ],
   },
   {
@@ -1746,7 +1746,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V70 Online</strong>
+          <strong>V71 Online</strong>
           <p>Fixed creator profile 404 caused by old creator_slug lookup; Guess The Word update kept.</p>
         </div>
       </aside>
