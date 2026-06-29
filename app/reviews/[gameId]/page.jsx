@@ -91,18 +91,13 @@ export default function ReviewsPage({ params }) {
       return;
     }
 
-    if (!cleanReview) {
-      setStatus("Write a review first.");
-      return;
-    }
-
     const payload = {
       game_id: gameId,
       user_id: user?.id || null,
       user_email: user?.email || "",
       display_name: cleanName,
       rating: numericRating,
-      review: cleanReview,
+      review: cleanReview || "",
     };
 
     const { data, error } = await supabase
@@ -147,7 +142,7 @@ export default function ReviewsPage({ params }) {
       </section>
 
       <form className="review-form" onSubmit={submitReview}>
-        <h2>Write a Review</h2>
+        <h2>Rate or Review</h2>
 
         <label>
           Display name
@@ -180,12 +175,12 @@ export default function ReviewsPage({ params }) {
           <textarea
             value={reviewText}
             onChange={(event) => setReviewText(event.target.value)}
-            placeholder="What did you think of the game?"
+            placeholder="Optional: what did you think of the game?"
           />
         </label>
 
         <button type="submit">
-          <Star size={16} /> Post Review
+          <Star size={16} /> Submit Rating
         </button>
 
         {status && <p className="form-status">{status}</p>}
@@ -198,7 +193,7 @@ export default function ReviewsPage({ params }) {
           reviews.map((item) => (
             <article className="public-review-card" key={item.id || `${item.created_at}-${item.review}`}>
               <strong>{item.rating}★</strong>
-              <p>{item.review}</p>
+              {item.review ? <p>{item.review}</p> : <p className="muted-review">No written review.</p>}
               <span>
                 {item.display_name || item.user_email || "Anonymous Player"} •{" "}
                 {item.created_at ? new Date(item.created_at).toLocaleDateString() : "Just now"}

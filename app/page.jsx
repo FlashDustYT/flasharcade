@@ -84,6 +84,19 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
+    version: "V68",
+    title: "Messages and last seen",
+    date: "Current",
+    changes: [
+      "Added real direct messages with inbox and conversation pages",
+      "Added last seen labels instead of stale online text",
+      "Trending now ranks by plays, then rating, then newest",
+      "Creator board ranks by follower count",
+      "Users can submit a star rating without writing a review",
+      "Avatar image cropping is cleaner across profiles"
+    ],
+  },
+  {
     version: "V67",
     title: "Creator profile 404 fix",
     date: "Current",
@@ -519,12 +532,15 @@ function formatNumber(value) {
 
 function sortTrending(games) {
   return [...games].sort((a, b) => {
-    const score = (game) =>
-      parsePlayCount(game.plays) * 0.3 +
-      Number(game.rating || 0) * 50 +
-      (game.featured ? 100 : 0) +
-      (game.status === "New Release" ? 40 : 0);
-    return score(b) - score(a);
+    const playDiff = parsePlayCount(b.plays) - parsePlayCount(a.plays);
+    if (playDiff !== 0) return playDiff;
+
+    const ratingDiff = Number(b.rating || 0) - Number(a.rating || 0);
+    if (ratingDiff !== 0) return ratingDiff;
+
+    const bt = new Date(b.created_at || b.createdAt || 0).getTime() || 0;
+    const at = new Date(a.created_at || a.createdAt || 0).getTime() || 0;
+    return bt - at;
   });
 }
 
@@ -1391,6 +1407,7 @@ export default function Home() {
   { id: "playlist", label: "Playlist", icon: Heart },
   { id: "creators", label: "Creators", icon: User },
   { id: "friends", label: "Friends", icon: Users },
+    { id: "messages", label: "Messages", icon: MessageSquare },
     { id: "updates", label: "Updates", icon: Newspaper },
     { id: "achievements", label: "Achievements", icon: Trophy },
     { id: "publish", label: "Publish", icon: Upload, highlight: true },
@@ -1519,6 +1536,7 @@ export default function Home() {
       about: "/about",
       account: "/profile",
       profile: "/profile",
+      messages: "/messages",
     };
 
     if (realRoutes[tabId] && typeof window !== "undefined") {
@@ -1584,7 +1602,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V67 Online</strong>
+          <strong>V68 Online</strong>
           <p>Fixed creator profile 404 caused by old creator_slug lookup; Guess The Word update kept.</p>
         </div>
       </aside>

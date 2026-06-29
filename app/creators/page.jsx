@@ -4,11 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, MessageCircle, Search, UserRound, Users } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
+import { getLastSeenLabel, isRecentlyOnline } from "../../lib/presence";
 
-function isOnline(profile) {
-  if (!profile?.last_seen_at) return false;
-  return Date.now() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 5;
-}
 
 export default function CreatorsPage() {
   const [user, setUser] = useState(null);
@@ -52,8 +49,9 @@ export default function CreatorsPage() {
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return profiles;
-    return profiles.filter((profile) =>
+    const ranked = [...profiles].sort((a, b) => Number(b.followers || 0) - Number(a.followers || 0));
+    if (!needle) return ranked;
+    return ranked.filter((profile) =>
       [profile.display_name, profile.username, profile.bio, profile.email]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(needle))
@@ -88,6 +86,25 @@ export default function CreatorsPage() {
     setProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, followers: Number(data?.followers ?? item.followers ?? 0) } : item));
   }
 
+  async function startConversation(otherUserId) {
+    if (!user) {
+      setStatus("Log in first to message creators.");
+      return;
+    }
+
+    const { data, error } = await supabase.rpc("get_or_create_direct_conversation", {
+      other_user_id: otherUserId,
+    });
+
+    if (error) {
+      setStatus(`Message failed: ${error.message}. Run V68 SQL.`);
+      return;
+    }
+
+    window.location.href = `/messages/${data}`;
+  }
+
+
   return (
     <main className="creator-hub-page social-home-page">
       <Link className="back-link" href="/"><ArrowLeft size={18} /> Back to FlashPortal</Link>
@@ -105,7 +122,7 @@ export default function CreatorsPage() {
 
       <section className="creator-directory-grid">
         {filtered.length ? filtered.map((profile) => {
-          const online = isOnline(profile);
+          const online = isRecentlyOnline(profile.last_seen_at);
           const isFollowing = followingIds.includes(profile.id);
           const isSelf = user?.id === profile.id;
 
@@ -122,11 +139,11 @@ export default function CreatorsPage() {
               <span>{profile.bio || "No bio yet."}</span>
               <div className="creator-mini-stats">
                 <Link href={`/profile/${profile.username || profile.id}/followers`}>{Number(profile.followers || 0)} followers</Link>
-                <small>{online ? "Online" : "Offline"}</small>
+                <small>{getLastSeenLabel(profile.last_seen_at)}</small>
               </div>
               <div className="creator-mini-actions">
                 <Link href={`/profile/${profile.id}`}>View Profile</Link>
-                <button type="button" onClick={() => setStatus("Messaging needs the next SQL/backend pass. For now, add them as a friend first; then we can add a real inbox.")}><MessageCircle size={15} /> Message Soon</button>
+                <button type="button" onClick={() => startConversation(profile.id)}><MessageCircle size={15} /> Message</button>
                 {!isSelf && (
                   user ? (
                     <button type="button" onClick={() => toggleFollow(profile)}>{isFollowing ? "Following" : "Follow"}</button>

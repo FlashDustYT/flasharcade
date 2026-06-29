@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, EyeOff, Gamepad2, Heart, MessageCircle, UserRound } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
+import { getLastSeenLabel, isRecentlyOnline } from "../../../lib/presence";
 
 function safeLookup(value) { return String(value || "").toLowerCase().replace(/^@+/, "").replace(/[^a-z0-9_.@-]/g, ""); }
-function isOnline(profile) { return profile?.last_seen_at && Date.now() - new Date(profile.last_seen_at).getTime() < 1000 * 60 * 5; }
 
 export default function PublicProfilePage({ params }) {
   const lookup = params.username;
@@ -94,6 +94,26 @@ export default function PublicProfilePage({ params }) {
     });
   }
 
+  async function startConversation() {
+    if (!user) {
+      setStatus("Log in to message this creator.");
+      return;
+    }
+
+    if (!profile || user.id === profile.id) return;
+
+    const { data, error } = await supabase.rpc("get_or_create_direct_conversation", {
+      other_user_id: profile.id,
+    });
+
+    if (error) {
+      setStatus(`Message failed: ${error.message}. Run V68 SQL.`);
+      return;
+    }
+
+    window.location.href = `/messages/${data}`;
+  }
+
   async function toggleFollow() {
     if (!user) {
       setStatus("Log in to follow this creator.");
@@ -151,15 +171,20 @@ export default function PublicProfilePage({ params }) {
           </div>
           <div>
             <h1>{profile.display_name || "FlashPortal Creator"}</h1>
-            <p>@{profile.username || "creator"} {profile.is_private ? "• Private" : "• Public"} <span className={`profile-online-label ${isOnline(profile) ? "online" : ""}`}>{isOnline(profile) ? "• Online" : "• Offline"}</span></p>
+            <p>@{profile.username || "creator"} {profile.is_private ? "• Private" : "• Public"} <span className={`profile-online-label ${isRecentlyOnline(profile.last_seen_at) ? "online" : ""}`}>{getLastSeenLabel(profile.last_seen_at)}</span></p>
             <span>{canViewPrivate ? profile.bio || "No bio yet." : "This profile is private."}</span>
           </div>
 
           {user?.id !== profile.id && (
             user ? (
-              <button className="profile-edit-button" type="button" onClick={toggleFollow}>
-                <Heart size={16} /> {following ? "Following" : "Follow"}
-              </button>
+              <div className="profile-action-stack">
+                <button className="profile-edit-button" type="button" onClick={toggleFollow}>
+                  <Heart size={16} /> {following ? "Following" : "Follow"}
+                </button>
+                <button className="profile-edit-button secondary" type="button" onClick={startConversation}>
+                  <MessageCircle size={16} /> Message
+                </button>
+              </div>
             ) : (
               <button className="profile-edit-button" type="button" onClick={login}>
                 Log in to Follow
