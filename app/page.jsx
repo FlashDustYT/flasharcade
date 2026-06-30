@@ -42,7 +42,6 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { loadCloudSave, saveCloudSave } from "../lib/cloudSaves";
-import { BADGE_DEFINITIONS, DEFAULT_GAME_ACHIEVEMENTS, badgeInfo } from "../lib/badges";
 
 function goToRealRoute(path) {
   if (typeof window !== "undefined") {
@@ -86,15 +85,16 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
-    version: "V75",
-    title: "Persistent feed + real progress tracking",
+    version: "V77",
+    title: "Legacy badge, persistent reactions, comments, and faster feed",
     date: "Current",
     changes: [
-      "Likes and comments persist after refresh using V75 backend functions",
-      "Achievements tab now shows earned badges and available badge goals",
-      "Starter badges are awarded to existing profiles",
-      "Creator Hub uses cached content for quicker page changes",
-      "Progress tracking has a real badge library instead of coming-soon text"
+      "FlashPortal Pioneer Legacy badge auto-awards during Early Build",
+      "Community likes now stay active after refresh",
+      "Added persistent dislikes and cleaner reaction UI",
+      "Commenters and post owners can delete comments",
+      "Creator Hub feed now loads through a faster backend RPC",
+      "Achievements now use real catalog and earned badge data"
     ],
   },
   {
@@ -664,8 +664,6 @@ export default function Home() {
   const [reviews, setReviews] = useState({});
   const [query, setQuery] = useState("");
   const [user, setUser] = useState(null);
-  const [earnedBadges, setEarnedBadges] = useState([]);
-  const [progressLoading, setProgressLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [playCounts, setPlayCounts] = useState({});
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
@@ -859,17 +857,6 @@ export default function Home() {
       if (!error && Array.isArray(data)) {
         let dismissed = [];
         try { dismissed = JSON.parse(localStorage.getItem("flashportal-dismissed-notifications") || "[]"); } catch {}
-
-        if (user?.id) {
-          const { data: remoteDismissed } = await supabase
-            .from("notification_dismissals")
-            .select("notification_key")
-            .eq("user_id", user.id);
-          if (Array.isArray(remoteDismissed)) {
-            dismissed = Array.from(new Set([...dismissed, ...remoteDismissed.map((row) => row.notification_key)]));
-          }
-        }
-
         setNotifications(data
           .map((item) => ({
             id: `announcement-${item.id}`,
@@ -879,13 +866,12 @@ export default function Home() {
             type: "announcement",
           }))
           .filter((item) => !dismissed.includes(item.id))
-          .filter((item) => !["test", "testing"].includes(String(item.body || "").trim().toLowerCase()))
         );
       }
     }
 
     loadAnnouncements();
-  }, [user?.id]);
+  }, []);
 
   useEffect(() => {
     try {
@@ -1153,57 +1139,6 @@ export default function Home() {
       const dismissed = JSON.parse(localStorage.getItem("flashportal-dismissed-notifications") || "[]");
       localStorage.setItem("flashportal-dismissed-notifications", JSON.stringify(Array.from(new Set([...dismissed, id]))));
     } catch {}
-  }
-
-  async function loadOwnerUsers() {
-    if (!userIsOwner) {
-      setToast("Owner only");
-      return;
-    }
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .select("id,email,display_name,username,followers,is_private,is_deleted,last_seen_at,created_at")
-      .order("updated_at", { ascending: false })
-      .limit(100);
-
-    if (error) {
-      setToast(`User list needs V73 SQL: ${error.message}`);
-      return;
-    }
-
-    setOwnerUsers((data || []).filter((profile) => !profile.is_deleted));
-    setToast("Users loaded");
-    setTimeout(() => setToast(""), 1800);
-  }
-
-  async function ownerDeleteProfile(profile) {
-    if (!userIsOwner || !profile?.id) return;
-    if (profile.id === user?.id) {
-      setToast("Use profile page to delete your own account");
-      return;
-    }
-    const confirmed = window.confirm(`Remove ${profile.display_name || profile.email || profile.username || "this user"} from FlashPortal?`);
-    if (!confirmed) return;
-
-    const { error } = await supabase.from("user_profiles").update({
-      is_deleted: true,
-      deleted_at: new Date().toISOString(),
-      display_name: "Deleted account",
-      username: `deleted-${String(profile.id).slice(0, 8)}`,
-      bio: "",
-      avatar_url: "",
-      banner_url: "",
-      is_private: true,
-    }).eq("id", profile.id);
-
-    if (error) {
-      setToast(`Delete failed: ${error.message}. Run V73 SQL.`);
-      return;
-    }
-
-    setOwnerUsers((current) => current.filter((item) => item.id !== profile.id));
-    setToast("Account removed from FlashPortal");
-    setTimeout(() => setToast(""), 1800);
   }
 
   async function loadSubmissionQueue() {
@@ -1624,32 +1559,6 @@ export default function Home() {
     setUser(null);
   }
 
-
-  useEffect(() => {
-    async function loadEarnedBadges() {
-      if (!user?.id) {
-        setEarnedBadges([]);
-        return;
-      }
-
-      setProgressLoading(true);
-      const { data, error } = await supabase
-        .from("user_badges")
-        .select("badge_code, earned_at")
-        .eq("user_id", user.id)
-        .order("earned_at", { ascending: false });
-
-      if (!error && Array.isArray(data)) {
-        setEarnedBadges(data);
-      } else {
-        setEarnedBadges([]);
-      }
-      setProgressLoading(false);
-    }
-
-    loadEarnedBadges();
-  }, [user?.id]);
-
   const navItems = [
     { id: "discover", label: "Discover", icon: Compass },
     { id: "library", label: "Library", icon: BookOpen },
@@ -1851,8 +1760,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V75 Online</strong>
-          <p>Persistent feed likes/comments and real progress badges.</p>
+          <strong>V77 Online</strong>
+          <p>Fixed creator profile 404 caused by old creator_slug lookup; Guess The Word update kept.</p>
         </div>
       </aside>
 
@@ -2097,95 +2006,13 @@ export default function Home() {
           <section className="portal-view">
             <SectionHeader
               label="Achievements"
-              title="Progress tracking"
-              text="Earn badges from playing, reviewing, saving, posting, uploading, and growing as a creator."
+              title="Progress tracking is coming"
+              text="Cloud saves are the foundation. Achievements, play history, and profile stats come next."
             />
-
-            <div className="progress-summary-grid">
-              <article>
-                <strong>{earnedBadges.length}</strong>
-                <span>Earned badges</span>
-              </article>
-              <article>
-                <strong>{BADGE_DEFINITIONS.length}</strong>
-                <span>Total available</span>
-              </article>
-              <article>
-                <strong>{DEFAULT_GAME_ACHIEVEMENTS.length}</strong>
-                <span>Default game goals</span>
-              </article>
-            </div>
-
-            <div className="achievement-section-card">
-              <div className="section-mini-head">
-                <h3><Trophy size={22} /> Your badges</h3>
-                <a href="/badges">View full badge guide</a>
-              </div>
-              {!user ? (
-                <div className="empty-panel compact">
-                  <Trophy size={34} />
-                  <h3>Log in to track badges</h3>
-                  <p>Your badges save to your FlashPortal account.</p>
-                </div>
-              ) : progressLoading ? (
-                <div className="empty-panel compact"><h3>Loading badges...</h3></div>
-              ) : earnedBadges.length ? (
-                <div className="earned-badge-grid">
-                  {earnedBadges.map((earned) => {
-                    const info = badgeInfo(earned.badge_code);
-                    return (
-                      <article className={`earned-badge rarity-${String(info.rarity || "Common").toLowerCase()}`} key={`${earned.badge_code}-${earned.earned_at}`}>
-                        <span>{info.rarity || "Common"}</span>
-                        <h4>{info.label}</h4>
-                        <p>{info.description}</p>
-                        <small>Earned {new Date(earned.earned_at).toLocaleDateString()}</small>
-                      </article>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="empty-panel compact">
-                  <Trophy size={34} />
-                  <h3>No badges yet</h3>
-                  <p>Run V75 SQL to award starter badges, then keep playing and posting.</p>
-                </div>
-              )}
-            </div>
-
-            <div className="achievement-section-card">
-              <div className="section-mini-head">
-                <h3><Sparkles size={22} /> Available badges</h3>
-                <a href="/badges">Open detailed guide</a>
-              </div>
-              <div className="available-badge-grid">
-                {BADGE_DEFINITIONS.slice(0, 18).map((badge) => {
-                  const earned = earnedBadges.some((item) => item.badge_code === badge.code);
-                  return (
-                    <article className={`available-badge ${earned ? "earned" : ""}`} key={badge.code}>
-                      <strong>{badge.label}</strong>
-                      <span>{badge.rarity}</span>
-                      <p>{badge.description}</p>
-                      {earned && <small>Unlocked</small>}
-                    </article>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="achievement-section-card">
-              <div className="section-mini-head">
-                <h3><Gamepad2 size={22} /> Game achievement examples</h3>
-                <a href="/creator/upload">Add achievements to a game</a>
-              </div>
-              <div className="available-badge-grid">
-                {DEFAULT_GAME_ACHIEVEMENTS.map((badge) => (
-                  <article className="available-badge" key={badge.code}>
-                    <strong>{badge.label}</strong>
-                    <span>{badge.rarity}</span>
-                    <p>{badge.description}</p>
-                  </article>
-                ))}
-              </div>
+            <div className="empty-panel">
+              <Trophy size={42} />
+              <h3>No achievements unlocked yet</h3>
+              <p>V34 can add real unlockable achievements per game.</p>
             </div>
           </section>
         )}
@@ -2579,39 +2406,6 @@ export default function Home() {
                   <a href="https://dashboard.stripe.com/payment-links" target="_blank" rel="noreferrer">Stripe Dashboard</a>
                 </div>
               </article>
-
-              {userIsOwner && (
-                <article className="admin-card wide">
-                  <User size={32} />
-                  <h3>User Management</h3>
-                  <p>Owner-only. Load users, search profiles, and remove accounts from FlashPortal.</p>
-                  <div className="admin-button-row">
-                    <input value={ownerUserSearch} onChange={(event) => setOwnerUserSearch(event.target.value)} placeholder="Search users..." />
-                    <button type="button" onClick={loadOwnerUsers}>Load Users</button>
-                  </div>
-                  <div className="admin-game-list">
-                    {ownerUsers
-                      .filter((profile) => {
-                        const needle = ownerUserSearch.trim().toLowerCase();
-                        if (!needle) return true;
-                        return [profile.display_name, profile.username, profile.email].filter(Boolean).some((value) => String(value).toLowerCase().includes(needle));
-                      })
-                      .map((profile) => (
-                        <div className="admin-game-row" key={profile.id}>
-                          <div className="mini-avatar">
-                            {profile.avatar_url ? <img src={profile.avatar_url} alt="" /> : <User size={18} />}
-                          </div>
-                          <div>
-                            <strong>{profile.display_name || profile.username || profile.email || "Unnamed user"}</strong>
-                            <small>@{profile.username || "no-username"} · {Number(profile.followers || 0)} followers · {profile.is_private ? "Private" : "Public"}</small>
-                          </div>
-                          <button type="button" className="danger" onClick={() => ownerDeleteProfile(profile)}>Delete Account</button>
-                        </div>
-                      ))}
-                    {!ownerUsers.length && <p className="editor-help">Click Load Users to view accounts.</p>}
-                  </div>
-                </article>
-              )}
 
               {userIsOwner && (
                 <article className="admin-card wide">

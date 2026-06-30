@@ -12,12 +12,9 @@ export default function CreatorsPage() {
   const [profiles, setProfiles] = useState([]);
   const [followingIds, setFollowingIds] = useState([]);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("Loading creators...");
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("");
 
   async function loadCreators() {
-    setLoading(true);
-    setStatus("Loading creators...");
     const { data: sessionData } = await supabase.auth.getSession();
     const currentUser = sessionData?.session?.user || null;
     setUser(currentUser);
@@ -31,14 +28,11 @@ export default function CreatorsPage() {
     const { data: profileData, error } = await supabase
       .from("user_profiles")
       .select("*")
-      .eq("is_deleted", false)
-      .order("followers", { ascending: false })
       .order("updated_at", { ascending: false })
       .limit(200);
 
-    if (error) setStatus(`Creators need V73 SQL: ${error.message}`);
-    else setStatus("");
-    setProfiles((profileData || []).filter((profile) => !profile.is_deleted));
+    if (error) setStatus(`Creators need V64 SQL: ${error.message}`);
+    setProfiles(profileData || []);
 
     if (currentUser) {
       const { data: followData } = await supabase
@@ -47,7 +41,6 @@ export default function CreatorsPage() {
         .eq("follower_id", currentUser.id);
       setFollowingIds((followData || []).map((item) => item.following_id));
     }
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -161,7 +154,7 @@ export default function CreatorsPage() {
               </div>
             </article>
           );
-        }) : loading ? <article className="social-post-card empty"><h3>Loading creators...</h3></article> : <article className="social-post-card empty"><h3>No creators found.</h3></article>}
+        }) : <article className="social-post-card empty"><h3>No creators found.</h3></article>}
       </section>
     </main>
   );

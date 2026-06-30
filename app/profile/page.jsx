@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, EyeOff, Globe2, ImagePlus, Save, Send, Trash2, UserRound, Video, Github, Lock, AlertTriangle } from "lucide-react";
+import { ArrowLeft, EyeOff, Globe2, ImagePlus, Save, Send, Trash2, UserRound, Video, Github, Lock } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { cleanUsername, ensureUserProfile, profileFromUser } from "../../lib/profileHelpers";
 import { awardBadge, badgeInfo } from "../../lib/badges";
@@ -230,31 +230,6 @@ export default function MyProfilePage() {
     if (error) setStatus(`Delete failed: ${error.message}. Run V71 SQL.`);
   }
 
-  async function deleteMyAccount() {
-    if (!user) return;
-    const confirmed = window.confirm("Delete your FlashPortal account profile? Your login provider account will not be deleted, but your FlashPortal profile will be hidden.");
-    if (!confirmed) return;
-
-    setStatus("Deleting account profile...");
-    try {
-      await supabase.from("social_posts").update({ is_deleted: true }).eq("user_id", user.id);
-      await supabase.from("user_profiles").update({
-        is_deleted: true,
-        deleted_at: new Date().toISOString(),
-        display_name: "Deleted account",
-        username: `deleted-${user.id.slice(0, 8)}`,
-        bio: "",
-        avatar_url: "",
-        banner_url: "",
-        is_private: true,
-      }).eq("id", user.id);
-      await supabase.auth.signOut();
-      window.location.href = "/";
-    } catch (error) {
-      setStatus(`Delete failed: ${error.message}. Run V73 SQL.`);
-    }
-  }
-
   if (!user) {
     return (
       <main className="social-home-page">
@@ -349,7 +324,6 @@ export default function MyProfilePage() {
           <h3>Security</h3>
           <button type="button" className="profile-edit-button mini" onClick={sendPasswordReset}><Lock size={15} /> Change password</button>
           <button type="button" className="profile-edit-button mini" onClick={loginWithGithub}><Github size={15} /> Connect GitHub</button>
-          <button type="button" className="profile-edit-button mini danger" onClick={deleteMyAccount}><AlertTriangle size={15} /> Delete my account</button>
           <p className="editor-help">2FA is controlled in Supabase Auth settings; we can add the in-site setup page next.</p>
         </aside>
 

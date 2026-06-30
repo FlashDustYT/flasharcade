@@ -1,0 +1,1 @@
+V77 full drop-in generated from the uploaded V72 project structure. Run npm install if needed, then npm run build.
