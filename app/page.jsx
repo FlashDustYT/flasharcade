@@ -2006,13 +2006,14 @@ export default function Home() {
           <section className="portal-view">
             <SectionHeader
               label="Achievements"
-              title="Progress tracking is coming"
-              text="Cloud saves are the foundation. Achievements, play history, and profile stats come next."
+              title="Progress tracking"
+              text="Badges are live now. Open the badge guide to see earned badges, rarity tiers, and how to unlock more."
             />
             <div className="empty-panel">
               <Trophy size={42} />
-              <h3>No achievements unlocked yet</h3>
-              <p>V34 can add real unlockable achievements per game.</p>
+              <h3>Badge tracking is live</h3>
+              <p>Legacy, social, creator, review, save, and game achievement badges are now handled by the real badge catalog.</p>
+              <button type="button" onClick={() => goToRealRoute("/achievements")}>Open Badge Guide</button>
             </div>
           </section>
         )}

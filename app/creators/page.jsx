@@ -13,8 +13,10 @@ export default function CreatorsPage() {
   const [followingIds, setFollowingIds] = useState([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(true);
 
   async function loadCreators() {
+    setLoading(true);
     const { data: sessionData } = await supabase.auth.getSession();
     const currentUser = sessionData?.session?.user || null;
     setUser(currentUser);
@@ -41,6 +43,7 @@ export default function CreatorsPage() {
         .eq("follower_id", currentUser.id);
       setFollowingIds((followData || []).map((item) => item.following_id));
     }
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -142,7 +145,7 @@ export default function CreatorsPage() {
                 <small>{getLastSeenLabel(profile.last_seen_at)}</small>
               </div>
               <div className="creator-mini-actions">
-                <Link href={`/profile/${profile.id}`}>View Profile</Link>
+                <Link href={`/profile/${profile.username || profile.id}`}>View Profile</Link>
                 <button type="button" onClick={() => startConversation(profile.id)}><MessageCircle size={15} /> Message</button>
                 {!isSelf && (
                   user ? (
@@ -154,7 +157,7 @@ export default function CreatorsPage() {
               </div>
             </article>
           );
-        }) : <article className="social-post-card empty"><h3>No creators found.</h3></article>}
+        }) : <article className="social-post-card empty"><h3>{loading ? "Loading creators..." : "No creators found."}</h3></article>}
       </section>
     </main>
   );

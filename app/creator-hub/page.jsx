@@ -23,7 +23,24 @@ export default function CreatorHubPage() {
   const [commentsByPost, setCommentsByPost] = useState({});
   const [commentText, setCommentText] = useState("");
 
+  function loadCachedHub() {
+    try {
+      const raw = window.sessionStorage.getItem("flashportal-feed-cache-v78");
+      if (!raw) return;
+      const cached = JSON.parse(raw);
+      if (Array.isArray(cached.posts)) setPosts(cached.posts);
+      if (Array.isArray(cached.profiles)) setProfiles(cached.profiles);
+    } catch {}
+  }
+
+  function saveCachedHub(nextPosts, nextProfiles) {
+    try {
+      window.sessionStorage.setItem("flashportal-feed-cache-v78", JSON.stringify({ posts: nextPosts || [], profiles: nextProfiles || [], at: Date.now() }));
+    } catch {}
+  }
+
   async function loadHub() {
+    if (!posts.length && !profiles.length) loadCachedHub();
     setLoading(true);
     setStatus("");
     const { data: sessionData } = await supabase.auth.getSession();
@@ -45,6 +62,9 @@ export default function CreatorHubPage() {
 
     if (profileResult.status === "fulfilled") setProfiles(profileResult.value?.data || []);
     if (followResult.status === "fulfilled") setFollowingIds((followResult.value?.data || []).map((item) => item.following_id));
+    const nextPosts = feedResult.status === "fulfilled" ? (feedResult.value || []) : posts;
+    const nextProfiles = profileResult.status === "fulfilled" ? (profileResult.value?.data || []) : profiles;
+    saveCachedHub(nextPosts, nextProfiles);
     setLoading(false);
   }
 
