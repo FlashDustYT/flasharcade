@@ -98,6 +98,13 @@ create index if not exists social_post_reactions_post_reaction_v77_idx on public
 create index if not exists user_badges_user_v77_idx on public.user_badges(user_id);
 create index if not exists user_profiles_public_v77_idx on public.user_profiles(followers desc, username) where coalesce(is_deleted,false)=false and coalesce(is_private,false)=false;
 
+alter table public.achievement_catalog
+  add column if not exists category text not null default 'platform',
+  add column if not exists game_id text,
+  add column if not exists unlock_hint text not null default '',
+  add column if not exists points integer not null default 10,
+  add column if not exists is_hidden boolean not null default false;
+
 insert into public.achievement_catalog(code,title,rarity,category,game_id,description,unlock_hint,points,is_hidden)
 values
 ('flashportal_pioneer','FlashPortal Pioneer','legacy','legacy',null,'Joined FlashPortal during the Early Build era before the official launch.','Create an account before FlashPortal Official releases.',1000,false),
