@@ -105,6 +105,28 @@ alter table public.achievement_catalog
   add column if not exists points integer not null default 10,
   add column if not exists is_hidden boolean not null default false;
 
+
+-- Fix older achievement_catalog rarity constraint so Legacy badges are allowed.
+do $$
+declare
+  constraint_name text;
+begin
+  select conname into constraint_name
+  from pg_constraint
+  where conrelid = 'public.achievement_catalog'::regclass
+    and contype = 'c'
+    and conname like '%rarity%check%'
+  limit 1;
+
+  if constraint_name is not null then
+    execute format('alter table public.achievement_catalog drop constraint %I', constraint_name);
+  end if;
+end $$;
+
+alter table public.achievement_catalog
+  add constraint achievement_catalog_rarity_check
+  check (rarity in ('legacy','mythic','legendary','epic','rare','uncommon','common'));
+
 insert into public.achievement_catalog(code,title,rarity,category,game_id,description,unlock_hint,points,is_hidden)
 values
 ('flashportal_pioneer','FlashPortal Pioneer','legacy','legacy',null,'Joined FlashPortal during the Early Build era before the official launch.','Create an account before FlashPortal Official releases.',1000,false),
