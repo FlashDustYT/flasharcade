@@ -116,7 +116,7 @@ export default function MessagesInboxPage() {
     });
 
     if (error) {
-      setStatus(`Could not start message: ${error.message}. Run V80 SQL.`);
+      setStatus(`Could not start message: ${error.message}. Run V81 SQL.`);
       return;
     }
 

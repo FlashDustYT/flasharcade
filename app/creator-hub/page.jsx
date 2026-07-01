@@ -61,7 +61,7 @@ export default function CreatorHubPage() {
       const nextFeed = feedResult.value || [];
       setPosts(nextFeed);
       if (nextFeed.length) loadComments(nextFeed.slice(0, 10).map((post) => post.id));
-    } else setStatus(`Creator Hub needs V80 SQL: ${feedResult.reason?.message || "feed failed"}`);
+    } else setStatus(`Creator Hub needs V81 SQL: ${feedResult.reason?.message || "feed failed"}`);
 
     if (profileResult.status === "fulfilled") setProfiles(profileResult.value?.data || []);
     if (followResult.status === "fulfilled") setFollowingIds((followResult.value?.data || []).map((item) => item.following_id));
@@ -100,17 +100,31 @@ export default function CreatorHubPage() {
   async function loadComments(postId) {
     const ids = Array.isArray(postId) ? postId.filter(Boolean) : [postId].filter(Boolean);
     if (!ids.length) return;
+
+    // Manual two-step lookup avoids PostgREST schema-cache relationship failures.
     const { data, error } = await supabase
       .from("social_comments")
-      .select("*, user_profiles(display_name, username, avatar_url)")
+      .select("id, post_id, user_id, body, created_at, is_deleted")
       .in("post_id", ids)
       .eq("is_deleted", false)
       .order("created_at", { ascending: true });
     if (error) return setStatus(`Comments failed: ${error.message}`);
+
+    const commenterIds = [...new Set((data || []).map((comment) => comment.user_id).filter(Boolean))];
+    let profilesById = {};
+    if (commenterIds.length) {
+      const { data: profileRows } = await supabase
+        .from("user_profiles")
+        .select("id, display_name, username, avatar_url")
+        .in("id", commenterIds);
+      profilesById = Object.fromEntries((profileRows || []).map((row) => [row.id, row]));
+    }
+
     const grouped = {};
+    ids.forEach((id) => { grouped[id] = []; });
     (data || []).forEach((comment) => {
       grouped[comment.post_id] ||= [];
-      grouped[comment.post_id].push(comment);
+      grouped[comment.post_id].push({ ...comment, user_profiles: profilesById[comment.user_id] || null });
     });
     setCommentsByPost((current) => ({ ...current, ...grouped }));
   }

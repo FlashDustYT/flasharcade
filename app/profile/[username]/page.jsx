@@ -31,9 +31,13 @@ export default function PublicProfilePage({ params }) {
   async function loadComments(postIds) {
     const ids = Array.isArray(postIds) ? postIds.filter(Boolean) : [postIds].filter(Boolean);
     if (!ids.length) return;
+
+    // Do NOT use PostgREST nested relationship here. Some older Supabase schemas
+    // do not have a direct social_comments -> user_profiles FK, so nested
+    // selects can fail even though the comments exist.
     const { data, error } = await supabase
       .from("social_comments")
-      .select("*, user_profiles(display_name, username, avatar_url)")
+      .select("id, post_id, user_id, body, created_at, is_deleted")
       .in("post_id", ids)
       .eq("is_deleted", false)
       .order("created_at", { ascending: true });
@@ -41,10 +45,22 @@ export default function PublicProfilePage({ params }) {
       setStatus(`Comments failed: ${error.message}`);
       return;
     }
+
+    const commenterIds = [...new Set((data || []).map((comment) => comment.user_id).filter(Boolean))];
+    let profilesById = {};
+    if (commenterIds.length) {
+      const { data: profileRows } = await supabase
+        .from("user_profiles")
+        .select("id, display_name, username, avatar_url")
+        .in("id", commenterIds);
+      profilesById = Object.fromEntries((profileRows || []).map((row) => [row.id, row]));
+    }
+
     const grouped = {};
+    ids.forEach((id) => { grouped[id] = []; });
     (data || []).forEach((comment) => {
       grouped[comment.post_id] ||= [];
-      grouped[comment.post_id].push(comment);
+      grouped[comment.post_id].push({ ...comment, user_profiles: profilesById[comment.user_id] || null });
     });
     setCommentsByPost((current) => ({ ...current, ...grouped }));
   }
@@ -85,14 +101,21 @@ export default function PublicProfilePage({ params }) {
       setMutualFollow(iFollowThem && theyFollowMe);
     }
 
-    const { data: badgeData } = await supabase
-      .from("user_badges")
-      .select("*")
-      .eq("user_id", profileData.id)
-      .order("earned_at", { ascending: false });
-    const realBadges = badgeData || [];
-    if (!realBadges.some((row) => row.badge_code === "flashportal_pioneer" || row.badge_code === "early_player")) {
-      realBadges.unshift({ user_id: profileData.id, badge_code: "flashportal_pioneer", earned_at: profileData.created_at || new Date().toISOString() });
+    let realBadges = [];
+    const { data: badgePageData } = await supabase.rpc("fp_get_achievement_page", { target_user_id: profileData.id });
+    if (Array.isArray(badgePageData)) {
+      realBadges = badgePageData.filter((row) => row.earned).map((row) => ({ ...row, badge_code: row.code }));
+    }
+    if (!realBadges.length) {
+      const { data: badgeData } = await supabase
+        .from("user_badges")
+        .select("*")
+        .eq("user_id", profileData.id)
+        .order("earned_at", { ascending: false });
+      realBadges = badgeData || [];
+    }
+    if (!realBadges.some((row) => row.badge_code === "flashportal_pioneer" || row.code === "flashportal_pioneer" || row.badge_code === "early_player")) {
+      realBadges.unshift({ user_id: profileData.id, badge_code: "flashportal_pioneer", code: "flashportal_pioneer", title: "FlashPortal Pioneer", rarity: "legacy", description: "Joined FlashPortal during the Early Build before the official completed release.", earned_at: profileData.created_at || new Date().toISOString() });
     }
     setBadges(realBadges);
 
@@ -132,7 +155,7 @@ export default function PublicProfilePage({ params }) {
     if (!profile || user.id === profile.id) return;
     if (!mutualFollow) return setStatus("Messages only open when both people follow each other.");
     const { data, error } = await supabase.rpc("get_or_create_direct_conversation", { other_user_id: profile.id });
-    if (error) return setStatus(`Message failed: ${error.message}. Run V80 SQL.`);
+    if (error) return setStatus(`Message failed: ${error.message}. Run V81 SQL.`);
     window.location.href = `/messages/${data}`;
   }
 

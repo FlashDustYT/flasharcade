@@ -21,20 +21,29 @@ export default function GamePage() {
 
   async function award(code) {
     if (!code || awarded.current.has(code)) return;
-    awarded.current.add(code);
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user) return;
     const { error } = await supabase.rpc("fp_award_badge", { badge_code: code });
-    if (!error) setStatus("Achievement synced.");
+    if (!error) {
+      awarded.current.add(code);
+      setStatus("Achievement synced.");
+    } else {
+      setStatus(`Achievement sync failed: ${error.message}`);
+    }
   }
 
   function syncLocalBest() {
     try {
-      const best = JSON.parse(window.localStorage.getItem("howManyRingsBest") || "null");
+      const keys = ["howManyRingsBest", "how_many_rings_best", "hmrBest", "ringsBest"];
+      const found = keys.map((key) => {
+        try { return JSON.parse(window.localStorage.getItem(key) || "null"); } catch { return null; }
+      }).find(Boolean);
+      const best = found || null;
       if (!best) return;
+      const rings = Number(best.rings ?? best.bestRings ?? best.record ?? best.score ?? 0);
       award("how_many_rings_first_run");
-      if (Number(best.rings || 0) >= 3) award("how_many_rings_dynasty");
-      if (Number(best.rings || 0) >= 10) award("how_many_rings_perfect_decade");
+      if (rings >= 3) award("how_many_rings_dynasty");
+      if (rings >= 10) award("how_many_rings_perfect_decade");
     } catch {}
   }
 
