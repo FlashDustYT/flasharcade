@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, EyeOff, Gamepad2, Heart, MessageCircle, UserRound } from "lucide-react";
 import { supabase } from "../../../lib/supabaseClient";
 import { getLastSeenLabel, isRecentlyOnline } from "../../../lib/presence";
-import { badgeInfo } from "../../../lib/badges";
+import { awardEarlyBuildBadges, badgeInfo } from "../../../lib/badges";
 
 function safeLookup(value) { return String(value || "").toLowerCase().replace(/^@+/, "").replace(/[^a-z0-9_.@-]/g, ""); }
 
@@ -47,6 +47,7 @@ export default function PublicProfilePage({ params }) {
     let isFollowing = false;
 
     if (currentUser) {
+      try { await awardEarlyBuildBadges(supabase, currentUser.id); } catch {}
       const { data: followData } = await supabase
         .from("profile_follows")
         .select("id")
@@ -60,6 +61,17 @@ export default function PublicProfilePage({ params }) {
 
     const canView = !profileData.is_private || currentUser?.id === profileData.id || isFollowing;
 
+    const { data: badgeData } = await supabase
+      .from("user_badges")
+      .select("*")
+      .eq("user_id", profileData.id)
+      .order("earned_at", { ascending: false });
+    const realBadges = badgeData || [];
+    if (!realBadges.some((row) => row.badge_code === "flashportal_pioneer" || row.badge_code === "early_player")) {
+      realBadges.unshift({ user_id: profileData.id, badge_code: "flashportal_pioneer", earned_at: profileData.created_at || new Date().toISOString() });
+    }
+    setBadges(realBadges);
+
     if (canView) {
       let postQuery = supabase
         .from("social_posts")
@@ -70,13 +82,6 @@ export default function PublicProfilePage({ params }) {
 
       const { data: postData } = await postQuery;
       setPosts((postData || []).filter((post) => !post.is_deleted && (!post.is_private || currentUser?.id === profileData.id || isFollowing)));
-
-      const { data: badgeData } = await supabase
-        .from("user_badges")
-        .select("*")
-        .eq("user_id", profileData.id)
-        .order("earned_at", { ascending: false });
-      setBadges(badgeData || []);
 
       const { data: gameData } = await supabase
         .from("game_submissions")
@@ -180,8 +185,7 @@ export default function PublicProfilePage({ params }) {
           </div>
           <div>
             <h1>{profile.display_name || "FlashPortal Creator"}</h1>
-            <p>@{profile.username || "creator"} {profile.is_private ? "• Private" : "• Public"} <span className={`profile-online-label ${isRecentlyOnline(profile.last_seen_at) ? "online" : ""}`}>{getLastSeenLabel(profile.last_seen_at)}</span></p>
-            <span>{canViewPrivate ? profile.bio || "No bio yet." : "This profile is private."}</span>
+            <p className="profile-meta-line"><span>@{profile.username || "creator"}</span><span>{profile.is_private ? "Private" : "Public"}</span><span className={`profile-online-label ${isRecentlyOnline(profile.last_seen_at) ? "online" : ""}`}>{getLastSeenLabel(profile.last_seen_at)}</span><span>{canViewPrivate ? profile.bio || "No bio yet." : "This profile is private."}</span></p>
           </div>
 
           {user?.id !== profile.id && (

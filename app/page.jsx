@@ -85,16 +85,17 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
-    version: "V77",
-    title: "Legacy badge, persistent reactions, comments, and faster feed",
+    version: "V79",
+    title: "Actual badge, reaction, profile, and loading fixes",
     date: "Current",
     changes: [
       "FlashPortal Pioneer Legacy badge auto-awards during Early Build",
       "Community likes now stay active after refresh",
       "Added persistent dislikes and cleaner reaction UI",
       "Commenters and post owners can delete comments",
-      "Creator Hub feed now loads through a faster backend RPC",
-      "Achievements now use real catalog and earned badge data"
+      "Creator Hub keeps cached posts visible while refreshing",
+      "Achievements now use real catalog, local fallback, and earned badge data",
+      "Profile badge rows and private profile spacing fixed"
     ],
   },
   {
@@ -1760,8 +1761,8 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V77 Online</strong>
-          <p>Fixed creator profile 404 caused by old creator_slug lookup; Guess The Word update kept.</p>
+          <strong>V79 Online</strong>
+          <p>Actual badge display, persistent reaction state, comment delete support, and smoother loading.</p>
         </div>
       </aside>
 

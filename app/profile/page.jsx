@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, EyeOff, Globe2, ImagePlus, Save, Send, Trash2, UserRound, Video, Github, Lock } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { cleanUsername, ensureUserProfile, profileFromUser } from "../../lib/profileHelpers";
-import { awardBadge, badgeInfo } from "../../lib/badges";
+import { awardBadge, awardEarlyBuildBadges, badgeInfo } from "../../lib/badges";
 
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -65,7 +65,7 @@ export default function MyProfilePage() {
     setPosts((postData || []).filter((post) => !post.is_deleted));
 
     try {
-      await awardBadge(supabase, currentUser.id, "early_player");
+      await awardEarlyBuildBadges(supabase, currentUser.id);
       const { data: badgeData } = await supabase
         .from("user_badges")
         .select("*")

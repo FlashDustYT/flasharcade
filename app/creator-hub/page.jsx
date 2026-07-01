@@ -25,7 +25,7 @@ export default function CreatorHubPage() {
 
   function loadCachedHub() {
     try {
-      const raw = window.sessionStorage.getItem("flashportal-feed-cache-v78");
+      const raw = window.sessionStorage.getItem("flashportal-feed-cache-v79");
       if (!raw) return;
       const cached = JSON.parse(raw);
       if (Array.isArray(cached.posts)) setPosts(cached.posts);
@@ -35,7 +35,7 @@ export default function CreatorHubPage() {
 
   function saveCachedHub(nextPosts, nextProfiles) {
     try {
-      window.sessionStorage.setItem("flashportal-feed-cache-v78", JSON.stringify({ posts: nextPosts || [], profiles: nextProfiles || [], at: Date.now() }));
+      window.sessionStorage.setItem("flashportal-feed-cache-v79", JSON.stringify({ posts: nextPosts || [], profiles: nextProfiles || [], at: Date.now() }));
     } catch {}
   }
 
@@ -120,6 +120,7 @@ export default function CreatorHubPage() {
     setCommentText("");
     setPosts((current) => current.map((item) => item.id === post.id ? { ...item, comments: Number(item.comments || 0) + 1 } : item));
     await loadComments(post.id);
+    await loadHub();
   }
 
   async function removeComment(post, comment) {
@@ -128,6 +129,7 @@ export default function CreatorHubPage() {
       await deleteSocialComment(supabase, Number(comment.id));
       setPosts((current) => current.map((item) => item.id === post.id ? { ...item, comments: Math.max(0, Number(item.comments || 0) - 1) } : item));
       await loadComments(post.id);
+      await loadHub();
     } catch (error) {
       setStatus(`Delete failed: ${error.message}`);
     }
@@ -146,7 +148,7 @@ export default function CreatorHubPage() {
       <section className="creator-hub-feed-layout">
         <section className="hub-feed-panel">
           <h2>Latest Posts</h2>
-          {loading ? <article className="social-post-card empty"><h3>Loading posts...</h3><p>Getting the newest community posts.</p></article> : visiblePosts.length ? visiblePosts.map((post) => {
+          {loading && !visiblePosts.length ? <article className="social-post-card empty"><h3>Loading posts...</h3><p>Getting the newest community posts.</p></article> : visiblePosts.length ? visiblePosts.map((post) => {
             const comments = commentsByPost[post.id] || [];
             const postOwner = user?.id === post.user_id;
             return <article className="social-post-card" key={post.id}>
@@ -177,10 +179,10 @@ export default function CreatorHubPage() {
         </section>
         <aside className="creator-list-panel">
           <h2>Creators</h2><p className="editor-help">Quick creator list. Full directory is on the Creators page.</p><Link className="profile-edit-button mini" href="/creators">Open Creators</Link>
-          {filteredProfiles.length ? filteredProfiles.slice(0, 8).map((profile) => {
+          {loading && !filteredProfiles.length ? <p>Loading creators...</p> : filteredProfiles.length ? filteredProfiles.slice(0, 8).map((profile) => {
             const isFollowing = followingIds.includes(profile.id); const isSelf = user?.id === profile.id; const canSeePrivate = !profile.is_private || isFollowing || isSelf;
             return <article className="creator-mini-card" key={profile.id}><div className="mini-avatar">{profile.avatar_url ? <img src={profile.avatar_url} alt="" /> : <UserRound size={22} />}</div><div><strong>{profile.display_name || "FlashPortal Creator"}</strong><span>@{profile.username || "creator"}</span><p>{canSeePrivate ? profile.bio || "No bio yet." : "Private profile"}</p><div className="creator-mini-stats"><Link href={`/profile/${profile.username || profile.id}/followers`}>{Number(profile.followers || 0)} followers</Link><small>{profile.is_private ? "Private" : "Public"}</small></div><div className="creator-mini-actions"><Link href={`/profile/${profile.username || profile.id}`}>View Profile</Link>{!isSelf && <button type="button" onClick={() => toggleFollow(profile)}>{isFollowing ? "Following" : "Follow"}</button>}</div></div></article>;
-          }) : <p>{loading ? "Loading creators..." : "No creators found yet."}</p>}
+          }) : <p>No creators found yet.</p>}
         </aside>
       </section>
     </main>

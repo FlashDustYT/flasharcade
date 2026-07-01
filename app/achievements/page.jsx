@@ -2,34 +2,72 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Trophy } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Lock, Trophy } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
+import { BADGE_DEFINITIONS, awardEarlyBuildBadges, normalizeBadgeRow, rarityRank, RARITY_ORDER } from "../../lib/badges";
 
-const labels = { legacy:"🏅 Legacy", mythic:"🟣 Mythic", legendary:"🟡 Legendary", epic:"🔴 Epic", rare:"🔵 Rare", uncommon:"🟢 Uncommon", common:"⚪ Common" };
+const labels = {
+  Legacy: "🏅 Legacy",
+  Mythic: "🟣 Mythic",
+  Legendary: "🟡 Legendary",
+  Epic: "🔴 Epic",
+  Rare: "🔵 Rare",
+  Uncommon: "🟢 Uncommon",
+  Common: "⚪ Common",
+};
 
 export default function AchievementsPage() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState(BADGE_DEFINITIONS.map((badge) => normalizeBadgeRow({ ...badge, earned: false })));
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("");
   const earnedCount = items.filter((item) => item.earned).length;
 
   useEffect(() => {
     let alive = true;
+
     async function load() {
       setLoading(true);
+      setStatus("");
       const { data: userData } = await supabase.auth.getUser();
-      const { data, error } = await supabase.rpc("fp_get_achievement_page", { target_user_id: userData.user?.id || null });
+      const userId = userData?.user?.id || null;
+
+      if (userId) await awardEarlyBuildBadges(supabase, userId);
+
+      let loaded = [];
+      const rpc = await supabase.rpc("fp_get_achievement_page", { target_user_id: userId });
+      if (!rpc.error && Array.isArray(rpc.data) && rpc.data.length) {
+        loaded = rpc.data.map((row) => normalizeBadgeRow(row));
+      } else {
+        const { data: catalog } = await supabase.from("achievement_catalog").select("*").order("points", { ascending: false });
+        const { data: earned } = userId
+          ? await supabase.from("user_badges").select("badge_code, earned_at").eq("user_id", userId)
+          : { data: [] };
+        const earnedMap = new Map((earned || []).map((row) => [row.badge_code, row.earned_at]));
+        const source = Array.isArray(catalog) && catalog.length ? catalog : BADGE_DEFINITIONS;
+        loaded = source.map((row) => normalizeBadgeRow({ ...row, earned: earnedMap.has(row.code), earned_at: earnedMap.get(row.code) || null }));
+      }
+
+      // Always show the local guide, even if the DB catalog is behind.
+      const byCode = new Map(loaded.map((row) => [row.code || row.badge_code, row]));
+      BADGE_DEFINITIONS.forEach((badge) => {
+        if (!byCode.has(badge.code)) byCode.set(badge.code, normalizeBadgeRow({ ...badge, earned: false }));
+      });
+
+      const finalItems = [...byCode.values()].sort((a, b) => rarityRank(a.rarity) - rarityRank(b.rarity) || Number(b.points || 0) - Number(a.points || 0) || String(a.title).localeCompare(String(b.title)));
       if (!alive) return;
-      if (error) console.error(error);
-      setItems(data || []);
+      setItems(finalItems);
+      if (rpc.error) setStatus("Showing the local badge guide. Run V79 SQL so earned badges sync from Supabase.");
       setLoading(false);
     }
+
     load();
     return () => { alive = false; };
   }, []);
 
   const grouped = useMemo(() => items.reduce((acc, item) => {
-    acc[item.rarity] ||= [];
-    acc[item.rarity].push(item);
+    const rarity = item.rarity || "Common";
+    acc[rarity] ||= [];
+    acc[rarity].push(item);
     return acc;
   }, {}), [items]);
 
@@ -39,27 +77,29 @@ export default function AchievementsPage() {
       <section className="creator-feed-hero">
         <span><Trophy size={16} /> Achievements</span>
         <h1>Progress tracking</h1>
-        <p>Earn badges from playing, reviewing, saving, posting, uploading, and growing as a creator.</p>
+        <p>Earn badges from playing, reviewing, saving, posting, messaging, uploading, and growing as a creator.</p>
+        {status && <p className="hub-status">{status}</p>}
       </section>
       <section className="achievement-stats-row">
         <article><strong>{earnedCount}</strong><span>Earned badges</span></article>
         <article><strong>{items.length}</strong><span>Total available</span></article>
       </section>
-      {loading ? <article className="social-post-card empty"><h3>Loading achievements...</h3></article> : Object.keys(labels).map((rarity) => {
+      {RARITY_ORDER.map((rarity) => {
         const list = grouped[rarity] || [];
         if (!list.length) return null;
         return <section className="hub-feed-panel achievement-section" key={rarity}>
-          <h2>{labels[rarity]}</h2>
+          <h2>{labels[rarity] || rarity}</h2>
           <div className="achievement-grid">
-            {list.map((badge) => <article className={`achievement-card ${badge.earned ? "earned" : "locked"}`} key={badge.code}>
-              <div className="badge-mark">{badge.earned ? "✓" : "○"}</div>
-              <h3>{badge.title}</h3>
+            {list.map((badge) => <article className={`achievement-card ${badge.earned ? "earned" : "locked"}`} key={badge.code || badge.badge_code}>
+              <div className="badge-mark">{badge.earned ? <CheckCircle2 size={20} /> : <Lock size={18} />}</div>
+              <h3>{badge.title || badge.label}</h3>
               <p>{badge.description}</p>
               <small>{badge.earned ? "Unlocked" : badge.unlock_hint}</small>
             </article>)}
           </div>
         </section>;
       })}
+      {loading && <p className="editor-help">Refreshing badge data...</p>}
     </main>
   );
 }
