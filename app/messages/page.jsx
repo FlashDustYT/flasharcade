@@ -12,6 +12,7 @@ export default function MessagesInboxPage() {
   const [memberships, setMemberships] = useState([]);
   const [latestMessages, setLatestMessages] = useState([]);
   const [unreadMessages, setUnreadMessages] = useState([]);
+  const [mutualFollowIds, setMutualFollowIds] = useState([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("Loading messages...");
 
@@ -36,7 +37,16 @@ export default function MessagesInboxPage() {
       .order("followers", { ascending: false })
       .limit(100);
 
-    setProfiles(profileData || []);
+    const allProfiles = profileData || [];
+    const { data: followData } = await supabase
+      .from("profile_follows")
+      .select("follower_id, following_id")
+      .or(`follower_id.eq.${currentUser.id},following_id.eq.${currentUser.id}`);
+    const iFollow = new Set((followData || []).filter((row) => row.follower_id === currentUser.id).map((row) => row.following_id));
+    const followsMe = new Set((followData || []).filter((row) => row.following_id === currentUser.id).map((row) => row.follower_id));
+    const mutualIds = allProfiles.filter((profile) => iFollow.has(profile.id) && followsMe.has(profile.id)).map((profile) => profile.id);
+    setMutualFollowIds(mutualIds);
+    setProfiles(allProfiles.filter((profile) => mutualIds.includes(profile.id)));
 
     const { data: memberData, error: memberError } = await supabase
       .from("conversation_members")
@@ -96,13 +106,17 @@ export default function MessagesInboxPage() {
 
   async function startConversation(otherUserId) {
     if (!user) return login();
+    if (!mutualFollowIds.includes(otherUserId)) {
+      setStatus("Messages only open when both people follow each other.");
+      return;
+    }
 
     const { data, error } = await supabase.rpc("get_or_create_direct_conversation", {
       other_user_id: otherUserId,
     });
 
     if (error) {
-      setStatus(`Could not start message: ${error.message}. Run V69 SQL.`);
+      setStatus(`Could not start message: ${error.message}. Run V80 SQL.`);
       return;
     }
 
@@ -148,7 +162,7 @@ export default function MessagesInboxPage() {
       <section className="messages-hero">
         <span><Inbox size={16} /> FlashPortal Messages</span>
         <h1>Inbox</h1>
-        <p>Start a direct message with creators and players. {unreadMessages.length ? `${unreadMessages.length} unread message${unreadMessages.length === 1 ? "" : "s"}.` : "No unread messages."}</p>
+        <p>Message people who follow you back. {unreadMessages.length ? `${unreadMessages.length} unread message${unreadMessages.length === 1 ? "" : "s"}.` : "No unread messages."}</p>
         {status && <p className="hub-status">{status}</p>}
       </section>
 
@@ -202,7 +216,7 @@ export default function MessagesInboxPage() {
             <article className="empty-panel">
               <MessageCircle size={34} />
               <h3>No conversations yet</h3>
-              <p>Search for a creator or friend and click Message.</p>
+              <p>Follow each other first, then click Message.</p>
             </article>
           )}
         </section>

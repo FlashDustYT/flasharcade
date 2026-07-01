@@ -3666,6 +3666,7 @@
       const previous = readBest();
       if (!previous || current.rings > previous.rings || (current.rings === previous.rings && current.finals > previous.finals) || (current.rings === previous.rings && current.finals === previous.finals && current.power > previous.power)) {
         localStorage.setItem("howManyRingsBest", JSON.stringify(current));
+        try { window.parent?.postMessage({ type: "flashportal-game-achievement", gameId: "how-many-rings", rings: current.rings, finals: current.finals, power: current.power }, window.location.origin); } catch (_) {}
         state.best = current;
       }
     }

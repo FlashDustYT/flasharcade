@@ -57,8 +57,11 @@ export default function CreatorHubPage() {
       currentUser ? supabase.from("profile_follows").select("following_id").eq("follower_id", currentUser.id) : Promise.resolve({ data: [] }),
     ]);
 
-    if (feedResult.status === "fulfilled") setPosts(feedResult.value || []);
-    else setStatus(`Creator Hub needs V77 SQL: ${feedResult.reason?.message || "feed failed"}`);
+    if (feedResult.status === "fulfilled") {
+      const nextFeed = feedResult.value || [];
+      setPosts(nextFeed);
+      if (nextFeed.length) loadComments(nextFeed.slice(0, 10).map((post) => post.id));
+    } else setStatus(`Creator Hub needs V80 SQL: ${feedResult.reason?.message || "feed failed"}`);
 
     if (profileResult.status === "fulfilled") setProfiles(profileResult.value?.data || []);
     if (followResult.status === "fulfilled") setFollowingIds((followResult.value?.data || []).map((item) => item.following_id));
@@ -95,14 +98,21 @@ export default function CreatorHubPage() {
   }
 
   async function loadComments(postId) {
+    const ids = Array.isArray(postId) ? postId.filter(Boolean) : [postId].filter(Boolean);
+    if (!ids.length) return;
     const { data, error } = await supabase
       .from("social_comments")
       .select("*, user_profiles(display_name, username, avatar_url)")
-      .eq("post_id", postId)
+      .in("post_id", ids)
       .eq("is_deleted", false)
       .order("created_at", { ascending: true });
     if (error) return setStatus(`Comments failed: ${error.message}`);
-    setCommentsByPost((current) => ({ ...current, [postId]: data || [] }));
+    const grouped = {};
+    (data || []).forEach((comment) => {
+      grouped[comment.post_id] ||= [];
+      grouped[comment.post_id].push(comment);
+    });
+    setCommentsByPost((current) => ({ ...current, ...grouped }));
   }
 
   async function openComments(postId) {
@@ -161,17 +171,17 @@ export default function CreatorHubPage() {
               {post.video_url && <video className="post-video" src={post.video_url} controls playsInline preload="metadata" />}
               <div className="post-actions-row-v77">
                 <SocialReactionBar postId={Number(post.id)} initialLikes={post.likes} initialDislikes={post.dislikes} initialReaction={post.my_reaction || null} currentUserId={user?.id} />
-                <button type="button" className="reaction-pill" onClick={() => openComments(post.id)}><MessageCircle size={16} /> {Number(post.comments || 0)} Comment</button>
+                <button type="button" className="reaction-pill" onClick={() => openComments(post.id)}><MessageCircle size={16} /> {openPostId === post.id ? "Hide" : "Show"} {Number(post.comments || comments.length || 0)} Comment</button>
               </div>
               {openPostId === post.id && <div className="comments-panel-v77">
-                {comments.map((comment) => {
+                {comments.length ? comments.map((comment) => {
                   const canDelete = user?.id === comment.user_id || postOwner;
                   return <div className="comment-card-v77" key={comment.id}>
                     <strong>{comment.user_profiles?.display_name || comment.user_profiles?.username || "Player"}</strong>
                     <p>{comment.body}</p>
                     {canDelete && <button type="button" className="tiny-danger-button" onClick={() => removeComment(post, comment)}><Trash2 size={13} /> Delete</button>}
                   </div>;
-                })}
+                }) : <p className="empty-comments-note">No comments yet.</p>}
                 <div className="comment-input-row-v77"><input value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder="Write a comment..." /><button type="button" onClick={() => submitComment(post)}><Send size={16} /> Send</button></div>
               </div>}
             </article>;

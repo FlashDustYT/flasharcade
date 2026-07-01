@@ -85,7 +85,7 @@ function avatarInitials(name) {
 
 const PLATFORM_UPDATES = [
   {
-    version: "V79",
+    version: "V80",
     title: "Actual badge, reaction, profile, and loading fixes",
     date: "Current",
     changes: [
@@ -1761,7 +1761,7 @@ export default function Home() {
 
         <div className="portal-mini-panel">
           <span className="status-dot" />
-          <strong>V79 Online</strong>
+          <strong>V80 Online</strong>
           <p>Actual badge display, persistent reaction state, comment delete support, and smoother loading.</p>
         </div>
       </aside>

@@ -56,7 +56,7 @@ export default function AchievementsPage() {
       const finalItems = [...byCode.values()].sort((a, b) => rarityRank(a.rarity) - rarityRank(b.rarity) || Number(b.points || 0) - Number(a.points || 0) || String(a.title).localeCompare(String(b.title)));
       if (!alive) return;
       setItems(finalItems);
-      if (rpc.error) setStatus("Showing the local badge guide. Run V79 SQL so earned badges sync from Supabase.");
+      if (rpc.error) setStatus("Showing the local badge guide. Run V80 SQL so earned badges sync from Supabase.");
       setLoading(false);
     }
 
